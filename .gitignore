@@ -1,0 +1,13 @@
+/args
+/bin
+/.kube-secrets
+/tmp/*
+/local
+**/dev
+
+*.coverprofile
+*.html
+.vscode
+.idea
+.DS_Store
+*~

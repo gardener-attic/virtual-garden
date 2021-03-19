@@ -1,0 +1,123 @@
+// Copyright (c) 2021 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package api
+
+// Imports defines the structure for the required configuration values from other components.
+type Imports struct {
+	// HostingCluster contains settings for the hosting cluster that runs the virtual garden.
+	HostingCluster HostingCluster `json:"hostingCluster" yaml:"hostingCluster"`
+	// VirtualGarden contains configuration for the virtual garden cluster.
+	VirtualGarden VirtualGarden `json:"virtualGarden" yaml:"virtualGarden"`
+	// Credentials maps names to credential pairs. Other structures shall reference those credentials using the names.
+	// +optional
+	Credentials map[string]Credentials `json:"credentials,omitempty" yaml:"credentials,omitempty"`
+}
+
+// HostingCluster contains settings for the hosting cluster that runs the virtual garden.
+type HostingCluster struct {
+	// Kubeconfig is the kubeconfig of the hosting cluster into which the virtual garden shall be installed.
+	Kubeconfig string `json:"kubeconfig" yaml:"kubeconfig"`
+	// Namespace is a namespace in the hosting cluster into which the virtual garden shall be installed.
+	Namespace string `json:"namespace" yaml:"namespace"`
+	// InfrastructureProvider is the provider type of the underlying infrastructure of the hosting cluster.
+	InfrastructureProvider InfrastructureProviderType `json:"infrastructureProvider" yaml:"infrastructureProvider"`
+}
+
+// VirtualGarden contains configuration for the virtual garden cluster.
+type VirtualGarden struct {
+	// ETCD contains configuration for the etcd that is used by the virtual garden kube-apiserver.
+	// +optional
+	ETCD *ETCD `json:"etcd,omitempty" yaml:"etcd,omitempty"`
+	// KubeAPIServer contains configuration for the virtual garden kube-apiserver.
+	// +optional
+	KubeAPIServer *KubeAPIServer `json:"kubeAPIServer,omitempty" yaml:"kubeAPIServer,omitempty"`
+}
+
+// ETCD contains configuration for the etcd that is used by the virtual garden kube-apiserver.
+type ETCD struct {
+	// StorageClassName allows to overwrite the default storage class name for etcd.
+	// +optional
+	StorageClassName *string `json:"storageClassName,omitempty" yaml:"storageClassName,omitempty"`
+	// Backup contains configuration for the backup of the main etcd for the virtual garden.
+	// +optional
+	Backup *ETCDBackup `json:"backup,omitempty" yaml:"backup,omitempty"`
+	// HVPA contains configuration for the HVPA for etcd.
+	// +optional
+	HVPA *ETCDHVPA `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`
+}
+
+// ETCDBackup contains configuration for the backup of the main etcd for the virtual garden.
+type ETCDBackup struct {
+	// InfrastructureProvider is the provider type of the underlying infrastructure for the blob storage bucket.
+	InfrastructureProvider InfrastructureProviderType `json:"infrastructureProvider" yaml:"infrastructureProvider"`
+	// Region is the name of the region in which the blob storage bucket shall be created.
+	Region string `json:"region" yaml:"region"`
+	// BucketName is the name of the blob storage bucket.
+	BucketName string `json:"bucketName" yaml:"bucketName"`
+	// CredentialsRef is the name of a key in the credentials that shall be used for the creation of the blob storage
+	// bucket.
+	CredentialsRef string `json:"credentialsRef" yaml:"credentialsRef"`
+}
+
+// ETCDHVPA contains configuration for the HVPA for etcd.
+type ETCDHVPA struct{}
+
+// KubeAPIServer contains configuration for the virtual garden kube-apiserver.
+type KubeAPIServer struct {
+	// Exposure contains configuration for the exposure settings.
+	// +optional
+	Exposure *KubeAPIServerExposure `json:"exposure,omitempty" yaml:"exposure,omitempty"`
+}
+
+// KubeAPIServerExposure contains configuration for the exposure settings for the virtual garden kube-apiserver.
+type KubeAPIServerExposure struct {
+	// SNI contains configuration for SNI settings for the virtual garden.
+	// +optional
+	SNI *SNI `json:"sni,omitempty" yaml:"sni,omitempty"`
+}
+
+// SNI contains configuration for SNI settings for the virtual garden.
+type SNI struct {
+	// Hostname is the list of hostnames for the virtual garden kube-apiserver. It is used to create DNS entries
+	// pointing to it.
+	// +optional
+	Hostnames []string `json:"hostnames,omitempty" yaml:"hostnames,omitempty"`
+	// DNSClass is the DNS class that shall be used to create the DNS entries for the given hostnames.
+	// +optional
+	DNSClass *string `json:"dnsClass,omitempty" yaml:"dnsClass,omitempty"`
+	// TTL is the time-to-live for the DNS entries created for the given hostnames.
+	// +optional
+	TTL *int32 `json:"ttl,omitempty" yaml:"ttl,omitempty"`
+}
+
+// Credentials contains key-value pairs for credentials for a certain endpoint type.
+type Credentials struct {
+	// Type is the credentials type.
+	Type InfrastructureProviderType `json:"type" yaml:"type"`
+	// Data contains key-value pairs with the credentials information. The keys are specific for the credentials type.
+	Data map[string]string `json:"data" yaml:"data"`
+}
+
+// InfrastructureProviderType is a string alias.
+type InfrastructureProviderType string
+
+const (
+	// InfrastructureProviderAlicloud is a constant for the Alicloud infrastructure provider.
+	InfrastructureProviderAlicloud InfrastructureProviderType = "alicloud"
+	// InfrastructureProviderAWS is a constant for the AWS infrastructure provider.
+	InfrastructureProviderAWS InfrastructureProviderType = "aws"
+	// InfrastructureProviderGCP is a constant for the GCP infrastructure provider.
+	InfrastructureProviderGCP InfrastructureProviderType = "gcp"
+)
