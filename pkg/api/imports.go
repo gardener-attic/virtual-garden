@@ -16,6 +16,8 @@ package api
 
 // Imports defines the structure for the required configuration values from other components.
 type Imports struct {
+	// Cluster is the kubeconfig of the hosting cluster into which the virtual garden shall be installed.
+	Cluster string `json:"cluster" yaml:"cluster"`
 	// HostingCluster contains settings for the hosting cluster that runs the virtual garden.
 	HostingCluster HostingCluster `json:"hostingCluster" yaml:"hostingCluster"`
 	// VirtualGarden contains configuration for the virtual garden cluster.
@@ -76,6 +78,7 @@ type ETCDHVPA struct{}
 
 // KubeAPIServer contains configuration for the virtual garden kube-apiserver.
 type KubeAPIServer struct {
+	Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
 	// Exposure contains configuration for the exposure settings.
 	// +optional
 	Exposure *KubeAPIServerExposure `json:"exposure,omitempty" yaml:"exposure,omitempty"`
@@ -100,6 +103,9 @@ type SNI struct {
 	// TTL is the time-to-live for the DNS entries created for the given hostnames.
 	// +optional
 	TTL *int32 `json:"ttl,omitempty" yaml:"ttl,omitempty"`
+	// SecretName
+	// +optional
+	SecretName string `json:"secretName,omitempty" yaml:"secretName,omitempty"`
 }
 
 // Credentials contains key-value pairs for credentials for a certain endpoint type.

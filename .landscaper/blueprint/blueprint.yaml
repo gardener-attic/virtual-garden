@@ -2,9 +2,79 @@ apiVersion: landscaper.gardener.cloud/v1alpha1
 kind: Blueprint
 
 imports:
-  - name: target-cluster
+  - name: cluster
     required: true
     targetType: landscaper.gardener.cloud/kubernetes-cluster
+
+  - name: hostingCluster
+    schema:
+      type: object
+      properties:
+        namespace:
+          type: string
+        infrastructureProvider:
+          type: string
+          default:
+            value: gcp
+
+  - name: virtualGarden
+    schema:
+      type: object
+      properties:
+        etcd:
+          type: object
+          properties:
+            storageClassName:
+              type: string
+            backup:
+              type: object
+              properties:
+                infrastructureProvider:
+                  type: string
+                region:
+                  type: string
+                bucketName:
+                  type: string
+                credentialsRef:
+                  type: string
+            hvpa:
+              type: object
+        kubeAPIServer:
+          type: object
+          properties:
+            replicas:
+              type: integer
+              default:
+                value: 6
+            exposure:
+              type: object
+              properties:
+                sni:
+                  type: object
+                  properties:
+                    hostnames:
+                      type: array
+                      items:
+                        type: string
+                    dnsClass:
+                      type: string
+                    ttl:
+                      type: integer
+
+  - name: credentials
+    description: "credentials map"
+    schema:
+      type: object
+      additionalProperties:
+        type: object
+        description: "credentials"
+        properties:
+          type:
+            type: string
+          data:
+            type: object
+            additionalProperties:
+              type: string
 
 exports: []
 

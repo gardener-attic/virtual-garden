@@ -37,7 +37,11 @@ func ValidateImports(obj *api.Imports) field.ErrorList {
 }
 
 // ValidInfrastructureProviderTypes is a set of valid infrastructure provider types.
-var ValidInfrastructureProviderTypes = sets.NewString(string(api.InfrastructureProviderAWS), string(api.InfrastructureProviderGCP))
+var ValidInfrastructureProviderTypes = sets.NewString(
+	string(api.InfrastructureProviderAWS),
+	string(api.InfrastructureProviderGCP),
+	string(api.InfrastructureProviderAlicloud),
+)
 
 // ValidateHostingCluster validates a HostingCluster object.
 func ValidateHostingCluster(obj *api.HostingCluster, fldPath *field.Path) field.ErrorList {

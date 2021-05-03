@@ -93,6 +93,8 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 		return err
 	}
 
+	imports.HostingCluster.Kubeconfig = imports.Cluster
+
 	log.Infof("Validating imports file")
 	if errList := validation.ValidateImports(imports); len(errList) > 0 {
 		return errList.ToAggregate()
