@@ -1,0 +1,18 @@
+apiVersion: landscaper.gardener.cloud/v1alpha1
+kind: Blueprint
+
+imports:
+  - name: target-cluster
+    required: true
+    targetType: landscaper.gardener.cloud/kubernetes-cluster
+
+exports: []
+
+exportExecutions: []
+
+subinstallations: []
+
+deployExecutions:
+- file: /virtual-garden-container-deployer.yaml
+  name: virtual-garden-container-deployer
+  type: GoTemplate

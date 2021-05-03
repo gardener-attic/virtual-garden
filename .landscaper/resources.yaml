@@ -1,0 +1,18 @@
+---
+type: blueprint
+name: blueprint
+relation: local
+input:
+  type: dir
+  path: ./blueprint
+  mediaType: application/vnd.gardener.landscaper.blueprint.v1+tar+gzip
+  compress: true
+...
+---
+type: ociImage
+name: virtual-garden-container-deployer
+relation: local
+access:
+  type: ociRegistry
+  imageReference: eu.gcr.io/gardener-project/virtual-garden-container-deployer:${VERSION}
+...
