@@ -1,0 +1,240 @@
+apiVersion: landscaper.gardener.cloud/v1alpha1
+kind: Blueprint
+
+imports:
+  - name: cluster
+    required: true
+    targetType: landscaper.gardener.cloud/kubernetes-cluster
+
+  - name: hostingCluster
+    schema:
+      type: object
+      properties:
+        namespace:
+          type: string
+          default:
+            value: garden
+          description: "The namespace into which the kube-api-server and the etcd is deployed. It is recommended not to change the default."
+        infrastructureProvider:
+          type: string
+          default:
+            value: gcp
+
+  - name: virtualGarden
+    schema:
+      definitions:
+        scaleParams:
+          type: object
+          properties:
+            cpu:
+              type: object
+              properties:
+                value:
+                  type: string
+                percentage:
+                  type: integer
+            memory:
+              type: object
+              properties:
+                value:
+                  type: string
+                percentage:
+                  type: integer
+            replicas:
+              type: object
+              properties:
+                value:
+                  type: string
+                percentage:
+                  type: integer
+      type: object
+      properties:
+        etcd:
+          type: object
+          properties:
+            storageClassName:
+              type: string
+            backup:
+              type: object
+              properties:
+                infrastructureProvider:
+                  type: string
+                region:
+                  type: string
+                bucketName:
+                  type: string
+                credentials:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties:
+                        type: string
+            handleETCDPersistentVolumes:
+              description: "If true, the persistent volumes for the etcds are also deleted."
+              type: boolean
+            hvpaEnabled:
+              type: boolean
+        kubeAPIServer:
+          type: object
+          properties:
+            replicas:
+              type: integer
+              default:
+                value: 6
+            sni:
+              type: object
+              properties:
+                hostname:
+                  type: string
+                dnsClass:
+                  type: string
+                ttl:
+                  type: integer
+                secretName:
+                  type: string
+            dnsAccessDomain:
+              type: string
+            gardenerControlplane:
+              type: object
+              properties:
+                validatingWebhookEnabled:
+                  type: boolean
+                mutatingWebhookEnabled:
+                  type: boolean
+            auditWebhookConfig:
+              type: object
+              properties:
+                config:
+                  description: "The kubeconfig to access audit log server."
+                  type: string
+            auditWebhookBatchMaxSize:
+              type: string
+            seedAuthorizer
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                certificateAuthorityData:
+                  type: string
+            hvpaEnabled:
+              type: boolean
+            hvpa:
+              type: object
+              properties:
+                maxReplicas:
+                  type: integer
+                minReplicas:
+                  type: integer
+                targetAverageUtilizationCpu:
+                  type: integer
+                targetAverageUtilizationMemory:
+                  type: integer
+                vpaScaleUpMode:
+                  type: string
+                vpaScaleDownMode:
+                  type: string
+                vpaScaleUpStabilization:
+                  type: object
+                  properties:
+                    stabilizationDuration:
+                      type: string
+                    minChange:
+                      "$ref": "#/definitions/scaleParams"
+                vpaScaleDownStabilization:
+                  type: object
+                  properties:
+                    stabilizationDuration:
+                      type: string
+                    minChange:
+                      "$ref": "#/definitions/scaleParams"
+                limitsRequestsGapScaleParams:
+                  "$ref": "#/definitions/scaleParams"
+                maintenanceWindow:
+                  type: object
+                  properties:
+                    begin:
+                      type: string
+                    end:
+                      type: string
+            eventTTL:
+              type: string
+            oidcIssuerURL:
+              type: string
+            additionalVolumeMounts:
+              type: array
+              items:
+                volumeMount:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    readOnly:
+                      type: boolean
+                    mountPath:
+                      type: string
+                    subPath:
+                      type: string
+                    mountPropagation:
+                      type: string
+                    subPathExpr:
+                      type: string
+            additionalVolumes:
+              type: array
+              items:
+                volume:
+                type: object
+            horizontalPodAutoscaler:
+              type: object
+              properties:
+                downscaleStabilization:
+                  type: string
+                readinessDelay:
+                  type: string
+                cpuInitializationPeriod:
+                  type: string
+                syncPeriod:
+                  type: string
+                tolerance:
+                  type: string
+        deleteNamespace:
+          type: boolean
+        priorityClassName:
+          type: string
+
+exports:
+- name: kubeApiserverCaPem
+  schema:
+    type: string
+
+- name: etcdCaPem
+  schema:
+    type: string
+
+- name: etcdClientTlsPem
+  schema:
+    type: string
+
+- name: etcdClientTlsKeyPem
+  schema:
+    type: string
+
+- name: virtualGardenKubeconfig
+  targetType: landscaper.gardener.cloud/kubernetes-cluster
+
+- name: virtualGardenEndpoint
+  schema:
+    type: string
+
+exportExecutions:
+- name: virtual-garden-export-execution
+  file: /virtual-garden-export-execution.yaml
+  type: GoTemplate
+
+subinstallations: []
+
+deployExecutions:
+- name: virtual-garden-deploy-execution
+  file: /virtual-garden-deploy-execution.yaml
+  type: GoTemplate
+

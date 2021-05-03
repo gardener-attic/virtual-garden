@@ -46,18 +46,15 @@ var _ = Describe("KubeApiserverService", func() {
 		fakeErr   = fmt.Errorf("fail")
 
 		hostname1       = "foo.com"
-		hostname2       = "bar.com"
 		dnsClass        = "baz"
 		ttl       int32 = 42
 		imports         = &api.Imports{
 			VirtualGarden: api.VirtualGarden{
 				KubeAPIServer: &api.KubeAPIServer{
-					Exposure: &api.KubeAPIServerExposure{
-						SNI: &api.SNI{
-							Hostnames: []string{hostname1, hostname2},
-							DNSClass:  pointer.StringPtr(dnsClass),
-							TTL:       pointer.Int32Ptr(ttl),
-						},
+					SNI: &api.SNI{
+						Hostname: hostname1,
+						DNSClass: pointer.StringPtr(dnsClass),
+						TTL:      pointer.Int32Ptr(ttl),
 					},
 				},
 			},
@@ -118,7 +115,7 @@ var _ = Describe("KubeApiserverService", func() {
 					"component": "kube-apiserver",
 				}
 				service.Annotations = map[string]string{
-					"dns.gardener.cloud/dnsnames": hostname1 + "," + hostname2,
+					"dns.gardener.cloud/dnsnames": hostname1,
 					"dns.gardener.cloud/class":    dnsClass,
 					"dns.gardener.cloud/ttl":      strconv.Itoa(int(ttl)),
 				}
@@ -219,7 +216,7 @@ var _ = Describe("KubeApiserverService", func() {
 				}
 				service.Annotations = map[string]string{
 					"bar":                         "baz",
-					"dns.gardener.cloud/dnsnames": hostname1 + "," + hostname2,
+					"dns.gardener.cloud/dnsnames": hostname1,
 					"dns.gardener.cloud/class":    dnsClass,
 					"dns.gardener.cloud/ttl":      strconv.Itoa(int(ttl)),
 				}

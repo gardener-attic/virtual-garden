@@ -1,0 +1,21 @@
+exports:
+  kubeApiserverCaPem: |
+    {{- index .values "deployitems" "virtual-garden-container-deployer" "kubeApiserverCaPem" | nindent 4 }}
+
+  etcdCaPem: |
+    {{- index .values "deployitems" "virtual-garden-container-deployer" "etcdCaPem" | nindent 4 }}
+
+  etcdClientTlsPem: |
+    {{- index .values "deployitems" "virtual-garden-container-deployer" "etcdClientTlsPem" | nindent 4 }}
+
+  etcdClientTlsKeyPem: |
+    {{- index .values "deployitems" "virtual-garden-container-deployer" "etcdClientTlsKeyPem" | nindent 4 }}
+
+  virtualGardenEndpoint: |
+    {{- index .values "deployitems" "virtual-garden-container-deployer" "virtualGardenEndpoint" | nindent 4 }}
+
+  virtualGardenKubeconfig:
+    type: landscaper.gardener.cloud/kubernetes-cluster
+    config:
+      kubeconfig: |
+        {{- index .values "deployitems" "virtual-garden-container-deployer" "kubeconfigYaml" | nindent 8 }}

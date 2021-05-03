@@ -21,6 +21,7 @@ import (
 	"github.com/gardener/virtual-garden/pkg/api"
 	"github.com/gardener/virtual-garden/pkg/provider/alicloud"
 	"github.com/gardener/virtual-garden/pkg/provider/aws"
+	"github.com/gardener/virtual-garden/pkg/provider/fake"
 	"github.com/gardener/virtual-garden/pkg/provider/gcp"
 
 	corev1 "k8s.io/api/core/v1"
@@ -31,6 +32,8 @@ type InfrastructureProvider interface {
 	// ComputeStorageClassConfiguration shall return the Kubernetes volume provisioner name as well as optional
 	// parameters for the storage class that can be used by etcd.
 	ComputeStorageClassConfiguration() (provisioner string, parameters map[string]string)
+	GetLoadBalancer(service *corev1.Service) string
+	GetKubeAPIServerURL(kubeAPIServer *api.KubeAPIServer, loadBalancer string) string
 }
 
 // NewInfrastructureProvider returns a new InfrastructureProvider interface for the given provider type.
@@ -63,18 +66,18 @@ type BackupProvider interface {
 }
 
 // NewBackupProvider returns a new InfrastructureProvider interface for the given provider type.
-func NewBackupProvider(providerType api.InfrastructureProviderType, credentials map[string]api.Credentials, credentialsRef string) (BackupProvider, error) {
-	creds, ok := credentials[credentialsRef]
-	if !ok {
-		return nil, fmt.Errorf("could not find referenced credentials with name %q", credentialsRef)
-	}
-	if creds.Type != providerType {
-		return nil, fmt.Errorf("referenced credentials type %q does not match provider type %q", creds.Type, providerType)
-	}
+func NewBackupProvider(providerType api.InfrastructureProviderType, credentials *api.Credentials) (BackupProvider, error) {
 
 	switch providerType {
 	case api.InfrastructureProviderGCP:
-		return gcp.NewBackupProvider(creds.Data)
+		return gcp.NewBackupProvider(credentials.Data)
+	case api.InfrastructureProviderFake:
+		backupSecretData := map[string][]byte{}
+
+		for k, v := range credentials.Data {
+			backupSecretData[k] = []byte(v)
+		}
+		return fake.NewBackupProvider(backupSecretData), nil
 	}
 
 	return nil, fmt.Errorf("unsupported backup provider type: %q", providerType)

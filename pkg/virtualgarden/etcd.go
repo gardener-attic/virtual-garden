@@ -193,8 +193,8 @@ func OtherVirtualGardensInHostingCluster(ctx context.Context, c client.Client, n
 
 func etcdLabels(role string) map[string]string {
 	return map[string]string{
-		"app":       Prefix,
-		"component": "etcd",
-		"role":      role,
+		LabelKeyApp:       Prefix,
+		LabelKeyComponent: "etcd",
+		LabelKeyRole:      role,
 	}
 }

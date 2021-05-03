@@ -20,15 +20,22 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+var FakeEnv = []corev1.EnvVar{
+	{
+		Name:  "testname",
+		Value: "testval",
+	},
+}
+
+const FakeProviderName = "fakeprovider"
+
 type fakeBackupProvider struct {
-	backupStorageProviderName string
-	backupSecretData          map[string][]byte
-	backupEnvironment         []corev1.EnvVar
+	backupSecretData map[string][]byte
 }
 
 // NewBackupProvider returns a fake backup provider for testing.
-func NewBackupProvider(backupStorageProviderName string, backupSecretData map[string][]byte, backupEnvironment []corev1.EnvVar) *fakeBackupProvider {
-	return &fakeBackupProvider{backupStorageProviderName, backupSecretData, backupEnvironment}
+func NewBackupProvider(backupSecretData map[string][]byte) *fakeBackupProvider {
+	return &fakeBackupProvider{backupSecretData}
 }
 
 func (f *fakeBackupProvider) CreateBucket(_ context.Context, _, _ string) error {
@@ -44,5 +51,5 @@ func (f *fakeBackupProvider) BucketExists(_ context.Context, _ string) (bool, er
 }
 
 func (f *fakeBackupProvider) ComputeETCDBackupConfiguration(_ string) (string, map[string][]byte, []corev1.EnvVar) {
-	return f.backupStorageProviderName, f.backupSecretData, f.backupEnvironment
+	return FakeProviderName, f.backupSecretData, FakeEnv
 }

@@ -15,9 +15,12 @@
 package validation_test
 
 import (
+	"encoding/json"
+
 	"github.com/gardener/virtual-garden/pkg/api"
 	. "github.com/gardener/virtual-garden/pkg/api/validation"
 
+	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -34,8 +37,14 @@ var _ = Describe("Imports", func() {
 
 		BeforeEach(func() {
 			obj = &api.Imports{
+				Cluster: lsv1alpha1.Target{
+					Spec: lsv1alpha1.TargetSpec{
+						Configuration: lsv1alpha1.AnyJSON{
+							RawMessage: json.RawMessage(`{"config":{"kubeconfig":"x"}}`),
+						},
+					},
+				},
 				HostingCluster: api.HostingCluster{
-					Kubeconfig:             "abc",
 					Namespace:              "foo",
 					InfrastructureProvider: "gcp",
 				},
@@ -45,14 +54,10 @@ var _ = Describe("Imports", func() {
 							InfrastructureProvider: api.InfrastructureProviderGCP,
 							Region:                 "foo",
 							BucketName:             "bar",
-							CredentialsRef:         "baz",
+							Credentials: &api.Credentials{
+								Data: map[string]string{"foo": "bar"},
+							},
 						},
-					},
-				},
-				Credentials: map[string]api.Credentials{
-					"baz": {
-						Type: api.InfrastructureProviderGCP,
-						Data: map[string]string{"foo": "bar"},
 					},
 				},
 			}
@@ -64,14 +69,14 @@ var _ = Describe("Imports", func() {
 
 		Context("hosting cluster", func() {
 			It("should fail for an invalid configuration", func() {
-				obj.HostingCluster.Kubeconfig = ""
+				obj.Cluster = lsv1alpha1.Target{}
 				obj.HostingCluster.Namespace = ""
 				obj.HostingCluster.InfrastructureProvider = ""
 
 				Expect(ValidateImports(obj)).To(ConsistOf(
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":  Equal(field.ErrorTypeRequired),
-						"Field": Equal("hostingCluster.kubeconfig"),
+						"Field": Equal("cluster"),
 					})),
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":  Equal(field.ErrorTypeRequired),
@@ -98,7 +103,8 @@ var _ = Describe("Imports", func() {
 						Backup:           &api.ETCDBackup{},
 					}
 
-					Expect(ValidateImports(obj)).To(ConsistOf(
+					result := ValidateImports(obj)
+					Expect(result).To(ConsistOf(
 						PointTo(MatchFields(IgnoreExtras, Fields{
 							"Type":  Equal(field.ErrorTypeRequired),
 							"Field": Equal("virtualGarden.etcd.storageClassName"),
@@ -117,30 +123,18 @@ var _ = Describe("Imports", func() {
 						})),
 						PointTo(MatchFields(IgnoreExtras, Fields{
 							"Type":  Equal(field.ErrorTypeRequired),
-							"Field": Equal("virtualGarden.etcd.backup.credentialsRef"),
+							"Field": Equal("virtualGarden.etcd.backup.credentials"),
 						})),
 					))
 				})
 
 				It("should fail when credentials ref is invalid", func() {
-					obj.VirtualGarden.ETCD.Backup.CredentialsRef = "baz2"
+					obj.VirtualGarden.ETCD.Backup.Credentials = nil
 
 					Expect(ValidateImports(obj)).To(ConsistOf(
 						PointTo(MatchFields(IgnoreExtras, Fields{
-							"Type":  Equal(field.ErrorTypeInvalid),
-							"Field": Equal("virtualGarden.etcd.backup.credentialsRef"),
-						})),
-					))
-				})
-
-				It("should fail when credentials ref points to credentials of different type", func() {
-					obj.VirtualGarden.ETCD.Backup.CredentialsRef = "wrong"
-					obj.Credentials["wrong"] = api.Credentials{Type: "type", Data: map[string]string{"foo": "bar"}}
-
-					Expect(ValidateImports(obj)).To(ConsistOf(
-						PointTo(MatchFields(IgnoreExtras, Fields{
-							"Type":  Equal(field.ErrorTypeInvalid),
-							"Field": Equal("virtualGarden.etcd.backup.credentialsRef"),
+							"Type":  Equal(field.ErrorTypeRequired),
+							"Field": Equal("virtualGarden.etcd.backup.credentials"),
 						})),
 					))
 				})
@@ -149,18 +143,16 @@ var _ = Describe("Imports", func() {
 			Context("KubeAPIServer", func() {
 				Context("SNI", func() {
 					It("should pass when no SNI is configured", func() {
-						obj.VirtualGarden.KubeAPIServer = &api.KubeAPIServer{Exposure: &api.KubeAPIServerExposure{}}
+						obj.VirtualGarden.KubeAPIServer = &api.KubeAPIServer{}
 						Expect(ValidateImports(obj)).To(BeEmpty())
 					})
 
 					It("should pass for a valid SNI configuration", func() {
 						obj.VirtualGarden.KubeAPIServer = &api.KubeAPIServer{
-							Exposure: &api.KubeAPIServerExposure{
-								SNI: &api.SNI{
-									Hostnames: []string{"foo.com"},
-									DNSClass:  pointer.StringPtr("bar"),
-									TTL:       pointer.Int32Ptr(62),
-								},
+							SNI: &api.SNI{
+								Hostname: "foo.com",
+								DNSClass: pointer.StringPtr("bar"),
+								TTL:      pointer.Int32Ptr(62),
 							},
 						}
 						Expect(ValidateImports(obj)).To(BeEmpty())
@@ -168,7 +160,7 @@ var _ = Describe("Imports", func() {
 
 					DescribeTable("should fail for invalid SNI configuration",
 						func(sni *api.SNI) {
-							obj.VirtualGarden.KubeAPIServer = &api.KubeAPIServer{Exposure: &api.KubeAPIServerExposure{SNI: sni}}
+							obj.VirtualGarden.KubeAPIServer = &api.KubeAPIServer{SNI: sni}
 							Expect(ValidateImports(obj)).To(ConsistOf(
 								PointTo(MatchFields(IgnoreExtras, Fields{
 									"Type":  Equal(field.ErrorTypeRequired),
@@ -185,23 +177,6 @@ var _ = Describe("Imports", func() {
 						Entry("no hostnames, ttl to high", &api.SNI{TTL: pointer.Int32Ptr(1000)}),
 					)
 				})
-			})
-		})
-
-		Context("credentials", func() {
-			It("should fail for an invalid configuration", func() {
-				obj.Credentials["foo"] = api.Credentials{}
-
-				Expect(ValidateImports(obj)).To(ConsistOf(
-					PointTo(MatchFields(IgnoreExtras, Fields{
-						"Type":  Equal(field.ErrorTypeRequired),
-						"Field": Equal("credentials.foo.type"),
-					})),
-					PointTo(MatchFields(IgnoreExtras, Fields{
-						"Type":  Equal(field.ErrorTypeRequired),
-						"Field": Equal("credentials.foo.data"),
-					})),
-				))
 			})
 		})
 	})

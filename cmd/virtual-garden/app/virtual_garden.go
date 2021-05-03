@@ -19,14 +19,20 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ghodss/yaml"
+
+	"github.com/gardener/virtual-garden/pkg/api"
+
 	"github.com/gardener/virtual-garden/pkg/api/loader"
 	"github.com/gardener/virtual-garden/pkg/api/validation"
 	"github.com/gardener/virtual-garden/pkg/virtualgarden"
 
 	hvpav1alpha1 "github.com/gardener/hvpa-controller/api/v1alpha1"
+	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	autoscalingv1beta2 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
@@ -87,8 +93,19 @@ func NewCommandVirtualGarden() *cobra.Command {
 
 // run runs the virtual garden deployer.
 func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
-	log.Infof("Reading imports file from IMPORTS_PATH(%s)", opts.ImportsPath)
-	imports, err := loader.FromFile(opts.ImportsPath)
+	log.Infof("Reading imports file from %s", opts.ImportsPath)
+	imports, err := loader.ImportsFromFile(opts.ImportsPath)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Reading component descriptor file from %s", opts.ComponentDescriptorPath)
+	cd, err := loader.ComponentDescriptorFromFile(opts.ComponentDescriptorPath)
+	if err != nil {
+		return err
+	}
+
+	imageRefs, err := api.NewImageRefsFromComponentDescriptor(cd)
 	if err != nil {
 		return err
 	}
@@ -99,23 +116,52 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 	}
 
 	log.Infof("Creating REST config and Kubernetes client based on given kubeconfig")
-	client, err := NewClientFromKubeconfig([]byte(imports.HostingCluster.Kubeconfig))
+	client, err := NewClientFromTarget(imports.Cluster)
 	if err != nil {
 		return err
 	}
 
-	operation, err := virtualgarden.NewOperation(client, log, imports.HostingCluster.Namespace, opts.HandleNamespace, opts.HandleETCDPersistentVolumes, imports)
+	operation, err := virtualgarden.NewOperation(client, log, imports.HostingCluster.Namespace, imports, imageRefs)
 	if err != nil {
 		return err
 	}
 	log.Infof("Initialization %q operation complete.", opts.OperationType)
 
 	if opts.OperationType == OperationTypeReconcile {
-		return operation.Reconcile(ctx)
+		exports, err := operation.Reconcile(ctx)
+		if err != nil {
+			return err
+		}
+
+		log.Infof("Writing exports file to EXPORTS_PATH(%s)", opts.ExportsPath)
+		err = loader.ExportsToFile(exports, opts.ExportsPath)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	} else if opts.OperationType == OperationTypeDelete {
 		return operation.Delete(ctx)
 	}
 	return fmt.Errorf("unknown operation type: %q", opts.OperationType)
+}
+
+// NewClientFromKubeconfig creates a new Kubernetes client for the kubeconfig in the given target.
+func NewClientFromTarget(target lsv1alpha1.Target) (client.Client, error) {
+	targetConfig := target.Spec.Configuration.RawMessage
+	targetConfigMap := make(map[string]string)
+
+	err := yaml.Unmarshal(targetConfig, &targetConfigMap)
+	if err != nil {
+		return nil, err
+	}
+
+	kubeconfig, ok := targetConfigMap["kubeconfig"]
+	if !ok {
+		return nil, fmt.Errorf("Imported target does not contain a kubeconfig")
+	}
+
+	return NewClientFromKubeconfig([]byte(kubeconfig))
 }
 
 // NewClientFromKubeconfig creates a new Kubernetes client for the given kubeconfig.
@@ -134,6 +180,7 @@ func NewClientFromKubeconfig(kubeconfig []byte) (client.Client, error) {
 	utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
 	utilruntime.Must(hvpav1alpha1.AddToScheme(scheme))
 	utilruntime.Must(autoscalingv1beta2.AddToScheme(scheme))
+	utilruntime.Must(apiextensionsv1beta1.AddToScheme(scheme))
 
 	return client.New(restConfig, client.Options{Scheme: scheme})
 }

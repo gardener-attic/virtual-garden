@@ -1,32 +1,108 @@
+cluster: |
+  apiVersion: v1
+  kind: Config
+# ... <please insert your kubeconfig here>
+
 hostingCluster:
-  kubeconfig: |
-    apiVersion: v1
-    kind: Config
-#   ... <please insert your kubeconfig here>
-  namespace: garden-123
+  namespace: garden-4
   infrastructureProvider: gcp # aws|gcp|alicloud
 
 virtualGarden:
+  deleteNamespace: true
+
   etcd:
     storageClassName: my-virtual-garden-storage-class
     backup:
       infrastructureProvider: gcp # aws|gcp|alicloud
-      region: europe-west5
+      region: europe-west555
       bucketName: my-virtual-garden-backup
-      credentialsRef: mycredentials
-    hvpa: {}
+      credentials:
+        data:
+          serviceaccount.json: |
+            {
+              "project_id": "test-project",
+              "type": "test-type"
+            }
+
+    handleETCDPersistentVolumes: true
+    hvpaEnabled: true
 
   kubeAPIServer:
-  # exposure:
-  #   sni:
-  #     hostnames:
-  #     - foo.com
-  #     dnsClass: my-class
-  #     ttl: 120
+    replicas: 1
+    sni:
+      hostname: api.dev.gardener.cloud.sap
+      dnsClass: gardendns
+      ttl: 120
+      secretName: gardener-dashboard-tls
+    dnsAccessDomain: my.dns.domain
 
-credentials:
-  mycredentials:
-    type: gcp
-    data:
-      serviceaccount.json: |
-#       ... <please insert your service account here>
+    gardenerControlplane:
+      validatingWebhookEnabled: false
+      mutatingWebhookEnabled: false
+      auditWebhookConfig:
+        config: "my-audit-webhook-config"
+        auditWebhookBatchMaxSize: "1"
+        hvpaEnabled: true
+        hvpa:
+          maxReplicas: 2
+          minReplicas: 1
+          targetAverageUtilizationCpu: 1
+          targetAverageUtilizationMemory: 1
+          vpaScaleUpMode: "x"
+          vpaScaleDownMode: "y"
+          vpaScaleUpStabilization:
+            stabilizationDuration: "z"
+            minChange:
+              cpu:
+                value: "abc"
+                percentage: 80
+              memory:
+                value: "abc"
+                percentage: 80
+              replicas:
+                value: "abc"
+                percentage: 80
+          vpaScaleDownStabilization:
+            stabilizationDuration: "a"
+            minChange:
+              cpu:
+                value: "abc"
+                percentage: 80
+              memory:
+                value: "abc"
+                percentage: 80
+              replicas:
+                value: "abc"
+                percentage: 80
+          limitsRequestsGapScaleParams:
+            cpu:
+              value: "abc"
+              percentage: 80
+            memory:
+              value: "abc"
+              percentage: 80
+            replicas:
+              value: "abc"
+              percentage: 80
+          maintenanceWindow:
+            begin: "abc"
+            end: "xyz"
+
+        eventTTL: "test-eventTTL"
+        oidcIssuerURL: "test-oidcIssuerURL"
+        additionalVolumeMounts:
+        - name: "test-volume-mount"
+          readOnly: true
+          mountPath: "test1/test2"
+          subPath: "sub1/sub2"
+          mountPropagation: true
+          subPathExpr: "test-subPathExpr"
+        additionalVolumes:
+        - name: "test-volume"
+          volumeSource: {}
+        horizontalPodAutoscaler:
+          downscaleStabilization: "a"
+          readinessDelay: "b"
+          cpuInitializationPeriod: "c"
+          syncPeriod: "d"
+          tolerance: "e"

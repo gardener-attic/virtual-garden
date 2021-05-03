@@ -19,38 +19,58 @@ import (
 
 	"github.com/gardener/virtual-garden/pkg/api/helper"
 
+	"github.com/gardener/virtual-garden/pkg/api"
+
 	"github.com/gardener/gardener/pkg/utils/flow"
 )
 
 // Reconcile runs the reconcile operation.
-func (o *operation) Reconcile(ctx context.Context) error {
+func (o *operation) Reconcile(ctx context.Context) (*api.Exports, error) {
 	var (
 		graph = flow.NewGraph("Virtual Garden Reconciliation")
 
+		createHVPACRD = graph.Add(flow.Task{
+			Name: "Creating HVPA CRD in hosting cluster",
+			Fn:   o.deployHVPACRD,
+		})
+
 		createNamespace = graph.Add(flow.Task{
 			Name: "Creating namespace for virtual-garden deployment in hosting cluster",
-			Fn:   flow.TaskFn(o.CreateNamespace).SkipIf(!o.handleNamespace),
+			Fn:   o.CreateNamespace,
 		})
-		_ = graph.Add(flow.Task{
+
+		deployBackupBucket = graph.Add(flow.Task{
+			Name: "Deploying the backup bucket for the main etcd",
+			Fn:   flow.TaskFn(o.DeployBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
+		})
+
+		createETCD = graph.Add(flow.Task{
+			Name:         "Deploying the main and events etcds",
+			Fn:           o.DeployETCD,
+			Dependencies: flow.NewTaskIDs(createHVPACRD, createNamespace, deployBackupBucket),
+		})
+
+		createKubeAPIServerService = graph.Add(flow.Task{
 			Name:         "Deploying the service for exposing the virtual garden kube-apiserver",
 			Fn:           o.DeployKubeAPIServerService,
 			Dependencies: flow.NewTaskIDs(createNamespace),
 		})
-		deployBackupBucket = graph.Add(flow.Task{
-			Name:         "Deploying the backup bucket for the main etcd",
-			Fn:           flow.TaskFn(o.DeployBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
-			Dependencies: flow.NewTaskIDs(createNamespace),
-		})
+
 		_ = graph.Add(flow.Task{
-			Name:         "Deploying the main and events etcds",
-			Fn:           o.DeployETCD,
-			Dependencies: flow.NewTaskIDs(createNamespace, deployBackupBucket),
+			Name:         "Deploying kube-apiserver",
+			Fn:           o.DeployKubeAPIServer,
+			Dependencies: flow.NewTaskIDs(createKubeAPIServerService, createETCD),
 		})
 	)
 
-	return graph.Compile().Run(flow.Opts{
+	err := graph.Compile().Run(flow.Opts{
 		Context:          ctx,
 		Logger:           o.log,
 		ProgressReporter: flow.NewImmediateProgressReporter(o.progressReporter),
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &o.exports, nil
 }

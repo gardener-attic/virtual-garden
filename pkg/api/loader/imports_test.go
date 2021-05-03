@@ -27,9 +27,9 @@ import (
 )
 
 var _ = Describe("Imports", func() {
-	Describe("#FromFile", func() {
+	Describe("#ImportsFromFile", func() {
 		It("should fail because the path does not exist", func() {
-			_, err := FromFile("does-not-exist")
+			_, err := ImportsFromFile("does-not-exist")
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(BeAssignableToTypeOf(&os.PathError{}))
 		})
@@ -53,7 +53,7 @@ var _ = Describe("Imports", func() {
 				path := filepath.Join(dir, "imports.yaml")
 				Expect(ioutil.WriteFile(path, []byte("foo"), 0644)).To(Succeed())
 
-				imports, err := FromFile(path)
+				imports, err := ImportsFromFile(path)
 				Expect(err).To(HaveOccurred())
 				Expect(imports).To(BeNil())
 			})
@@ -62,11 +62,10 @@ var _ = Describe("Imports", func() {
 				path := filepath.Join(dir, "imports.yaml")
 				Expect(ioutil.WriteFile(path, []byte("virtualGarden: {}\nhostingCluster: {namespace: foo}\ncredentials: {}"), 0644)).To(Succeed())
 
-				imports, err := FromFile(path)
+				imports, err := ImportsFromFile(path)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(imports).To(Equal(&api.Imports{
 					HostingCluster: api.HostingCluster{Namespace: "foo"},
-					Credentials:    map[string]api.Credentials{},
 				}))
 			})
 
@@ -74,11 +73,10 @@ var _ = Describe("Imports", func() {
 				path := filepath.Join(dir, "imports.json")
 				Expect(ioutil.WriteFile(path, []byte(`{"virtualGarden": {}, "hostingCluster": {"namespace": "foo"}, "credentials": {}}`), 0644)).To(Succeed())
 
-				imports, err := FromFile(path)
+				imports, err := ImportsFromFile(path)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(imports).To(Equal(&api.Imports{
 					HostingCluster: api.HostingCluster{Namespace: "foo"},
-					Credentials:    map[string]api.Credentials{},
 				}))
 			})
 		})

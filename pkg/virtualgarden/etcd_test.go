@@ -68,12 +68,9 @@ var _ = Describe("Etcd", func() {
 		infrastructureStorageClassProvisioner = "FaKe"
 		infrastructureStorageClassParameters  = map[string]string{"foo": "bar"}
 
-		bucketName                = "main-backup"
-		backupStorageProviderName = "fAkE"
-		backupSecretData          = map[string][]byte{"foo": []byte("bar")}
-		backupEnvironment         = []corev1.EnvVar{{Name: "some", Value: "data"}}
-
-		op *operation
+		bucketName       = "main-backup"
+		backupSecretData = map[string][]byte{"foo": []byte("bar")}
+		op               *operation
 	)
 
 	BeforeEach(func() {
@@ -81,22 +78,27 @@ var _ = Describe("Etcd", func() {
 		c = mockclient.NewMockClient(ctrl)
 
 		op = &operation{
-			client:                      c,
-			log:                         &logrus.Logger{Out: ioutil.Discard},
-			handleETCDPersistentVolumes: true,
-			namespace:                   namespace,
-			infrastructureProvider:      fake.NewInfrastructureProvider(infrastructureStorageClassProvisioner, infrastructureStorageClassParameters),
-			backupProvider:              fake.NewBackupProvider(backupStorageProviderName, backupSecretData, backupEnvironment),
+			client:                 c,
+			log:                    &logrus.Logger{Out: ioutil.Discard},
+			namespace:              namespace,
+			infrastructureProvider: fake.NewInfrastructureProvider(infrastructureStorageClassProvisioner, infrastructureStorageClassParameters),
+			backupProvider:         fake.NewBackupProvider(backupSecretData),
 			imports: &api.Imports{
 				VirtualGarden: api.VirtualGarden{
 					ETCD: &api.ETCD{
 						Backup: &api.ETCDBackup{
 							BucketName: bucketName,
 						},
-						StorageClassName: &storageClassName,
-						HVPA:             &api.ETCDHVPA{},
+						StorageClassName:            &storageClassName,
+						HVPAEnabled:                 true,
+						HandleETCDPersistentVolumes: true,
 					},
+					PriorityClassName: "garden-controlplane",
 				},
+			},
+			imageRefs: api.ImageRefs{
+				ETCDImage:              "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",
+				ETCDBackupRestoreImage: "eu.gcr.io/sap-se-gcr-k8s-public/eu_gcr_io/gardener-project/gardener/etcdbrctl:v0.9.1",
 			},
 		}
 	})
@@ -251,7 +253,7 @@ var _ = Describe("Etcd", func() {
 								Name:  "STORAGE_CONTAINER",
 								Value: bucketName,
 							},
-						}, backupEnvironment...)
+						}, fake.FakeEnv...)
 						additionalPodAnnotations = map[string]string{"checksum/secret-etcd-backup": secretChecksumBackup}
 						additionalVolumes = []corev1.Volume{
 							{
@@ -271,10 +273,12 @@ var _ = Describe("Etcd", func() {
 						}
 						additionalCommand = []string{
 							"--schedule=0 */24 * * *",
-							"--storage-provider=" + backupStorageProviderName,
+							"--defragmentation-schedule=0 1 * * *",
+							"--storage-provider=" + fake.FakeProviderName,
 							"--store-prefix=virtual-garden-etcd-main",
 							"--delta-snapshot-period=5m",
 							"--delta-snapshot-memory-limit=104857600",
+							"--embedded-etcd-quota-bytes=8589934592",
 						}
 					}
 				} else if role == ETCDRoleEvents {
@@ -313,6 +317,34 @@ var _ = Describe("Etcd", func() {
 								Labels: labels,
 							},
 							Spec: corev1.PodSpec{
+								Affinity: &corev1.Affinity{
+									PodAntiAffinity: &corev1.PodAntiAffinity{
+										RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+											{
+												LabelSelector: &metav1.LabelSelector{
+													MatchExpressions: []metav1.LabelSelectorRequirement{
+														{
+															Key:      "app",
+															Operator: metav1.LabelSelectorOpIn,
+															Values: []string{
+																Prefix,
+															},
+														},
+														{
+															Key:      "component",
+															Operator: metav1.LabelSelectorOpIn,
+															Values: []string{
+																"etcd",
+															},
+														},
+													},
+												},
+												TopologyKey: corev1.LabelHostname,
+											},
+										},
+									},
+								},
+								PriorityClassName: "garden-controlplane",
 								Containers: []corev1.Container{
 									{
 										Name:            "etcd",
@@ -756,7 +788,7 @@ var _ = Describe("Etcd", func() {
 
 		It("should correctly deploy all etcd resources (w/o backup, w/o hvpa)", func() {
 			op.imports.VirtualGarden.ETCD.Backup = nil
-			op.imports.VirtualGarden.ETCD.HVPA = nil
+			op.imports.VirtualGarden.ETCD.HVPAEnabled = false
 
 			gomock.InOrder(
 				c.EXPECT().Get(ctx, client.ObjectKey{Name: storageClassObjectMeta.Name}, gomock.AssignableToTypeOf(&storagev1.StorageClass{})).Return(apierrors.NewNotFound(schema.GroupResource{}, "")),
@@ -868,8 +900,8 @@ var _ = Describe("Etcd", func() {
 
 		It("should correctly delete all etcd resources (w/o backup, w/o pvc handling, w/o hvpa)", func() {
 			op.imports.VirtualGarden.ETCD.Backup = nil
-			op.imports.VirtualGarden.ETCD.HVPA = nil
-			op.handleETCDPersistentVolumes = false
+			op.imports.VirtualGarden.ETCD.HVPAEnabled = false
+			op.imports.VirtualGarden.ETCD.HandleETCDPersistentVolumes = false
 
 			gomock.InOrder(
 				c.EXPECT().Delete(ctx, &appsv1.StatefulSet{ObjectMeta: objectMeta(ETCDStatefulSetName(ETCDRoleMain), namespace)}),
