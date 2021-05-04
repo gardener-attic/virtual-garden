@@ -43,5 +43,9 @@ snapshot-count: 75000
 # default quota.
 quota-backend-bytes: 8589934592
 
+# Automatically compact for etcd history
+auto-compaction-mode: periodic
+auto-compaction-retention: "1"
+
 # metrics configuration
 metrics: basic

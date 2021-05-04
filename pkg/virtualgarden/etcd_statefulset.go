@@ -86,10 +86,12 @@ func (o *operation) deployETCDStatefulSet(
 	if storageProviderName != "" {
 		backupConfigParameters = []string{
 			"--schedule=0 */24 * * *",
+			"--defragmentation-schedule=0 1 * * *",
 			"--storage-provider=" + storageProviderName,
 			"--store-prefix=" + sts.Name,
 			"--delta-snapshot-period=5m",
 			"--delta-snapshot-memory-limit=104857600", // 100 MB
+			"--embedded-etcd-quota-bytes=8589934592",  // 8 GB
 		}
 		backupEnvironment = append([]corev1.EnvVar{
 			{
@@ -127,6 +129,34 @@ func (o *operation) deployETCDStatefulSet(
 				Labels:      etcdLabels(role),
 			},
 			Spec: corev1.PodSpec{
+				Affinity: &corev1.Affinity{
+					PodAntiAffinity: &corev1.PodAntiAffinity{
+						RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+							{
+								LabelSelector: &metav1.LabelSelector{
+									MatchExpressions: []metav1.LabelSelectorRequirement{
+										{
+											Key:      "app",
+											Operator: metav1.LabelSelectorOpIn,
+											Values:   []string{
+												Prefix,
+											},
+										},
+										{
+											Key:      "component",
+											Operator: metav1.LabelSelectorOpIn,
+											Values:   []string{
+												"etcd",
+											},
+										},
+									},
+								},
+								TopologyKey:   corev1.LabelHostname,
+							},
+						},
+					},
+				},
+				PriorityClassName: "garden-controlplane",
 				Containers: []corev1.Container{
 					{
 						Name:            etcdContainerName,
