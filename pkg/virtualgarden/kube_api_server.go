@@ -16,15 +16,24 @@ package virtualgarden
 
 import (
 	"context"
-	//"embed"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
-//go:embed resources/hvpa.yaml
-var hvpaCrd []byte
-
 // DeployKubeAPIServer deploys a kubernetes api server.
-func (o *operation) deployHVPACrd(ctx context.Context) error {
-	crd := &v1beta1.CustomResourceDefinition{}
+func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
+	o.log.Infof("Deploying the HVPA CRD")
+	if err := o.deployHVPACRD(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteKubeAPIServer deletes the kube-apiserver and all related resources.
+func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
+	o.log.Infof("Deleting the HPVA CRD")
+	if err := o.deleteHPVACRD(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }

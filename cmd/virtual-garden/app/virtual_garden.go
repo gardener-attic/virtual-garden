@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	autoscalingv1beta2 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
@@ -136,6 +137,7 @@ func NewClientFromKubeconfig(kubeconfig []byte) (client.Client, error) {
 	utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
 	utilruntime.Must(hvpav1alpha1.AddToScheme(scheme))
 	utilruntime.Must(autoscalingv1beta2.AddToScheme(scheme))
+	utilruntime.Must(apiextensionsv1beta1.AddToScheme(scheme))
 
 	return client.New(restConfig, client.Options{Scheme: scheme})
 }

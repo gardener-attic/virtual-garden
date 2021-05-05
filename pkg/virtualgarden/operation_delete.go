@@ -25,24 +25,30 @@ func (o *operation) Delete(ctx context.Context) error {
 	var (
 		graph = flow.NewGraph("Virtual Garden Deletion")
 
-		deleteKubeAPIServerService = graph.Add(flow.Task{
-			Name: "Deleting the service for exposing the virtual garden kube-apiserver",
-			Fn:   o.DeleteKubeAPIServerService,
-		})
-		deleteETCD = graph.Add(flow.Task{
-			Name: "Deleting the main and events etcds",
-			Fn:   o.DeleteETCD,
-		})
-		deleteBackupBucket = graph.Add(flow.Task{
-			Name:         "Deleting the backup bucket for the main etcd",
-			Fn:           o.DeleteBackupBucket,
-			Dependencies: flow.NewTaskIDs(deleteETCD),
-		})
 		_ = graph.Add(flow.Task{
-			Name:         "Deleting namespace for virtual-garden deployment in hosting cluster",
-			Fn:           flow.TaskFn(o.DeleteNamespace).SkipIf(!o.handleNamespace),
-			Dependencies: flow.NewTaskIDs(deleteKubeAPIServerService, deleteETCD, deleteBackupBucket),
+			Name: "Deleting kube-apiserver",
+			Fn:   o.DeleteKubeAPIServer,
 		})
+
+		//deleteKubeAPIServerService = graph.Add(flow.Task{
+		//	Name: "Deleting the service for exposing the virtual garden kube-apiserver",
+		//	Fn:   o.DeleteKubeAPIServerService,
+		//	Dependencies: flow.NewTaskIDs(deleteETCD),
+		//})
+		//deleteETCD = graph.Add(flow.Task{
+		//	Name: "Deleting the main and events etcds",
+		//	Fn:   o.DeleteETCD,
+		//})
+		//deleteBackupBucket = graph.Add(flow.Task{
+		//	Name:         "Deleting the backup bucket for the main etcd",
+		//	Fn:           o.DeleteBackupBucket,
+		//	Dependencies: flow.NewTaskIDs(deleteETCD),
+		//})
+		//_ = graph.Add(flow.Task{
+		//	Name:         "Deleting namespace for virtual-garden deployment in hosting cluster",
+		//	Fn:           flow.TaskFn(o.DeleteNamespace).SkipIf(!o.handleNamespace),
+		//	Dependencies: flow.NewTaskIDs(deleteKubeAPIServerService, deleteETCD, deleteBackupBucket),
+		//})
 	)
 
 	return graph.Compile().Run(flow.Opts{
