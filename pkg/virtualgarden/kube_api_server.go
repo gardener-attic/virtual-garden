@@ -16,9 +16,18 @@ package virtualgarden
 
 import (
 	"context"
+	//"embed"
+
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta"
 )
+
+//go:embed resources/hvpa.yaml
+var hvpaCrd []byte
 
 // DeployKubeAPIServer deploys a kubernetes api server.
 func (o *operation) deployHVPACrd(ctx context.Context) error {
+	crd := &v1beta.CustomResourceDefinition{}
+
+
 	return nil
 }
