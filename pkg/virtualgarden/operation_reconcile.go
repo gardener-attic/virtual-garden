@@ -31,7 +31,7 @@ func (o *operation) Reconcile(ctx context.Context) error {
 			Name: "Creating namespace for virtual-garden deployment in hosting cluster",
 			Fn:   flow.TaskFn(o.CreateNamespace).SkipIf(!o.handleNamespace),
 		})
-		_ = graph.Add(flow.Task{
+		createKubeAPIServerService = graph.Add(flow.Task{
 			Name:         "Deploying the service for exposing the virtual garden kube-apiserver",
 			Fn:           o.DeployKubeAPIServerService,
 			Dependencies: flow.NewTaskIDs(createNamespace),
@@ -41,10 +41,15 @@ func (o *operation) Reconcile(ctx context.Context) error {
 			Fn:           flow.TaskFn(o.DeployBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
 			Dependencies: flow.NewTaskIDs(createNamespace),
 		})
-		_ = graph.Add(flow.Task{
+		createETCD = graph.Add(flow.Task{
 			Name:         "Deploying the main and events etcds",
 			Fn:           o.DeployETCD,
 			Dependencies: flow.NewTaskIDs(createNamespace, deployBackupBucket),
+		})
+		_ = graph.Add(flow.Task{
+			Name:         "Deploying kube-apiserver",
+			Fn:           o.DeployKubeAPIServer,
+			Dependencies: flow.NewTaskIDs(createKubeAPIServerService, createETCD),
 		})
 	)
 
