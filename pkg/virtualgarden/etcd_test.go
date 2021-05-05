@@ -271,10 +271,12 @@ var _ = Describe("Etcd", func() {
 						}
 						additionalCommand = []string{
 							"--schedule=0 */24 * * *",
+							"--defragmentation-schedule=0 1 * * *",
 							"--storage-provider=" + backupStorageProviderName,
 							"--store-prefix=virtual-garden-etcd-main",
 							"--delta-snapshot-period=5m",
 							"--delta-snapshot-memory-limit=104857600",
+							"--embedded-etcd-quota-bytes=8589934592",
 						}
 					}
 				} else if role == ETCDRoleEvents {
@@ -313,6 +315,34 @@ var _ = Describe("Etcd", func() {
 								Labels: labels,
 							},
 							Spec: corev1.PodSpec{
+								Affinity: &corev1.Affinity{
+									PodAntiAffinity: &corev1.PodAntiAffinity{
+										RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+											{
+												LabelSelector: &metav1.LabelSelector{
+													MatchExpressions: []metav1.LabelSelectorRequirement{
+														{
+															Key:      "app",
+															Operator: metav1.LabelSelectorOpIn,
+															Values: []string{
+																Prefix,
+															},
+														},
+														{
+															Key:      "component",
+															Operator: metav1.LabelSelectorOpIn,
+															Values: []string{
+																"etcd",
+															},
+														},
+													},
+												},
+												TopologyKey: corev1.LabelHostname,
+											},
+										},
+									},
+								},
+								PriorityClassName: "garden-controlplane",
 								Containers: []corev1.Container{
 									{
 										Name:            "etcd",

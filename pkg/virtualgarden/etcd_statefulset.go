@@ -138,20 +138,20 @@ func (o *operation) deployETCDStatefulSet(
 										{
 											Key:      "app",
 											Operator: metav1.LabelSelectorOpIn,
-											Values:   []string{
+											Values: []string{
 												Prefix,
 											},
 										},
 										{
 											Key:      "component",
 											Operator: metav1.LabelSelectorOpIn,
-											Values:   []string{
+											Values: []string{
 												"etcd",
 											},
 										},
 									},
 								},
-								TopologyKey:   corev1.LabelHostname,
+								TopologyKey: corev1.LabelHostname,
 							},
 						},
 					},

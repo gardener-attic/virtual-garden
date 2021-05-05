@@ -277,10 +277,12 @@ func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imp
 			}}, environment...)))
 			Expect(sts.Spec.Template.Spec.Containers[1].Command).To(ContainElements(
 				"--schedule=0 */24 * * *",
+				"--defragmentation-schedule=0 1 * * *",
 				"--storage-provider="+storageProviderName,
 				"--store-prefix="+sts.Name,
 				"--delta-snapshot-period=5m",
 				"--delta-snapshot-memory-limit=104857600",
+				"--embedded-etcd-quota-bytes=8589934592",
 			))
 		}
 		Expect(sts.Spec.VolumeClaimTemplates).To(HaveLen(1))
