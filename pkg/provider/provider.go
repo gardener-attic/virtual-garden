@@ -31,6 +31,8 @@ type InfrastructureProvider interface {
 	// ComputeStorageClassConfiguration shall return the Kubernetes volume provisioner name as well as optional
 	// parameters for the storage class that can be used by etcd.
 	ComputeStorageClassConfiguration() (provisioner string, parameters map[string]string)
+	GetLoadBalancer(service *corev1.Service) string
+	GetKubeAPIServerURL(kubeAPIServer *api.KubeAPIServer, loadBalancer string) string
 }
 
 // NewInfrastructureProvider returns a new InfrastructureProvider interface for the given provider type.

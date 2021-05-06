@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/virtual-garden/pkg/api"
-
 	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
 )
 
@@ -104,7 +102,7 @@ func (o *operation) deployKubeApiServerKubeControllerManagerClientCertificate(ct
 }
 
 func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Context, caCertificate *secretsutil.Certificate,
-	loadbalancer string) (*secretsutil.Certificate, string, error) {
+	loadBalancer string) (*secretsutil.Certificate, string, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameClientAdminCertificate,
 		CertType:   secretsutil.ClientCert,
@@ -114,18 +112,11 @@ func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Contex
 
 	// names: [{"O": "system:masters"}] in the config.json ?
 
-	var server string
-	provider := o.imports.HostingCluster.InfrastructureProvider
-	if provider == api.InfrastructureProviderGCP || provider == api.InfrastructureProviderAlicloud {
-		dnsAccessDomain := o.imports.VirtualGarden.KubeAPIServer.DnsAccessDomain
-		server = fmt.Sprintf("https://api.%s:443", dnsAccessDomain)
-	} else { // aws
-		server = fmt.Sprintf("https://%s:443", loadbalancer)
-	}
+	// o.imports.VirtualGarden.KubeAPIServer could be nil
 
 	kubeconfigGen := &kubeconfigGenerator{
 		user:   "admin",
-		server: server,
+		server: o.infrastructureProvider.GetKubeAPIServerURL(o.imports.VirtualGarden.KubeAPIServer, loadBalancer),
 	}
 
 	return o.deployCertificate(ctx, certConfig, kubeconfigGen)

@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gardener/virtual-garden/pkg/api"
 	"github.com/gardener/virtual-garden/pkg/util"
 )
 
@@ -108,19 +107,5 @@ func (o *operation) computeKubeApiserverLoadbalancerOnce(ctx context.Context) (s
 		return "", err
 	}
 
-	provider := o.imports.HostingCluster.InfrastructureProvider
-	ingress := service.Status.LoadBalancer.Ingress
-
-	if len(ingress) == 0 {
-		return "", nil
-	}
-
-	var loadbalancer string
-	if provider == api.InfrastructureProviderGCP || provider == api.InfrastructureProviderAlicloud {
-		loadbalancer = service.Status.LoadBalancer.Ingress[0].IP
-	} else {
-		loadbalancer = service.Status.LoadBalancer.Ingress[0].Hostname
-	}
-
-	return loadbalancer, nil
+	return o.infrastructureProvider.GetLoadBalancer(service), nil
 }

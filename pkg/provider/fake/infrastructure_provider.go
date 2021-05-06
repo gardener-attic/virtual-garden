@@ -14,6 +14,14 @@
 
 package fake
 
+import (
+	"fmt"
+
+	"github.com/gardener/virtual-garden/pkg/api"
+
+	corev1 "k8s.io/api/core/v1"
+)
+
 type fakeInfrastructureProvider struct {
 	provisioner string
 	parameters  map[string]string
@@ -26,4 +34,17 @@ func NewInfrastructureProvider(provisioner string, parameters map[string]string)
 
 func (f *fakeInfrastructureProvider) ComputeStorageClassConfiguration() (string, map[string]string) {
 	return f.provisioner, f.parameters
+}
+
+func (b *fakeInfrastructureProvider) GetLoadBalancer(service *corev1.Service) string {
+	ingress := service.Status.LoadBalancer.Ingress
+	if len(ingress) == 0 {
+		return ""
+	}
+
+	return ingress[0].IP
+}
+
+func (b *fakeInfrastructureProvider) GetKubeAPIServerURL(kubeAPIServer *api.KubeAPIServer, _ string) string {
+	return fmt.Sprintf("https://api.%s:443", kubeAPIServer.DnsAccessDomain)
 }

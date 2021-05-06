@@ -14,6 +14,14 @@
 
 package alicloud
 
+import (
+	"fmt"
+
+	"github.com/gardener/virtual-garden/pkg/api"
+
+	corev1 "k8s.io/api/core/v1"
+)
+
 type infrastructureProvider struct{}
 
 // NewInfrastructureProvider creates a new Alicloud infrastructure provider implementation.
@@ -28,4 +36,17 @@ func (b *infrastructureProvider) ComputeStorageClassConfiguration() (provisioner
 		"encrypted": "true",
 	}
 	return
+}
+
+func (b *infrastructureProvider) GetLoadBalancer(service *corev1.Service) string {
+	ingress := service.Status.LoadBalancer.Ingress
+	if len(ingress) == 0 {
+		return ""
+	}
+
+	return ingress[0].IP
+}
+
+func (b *infrastructureProvider) GetKubeAPIServerURL(kubeAPIServer *api.KubeAPIServer, _ string) string {
+	return fmt.Sprintf("https://api.%s:443", kubeAPIServer.DnsAccessDomain)
 }
