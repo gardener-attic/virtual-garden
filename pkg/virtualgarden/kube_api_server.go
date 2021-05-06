@@ -31,6 +31,21 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 
 	o.computeKubeApiserverLoadbalancer(ctx)
 
+	aggregatorCACertificate, aggregatorCACertChecksum, err := o.deployKubeApiServerAggregatorCACertificate(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, aggregatorClientCertChecksum, err := o.deployKubeApiServerAggregatorClientCertificate(ctx, aggregatorCACertificate)
+	if err != nil {
+		return err
+	}
+
+	apiServerCACertificate, apiServerCACertChecksum, err := o.deployKubeApiServerApiServerCACertificate(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
