@@ -16,10 +16,11 @@ package virtualgarden
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/gardener/virtual-garden/pkg/util"
 	"github.com/gardener/virtual-garden/pkg/api"
+	"github.com/gardener/virtual-garden/pkg/util"
 )
 
 // DeployKubeAPIServer deploys a kubernetes api server.
@@ -29,7 +30,10 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
-	o.computeKubeApiserverLoadbalancer(ctx)
+	loadbalancer, err := o.computeKubeApiserverLoadbalancer(ctx)
+	if err != nil {
+		return err
+	}
 
 	aggregatorCACertificate, aggregatorCACertChecksum, err := o.deployKubeApiServerAggregatorCACertificate(ctx)
 	if err != nil {
@@ -45,6 +49,31 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	_, apiServerServerCertChecksum, err := o.deployKubeApiServerApiServerServerCertificate(ctx, apiServerCACertificate, loadbalancer)
+	if err != nil {
+		return err
+	}
+
+	_, kubeControllerManagerClientCertChecksum, err := o.deployKubeApiServerKubeControllerManagerClientCertificate(ctx, apiServerCACertificate)
+	if err != nil {
+		return err
+	}
+
+	_, clientAdminCertChecksum, err := o.deployKubeApiServerClientAdminCertificate(ctx, apiServerCACertificate, loadbalancer)
+	if err != nil {
+		return err
+	}
+
+	// temporarily
+	fmt.Println("Checksums: ",
+		aggregatorCACertChecksum,
+		aggregatorClientCertChecksum,
+		apiServerCACertChecksum,
+		apiServerServerCertChecksum,
+		kubeControllerManagerClientCertChecksum,
+		clientAdminCertChecksum,
+	)
 
 	return nil
 }
@@ -87,7 +116,7 @@ func (o *operation) computeKubeApiserverLoadbalancerOnce(ctx context.Context) (s
 	}
 
 	var loadbalancer string
-	if provider == api.InfrastructureProviderGCP || provider == api.InfrastructureProviderGCP {
+	if provider == api.InfrastructureProviderGCP || provider == api.InfrastructureProviderAlicloud {
 		loadbalancer = service.Status.LoadBalancer.Ingress[0].IP
 	} else {
 		loadbalancer = service.Status.LoadBalancer.Ingress[0].Hostname

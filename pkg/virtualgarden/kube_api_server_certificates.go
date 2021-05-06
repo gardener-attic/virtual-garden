@@ -16,16 +16,23 @@ package virtualgarden
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/gardener/virtual-garden/pkg/api"
 
 	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
 )
 
 const (
-	KubeApiServerSecretNameAggregatorCACertificate = Prefix + "-kube-aggregator-ca"
+	KubeApiServerSecretNameAggregatorCACertificate     = Prefix + "-kube-aggregator-ca"
 	KubeApiServerSecretNameAggregatorClientCertificate = Prefix + "-kube-aggregator"
 
-	KubeApiServerSecretNameApiServerCACertificate = Prefix + "-kube-apiserver-ca"
+	KubeApiServerSecretNameApiServerCACertificate     = Prefix + "-kube-apiserver-ca"
+	KubeApiServerSecretNameApiServerServerCertificate = Prefix + "-kube-apiserver"
 
+	KubeApiServerSecretNameKubeControllerManagerCertificate = Prefix + "-kube-controller-manager"
+	KubeApiServerSecretNameClientAdminCertificate           = Prefix + "-kubeconfig-for-admin"
+	//KubeApiServerSecretNameMetricsScraperCertificate = Prefix + "-metrics-scraper"
 )
 
 func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Context) (*secretsutil.Certificate, string, error) {
@@ -34,7 +41,94 @@ func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Contex
 		CertType:   secretsutil.CACert,
 		CommonName: Prefix + ":ca:kube-apiserver",
 	}
-	return o.deployCertificate(ctx, certConfig)
+	return o.deployCertificate(ctx, certConfig, nil)
+}
+
+func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Context, caCertificate *secretsutil.Certificate,
+	loadbalancer string) (*secretsutil.Certificate, string, error) {
+	dnsAccessDomain := o.imports.VirtualGarden.KubeAPIServer.DnsAccessDomain
+
+	certConfig := &secretsutil.CertificateSecretConfig{
+		Name:       KubeApiServerSecretNameApiServerServerCertificate,
+		CertType:   secretsutil.ServerClientCert,
+		SigningCA:  caCertificate,
+		CommonName: Prefix + ":server:kube-apiserver",
+		DNSNames: []string{
+			"127.0.0.1",
+			"localhost",
+			"100.64.0.1",
+			"virtual-garden-kube-apiserver",
+			"virtual-garden-kube-apiserver.garden",
+			"virtual-garden-kube-apiserver.garden.svc",
+			"virtual-garden-kube-apiserver.garden.svc.cluster",
+			"virtual-garden-kube-apiserver.garden.svc.cluster.local",
+			"kubernetes",
+			"kubernetes.default",
+			"kubernetes.default.svc",
+			"kubernetes.default.svc.cluster",
+			"kubernetes.default.svc.cluster.local",
+			loadbalancer,
+			fmt.Sprintf("api.%s", dnsAccessDomain),
+			fmt.Sprintf("gardener.%s", dnsAccessDomain),
+		},
+	}
+	return o.deployCertificate(ctx, certConfig, nil)
+}
+
+// cert_names:
+//   kube-apiserver-client-kube-controller-manager
+//     "CN": "system:kube-controller-manager",
+//     secretname: virtual-garden-kube-controller-manager
+//   kube-apiserver-client-admin
+//     "CN": "virtual-garden:client:admin",
+//     secretname: virtual-garden-kubeconfig-for-admin
+//     names !!!
+//   apiservers-metrics-scraper"
+//     "CN": "virtual-garden:client:metrics-scraper",
+//     secretname: virtual-garden-metrics-scraper
+
+func (o *operation) deployKubeApiServerKubeControllerManagerClientCertificate(ctx context.Context, caCertificate *secretsutil.Certificate) (*secretsutil.Certificate, string, error) {
+	certConfig := &secretsutil.CertificateSecretConfig{
+		Name:       KubeApiServerSecretNameKubeControllerManagerCertificate,
+		CertType:   secretsutil.ClientCert,
+		SigningCA:  caCertificate,
+		CommonName: "system:kube-controller-manager",
+	}
+
+	kubeconfigGen := &kubeconfigGenerator{
+		user:   "kube-controller-manager",
+		server: "https://virtual-garden-kube-apiserver:443",
+	}
+
+	return o.deployCertificate(ctx, certConfig, kubeconfigGen)
+}
+
+func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Context, caCertificate *secretsutil.Certificate,
+	loadbalancer string) (*secretsutil.Certificate, string, error) {
+	certConfig := &secretsutil.CertificateSecretConfig{
+		Name:       KubeApiServerSecretNameClientAdminCertificate,
+		CertType:   secretsutil.ClientCert,
+		SigningCA:  caCertificate,
+		CommonName: Prefix + ":client:admin",
+	}
+
+	// names: [{"O": "system:masters"}] in the config.json ?
+
+	var server string
+	provider := o.imports.HostingCluster.InfrastructureProvider
+	if provider == api.InfrastructureProviderGCP || provider == api.InfrastructureProviderAlicloud {
+		dnsAccessDomain := o.imports.VirtualGarden.KubeAPIServer.DnsAccessDomain
+		server = fmt.Sprintf("https://api.%s:443", dnsAccessDomain)
+	} else { // aws
+		server = fmt.Sprintf("https://%s:443", loadbalancer)
+	}
+
+	kubeconfigGen := &kubeconfigGenerator{
+		user:   "admin",
+		server: server,
+	}
+
+	return o.deployCertificate(ctx, certConfig, kubeconfigGen)
 }
 
 func (o *operation) deployKubeApiServerAggregatorCACertificate(ctx context.Context) (*secretsutil.Certificate, string, error) {
@@ -43,7 +137,7 @@ func (o *operation) deployKubeApiServerAggregatorCACertificate(ctx context.Conte
 		CertType:   secretsutil.CACert,
 		CommonName: Prefix + ":ca:kube-aggregator",
 	}
-	return o.deployCertificate(ctx, certConfig)
+	return o.deployCertificate(ctx, certConfig, nil)
 }
 
 func (o *operation) deployKubeApiServerAggregatorClientCertificate(ctx context.Context,
@@ -54,5 +148,5 @@ func (o *operation) deployKubeApiServerAggregatorClientCertificate(ctx context.C
 		SigningCA:  caCertificate,
 		CommonName: Prefix + ":aggregator-client:kube-aggregator",
 	}
-	return o.deployCertificate(ctx, certConfig)
+	return o.deployCertificate(ctx, certConfig, nil)
 }

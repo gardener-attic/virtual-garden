@@ -17,6 +17,9 @@ package virtualgarden
 import (
 	"context"
 
+	"github.com/ghodss/yaml"
+	v1 "k8s.io/client-go/tools/clientcmd/api/v1"
+
 	"github.com/gardener/gardener/pkg/utils"
 	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
 	corev1 "k8s.io/api/core/v1"
@@ -73,7 +76,8 @@ func loadOrGenerateCertificateSecret(ctx context.Context, c client.Client, objec
 	return certificate, nil
 }
 
-func createOrUpdateCertificateSecret(ctx context.Context, c client.Client, objectKey client.ObjectKey, certificate *secretsutil.Certificate) (string, error) {
+func createOrUpdateCertificateSecret(ctx context.Context, c client.Client, objectKey client.ObjectKey,
+	certificate *secretsutil.Certificate, kubeconfigGenerator *kubeconfigGenerator) (string, error) {
 	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: objectKey.Name, Namespace: objectKey.Namespace}}
 
 	if _, err := controllerutil.CreateOrUpdate(ctx, c, secret, func() error {
@@ -82,10 +86,67 @@ func createOrUpdateCertificateSecret(ctx context.Context, c client.Client, objec
 			secret.Type = corev1.SecretTypeTLS
 		}
 		secret.Data = certificate.SecretData()
+
+		if kubeconfigGenerator != nil {
+			if err := kubeconfigGenerator.addKubeconfigToSecretData(certificate, secret.Data); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}); err != nil {
 		return "", err
 	}
 
 	return utils.ComputeChecksum(secret.Data), nil
+}
+
+type kubeconfigGenerator struct {
+	user   string
+	server string
+}
+
+func (k *kubeconfigGenerator) addKubeconfigToSecretData(certificate *secretsutil.Certificate, secretData map[string][]byte) error {
+	kubeconfig, err := yaml.Marshal(k.createKubeconfig(certificate))
+	if err != nil {
+		return err
+	}
+
+	secretData["kubeconfig"] = kubeconfig
+	return nil
+}
+
+func (k *kubeconfigGenerator) createKubeconfig(certificate *secretsutil.Certificate) *v1.Config {
+	return &v1.Config{
+		APIVersion:     "v1",
+		Kind:           "Config",
+		CurrentContext: "virtual-garden",
+		Contexts: []v1.NamedContext{
+			{
+				Name: "virtual-garden",
+				Context: v1.Context{
+					Cluster:  "virtual-garden",
+					AuthInfo: k.user,
+				},
+			},
+		},
+		Clusters: []v1.NamedCluster{
+			{
+				Name: "virtual-garden",
+				Cluster: v1.Cluster{
+					Server:                   k.server,
+					CertificateAuthorityData: certificate.CA.CertificatePEM,
+				},
+			},
+		},
+		AuthInfos: []v1.NamedAuthInfo{
+			{
+				Name: k.user,
+				AuthInfo: v1.AuthInfo{
+					ClientCertificateData: certificate.CertificatePEM,
+					ClientKeyData:         certificate.PrivateKeyPEM,
+				},
+			},
+		},
+	}
 }

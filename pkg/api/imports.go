@@ -81,7 +81,8 @@ type KubeAPIServer struct {
 	Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
 	// Exposure contains configuration for the exposure settings.
 	// +optional
-	Exposure *KubeAPIServerExposure `json:"exposure,omitempty" yaml:"exposure,omitempty"`
+	Exposure        *KubeAPIServerExposure `json:"exposure,omitempty" yaml:"exposure,omitempty"`
+	DnsAccessDomain string
 }
 
 // KubeAPIServerExposure contains configuration for the exposure settings for the virtual garden kube-apiserver.
