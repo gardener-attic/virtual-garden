@@ -16,6 +16,10 @@ package virtualgarden
 
 import (
 	"context"
+	"time"
+
+	"github.com/gardener/virtual-garden/pkg/util"
+	"github.com/gardener/virtual-garden/pkg/api"
 )
 
 // DeployKubeAPIServer deploys a kubernetes api server.
@@ -24,6 +28,8 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 	if err := o.deployHVPACRD(ctx); err != nil {
 		return err
 	}
+
+	o.computeKubeApiserverLoadbalancer(ctx)
 
 	return nil
 }
@@ -36,4 +42,41 @@ func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (o *operation) computeKubeApiserverLoadbalancer(ctx context.Context) (string, error) {
+	var err error
+	var loadbalancer string
+
+	util.Repeat(func() bool {
+		loadbalancer, err := o.computeKubeApiserverLoadbalancerOnce(ctx)
+		return (err != nil || loadbalancer != "")
+	}, 10, time.Second)
+
+	return loadbalancer, err
+}
+
+func (o *operation) computeKubeApiserverLoadbalancerOnce(ctx context.Context) (string, error) {
+	service := emptyKubeAPIServerService(o.namespace)
+
+	err := o.client.Get(ctx, util.GetKey(service), service)
+	if err != nil {
+		return "", err
+	}
+
+	provider := o.imports.HostingCluster.InfrastructureProvider
+	ingress := service.Status.LoadBalancer.Ingress
+
+	if len(ingress) == 0 {
+		return "", nil
+	}
+
+	var loadbalancer string
+	if provider == api.InfrastructureProviderGCP || provider == api.InfrastructureProviderGCP {
+		loadbalancer = service.Status.LoadBalancer.Ingress[0].IP
+	} else {
+		loadbalancer = service.Status.LoadBalancer.Ingress[0].Hostname
+	}
+
+	return loadbalancer, nil
 }

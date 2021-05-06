@@ -25,15 +25,15 @@ func (o *operation) Reconcile(ctx context.Context) error {
 	var (
 		graph = flow.NewGraph("Virtual Garden Reconciliation")
 
-		//createNamespace = graph.Add(flow.Task{
-		//	Name: "Creating namespace for virtual-garden deployment in hosting cluster",
-		//	Fn:   flow.TaskFn(o.CreateNamespace).SkipIf(!o.handleNamespace),
-		//})
-		//createKubeAPIServerService = graph.Add(flow.Task{
-		//	Name:         "Deploying the service for exposing the virtual garden kube-apiserver",
-		//	Fn:           o.DeployKubeAPIServerService,
-		//	Dependencies: flow.NewTaskIDs(createNamespace),
-		//})
+		createNamespace = graph.Add(flow.Task{
+			Name: "Creating namespace for virtual-garden deployment in hosting cluster",
+			Fn:   flow.TaskFn(o.CreateNamespace).SkipIf(!o.handleNamespace),
+		})
+		createKubeAPIServerService = graph.Add(flow.Task{
+			Name:         "Deploying the service for exposing the virtual garden kube-apiserver",
+			Fn:           o.DeployKubeAPIServerService,
+			Dependencies: flow.NewTaskIDs(createNamespace),
+		})
 		//deployBackupBucket = graph.Add(flow.Task{
 		//	Name:         "Deploying the backup bucket for the main etcd",
 		//	Fn:           flow.TaskFn(o.DeployBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
@@ -46,9 +46,9 @@ func (o *operation) Reconcile(ctx context.Context) error {
 		//})
 
 		_ = graph.Add(flow.Task{
-			Name: "Deploying kube-apiserver",
-			Fn:   o.DeployKubeAPIServer,
-			//Dependencies: flow.NewTaskIDs(createKubeAPIServerService, createETCD),
+			Name:         "Deploying kube-apiserver",
+			Fn:           o.DeployKubeAPIServer,
+			Dependencies: flow.NewTaskIDs(createKubeAPIServerService), // createETCD),
 		})
 	)
 

@@ -25,7 +25,7 @@ func (o *operation) Delete(ctx context.Context) error {
 	var (
 		graph = flow.NewGraph("Virtual Garden Deletion")
 
-		_ = graph.Add(flow.Task{
+		deleteKubeAPIServerService = graph.Add(flow.Task{
 			Name: "Deleting kube-apiserver",
 			Fn:   o.DeleteKubeAPIServer,
 		})
@@ -44,11 +44,11 @@ func (o *operation) Delete(ctx context.Context) error {
 		//	Fn:           o.DeleteBackupBucket,
 		//	Dependencies: flow.NewTaskIDs(deleteETCD),
 		//})
-		//_ = graph.Add(flow.Task{
-		//	Name:         "Deleting namespace for virtual-garden deployment in hosting cluster",
-		//	Fn:           flow.TaskFn(o.DeleteNamespace).SkipIf(!o.handleNamespace),
-		//	Dependencies: flow.NewTaskIDs(deleteKubeAPIServerService, deleteETCD, deleteBackupBucket),
-		//})
+		_ = graph.Add(flow.Task{
+			Name:         "Deleting namespace for virtual-garden deployment in hosting cluster",
+			Fn:           flow.TaskFn(o.DeleteNamespace).SkipIf(!o.handleNamespace),
+			Dependencies: flow.NewTaskIDs(deleteKubeAPIServerService), // , deleteETCD, deleteBackupBucket),
+		})
 	)
 
 	return graph.Compile().Run(flow.Opts{
