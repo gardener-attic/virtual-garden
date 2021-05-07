@@ -33,6 +33,57 @@ const (
 	KubeApiServerSecretNameMetricsScraperCertificate        = Prefix + "-metrics-scraper"
 )
 
+
+func (o *operation) deployCertificates(ctx context.Context, loadbalancer string) error {
+	aggregatorCACertificate, aggregatorCACertChecksum, err := o.deployKubeApiServerAggregatorCACertificate(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, aggregatorClientCertChecksum, err := o.deployKubeApiServerAggregatorClientCertificate(ctx, aggregatorCACertificate)
+	if err != nil {
+		return err
+	}
+
+	apiServerCACertificate, apiServerCACertChecksum, err := o.deployKubeApiServerApiServerCACertificate(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, apiServerServerCertChecksum, err := o.deployKubeApiServerApiServerServerCertificate(ctx, apiServerCACertificate, loadbalancer)
+	if err != nil {
+		return err
+	}
+
+	_, kubeControllerManagerClientCertChecksum, err := o.deployKubeApiServerKubeControllerManagerClientCertificate(ctx, apiServerCACertificate)
+	if err != nil {
+		return err
+	}
+
+	_, clientAdminCertChecksum, err := o.deployKubeApiServerClientAdminCertificate(ctx, apiServerCACertificate, loadbalancer)
+	if err != nil {
+		return err
+	}
+
+	_, metricsScraperCertChecksum, err := o.deployKubeApiServerMetricsScraperCertificate(ctx, apiServerCACertificate, loadbalancer)
+	if err != nil {
+		return err
+	}
+
+	// temporarily
+	fmt.Println("Checksums: ",
+		aggregatorCACertChecksum,
+		aggregatorClientCertChecksum,
+		apiServerCACertChecksum,
+		apiServerServerCertChecksum,
+		kubeControllerManagerClientCertChecksum,
+		clientAdminCertChecksum,
+		metricsScraperCertChecksum,
+	)
+
+	return nil
+}
+
 func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Context) (*secretsutil.Certificate, string, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameApiServerCACertificate,
@@ -97,8 +148,6 @@ func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Contex
 		SigningCA:  caCertificate,
 		CommonName: Prefix + ":client:admin",
 	}
-
-	// names: [{"O": "system:masters"}] in the config.json ?
 
 	// o.imports.VirtualGarden.KubeAPIServer could be nil
 

@@ -16,7 +16,6 @@ package virtualgarden
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gardener/virtual-garden/pkg/util"
@@ -34,51 +33,10 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
-	aggregatorCACertificate, aggregatorCACertChecksum, err := o.deployKubeApiServerAggregatorCACertificate(ctx)
+	err = o.deployCertificates(ctx, loadbalancer)
 	if err != nil {
 		return err
 	}
-
-	_, aggregatorClientCertChecksum, err := o.deployKubeApiServerAggregatorClientCertificate(ctx, aggregatorCACertificate)
-	if err != nil {
-		return err
-	}
-
-	apiServerCACertificate, apiServerCACertChecksum, err := o.deployKubeApiServerApiServerCACertificate(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, apiServerServerCertChecksum, err := o.deployKubeApiServerApiServerServerCertificate(ctx, apiServerCACertificate, loadbalancer)
-	if err != nil {
-		return err
-	}
-
-	_, kubeControllerManagerClientCertChecksum, err := o.deployKubeApiServerKubeControllerManagerClientCertificate(ctx, apiServerCACertificate)
-	if err != nil {
-		return err
-	}
-
-	_, clientAdminCertChecksum, err := o.deployKubeApiServerClientAdminCertificate(ctx, apiServerCACertificate, loadbalancer)
-	if err != nil {
-		return err
-	}
-
-	_, metricsScraperCertChecksum, err := o.deployKubeApiServerMetricsScraperCertificate(ctx, apiServerCACertificate, loadbalancer)
-	if err != nil {
-		return err
-	}
-
-	// temporarily
-	fmt.Println("Checksums: ",
-		aggregatorCACertChecksum,
-		aggregatorClientCertChecksum,
-		apiServerCACertChecksum,
-		apiServerServerCertChecksum,
-		kubeControllerManagerClientCertChecksum,
-		clientAdminCertChecksum,
-		metricsScraperCertChecksum,
-	)
 
 	return nil
 }
@@ -115,3 +73,4 @@ func (o *operation) computeKubeApiserverLoadbalancerOnce(ctx context.Context) (s
 
 	return o.infrastructureProvider.GetLoadBalancer(service), nil
 }
+
