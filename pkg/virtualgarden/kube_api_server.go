@@ -82,4 +82,3 @@ func (o *operation) computeKubeApiserverLoadbalancerOnce(ctx context.Context) (s
 
 	return o.infrastructureProvider.GetLoadBalancer(service), nil
 }
-

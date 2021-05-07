@@ -16,23 +16,47 @@ package virtualgarden
 
 import (
 	"context"
+	_ "embed"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
-	KubeApiServerSecretNameAdmissionKubeconfig     = Prefix + "-kube-apiserver-admission-kubeconfig"
-
+	KubeApiServerSecretNameAdmissionKubeconfig = Prefix + "-kube-apiserver-admission-kubeconfig"
 )
 
+//go:embed resources/validating-webhook-kubeconfig.yaml
+var validatingWebhookKubeconfig []byte
+
+//go:embed resources/mutating-webhook-kubeconfig.yaml
+var mutatingWebhookKubeconfig []byte
 
 func (o *operation) deploySecrets(ctx context.Context) error {
+	if err := o.deployKubeApiServerSecretAdmissionKubeconfig(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (o *operation) deployKubeApiServerSecretAdmissionKubeconfig(ctx context.Context) (error) {
+func (o *operation) deployKubeApiServerSecretAdmissionKubeconfig(ctx context.Context) error {
+	controlplane := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane
+	if !controlplane.ValidatingWebhookEnabled && !controlplane.MutatingWebhookEnabled {
+		return nil
+	}
+
 	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: KubeApiServerSecretNameAdmissionKubeconfig, Namespace: o.namespace}}
 
+	_, err := controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
+		if secret.Data == nil {
+			secret.Data = make(map[string][]byte)
+		}
+		secret.Data["validating-webhook"] = validatingWebhookKubeconfig
+		secret.Data["mutating-webhook"] = mutatingWebhookKubeconfig
+		return nil
+	})
 
-	return nil
+	return err
 }

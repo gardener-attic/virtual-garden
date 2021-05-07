@@ -81,8 +81,14 @@ type KubeAPIServer struct {
 	Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
 	// Exposure contains configuration for the exposure settings.
 	// +optional
-	Exposure        *KubeAPIServerExposure `json:"exposure,omitempty" yaml:"exposure,omitempty"`
-	DnsAccessDomain string
+	Exposure             *KubeAPIServerExposure `json:"exposure,omitempty" yaml:"exposure,omitempty"`
+	DnsAccessDomain      string                 `json:"dnsAccessDomain,omitempty" yaml:"dnsAccessDomain,omitempty"`
+	GardenerControlplane GardenerControlplane   `json:"gardenerControlplane,omitempty" yaml:"gardenerControlplane,omitempty"`
+}
+
+type GardenerControlplane struct {
+	ValidatingWebhookEnabled bool `json:"validatingWebhookEnabled,omitempty" yaml:"validatingWebhookEnabled,omitempty"`
+	MutatingWebhookEnabled   bool `json:"mutatingWebhookEnabled,omitempty" yaml:"mutatingWebhookEnabled,omitempty"`
 }
 
 // KubeAPIServerExposure contains configuration for the exposure settings for the virtual garden kube-apiserver.
