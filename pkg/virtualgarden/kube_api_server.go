@@ -38,6 +38,11 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
+	err = o.deploySecrets(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
