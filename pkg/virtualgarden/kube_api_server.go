@@ -28,17 +28,17 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
-	loadbalancer, err := o.computeKubeApiserverLoadbalancer(ctx)
+	loadBalancer, err := o.computeKubeAPIServerLoadBalancer(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = o.deployCertificates(ctx, loadbalancer)
+	err = o.deployKubeAPIServerCertificates(ctx, loadBalancer)
 	if err != nil {
 		return err
 	}
 
-	err = o.deploySecrets(ctx)
+	err = o.deployKubeAPIServerSecrets(ctx)
 	if err != nil {
 		return err
 	}
@@ -53,26 +53,30 @@ func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
-	if err := o.deleteCertificates(ctx); err != nil {
+	if err := o.deleteKubeAPIServerCertificates(ctx); err != nil {
+		return err
+	}
+
+	if err := o.deleteKubeAPIServerSecrets(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (o *operation) computeKubeApiserverLoadbalancer(ctx context.Context) (string, error) {
+func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (string, error) {
 	var err error
-	var loadbalancer string
+	var loadBalancer string
 
 	util.Repeat(func() bool {
-		loadbalancer, err := o.computeKubeApiserverLoadbalancerOnce(ctx)
-		return (err != nil || loadbalancer != "")
+		loadBalancer, err := o.computeKubeAPIServerLoadBalancerOnce(ctx)
+		return err != nil || loadBalancer != ""
 	}, 10, time.Second)
 
-	return loadbalancer, err
+	return loadBalancer, err
 }
 
-func (o *operation) computeKubeApiserverLoadbalancerOnce(ctx context.Context) (string, error) {
+func (o *operation) computeKubeAPIServerLoadBalancerOnce(ctx context.Context) (string, error) {
 	service := emptyKubeAPIServerService(o.namespace)
 
 	err := o.client.Get(ctx, util.GetKey(service), service)

@@ -37,7 +37,7 @@ const (
 	KubeApiServerSecretNameMetricsScraperCertificate        = Prefix + "-metrics-scraper"
 )
 
-func (o *operation) deployCertificates(ctx context.Context, loadbalancer string) error {
+func (o *operation) deployKubeAPIServerCertificates(ctx context.Context, loadbalancer string) error {
 	aggregatorCACertificate, aggregatorCACertChecksum, err := o.deployKubeApiServerAggregatorCACertificate(ctx)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func (o *operation) deployCertificates(ctx context.Context, loadbalancer string)
 	return nil
 }
 
-func (o *operation) deleteCertificates(ctx context.Context) error {
+func (o *operation) deleteKubeAPIServerCertificates(ctx context.Context) error {
 	for _, name := range []string{
 		KubeApiServerSecretNameAggregatorCACertificate,
 		KubeApiServerSecretNameAggregatorClientCertificate,
