@@ -48,6 +48,10 @@ func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
+	if err := o.deleteCertificates(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }
 

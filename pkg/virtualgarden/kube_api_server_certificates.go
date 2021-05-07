@@ -17,6 +17,9 @@ package virtualgarden
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
 )
@@ -81,6 +84,24 @@ func (o *operation) deployCertificates(ctx context.Context, loadbalancer string)
 		metricsScraperCertChecksum,
 	)
 
+	return nil
+}
+
+func (o *operation) deleteCertificates(ctx context.Context) error {
+	for _, name := range []string{
+		KubeApiServerSecretNameAggregatorCACertificate,
+		KubeApiServerSecretNameAggregatorClientCertificate,
+		KubeApiServerSecretNameApiServerCACertificate,
+		KubeApiServerSecretNameApiServerServerCertificate,
+		KubeApiServerSecretNameKubeControllerManagerCertificate,
+		KubeApiServerSecretNameClientAdminCertificate,
+		KubeApiServerSecretNameMetricsScraperCertificate,
+	} {
+		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: o.namespace}}
+		if err := o.client.Delete(ctx, secret); client.IgnoreNotFound(err) != nil {
+			return err
+		}
+	}
 	return nil
 }
 
