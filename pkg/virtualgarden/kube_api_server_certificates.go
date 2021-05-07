@@ -30,7 +30,7 @@ const (
 
 	KubeApiServerSecretNameKubeControllerManagerCertificate = Prefix + "-kube-controller-manager"
 	KubeApiServerSecretNameClientAdminCertificate           = Prefix + "-kubeconfig-for-admin"
-	//KubeApiServerSecretNameMetricsScraperCertificate = Prefix + "-metrics-scraper"
+	KubeApiServerSecretNameMetricsScraperCertificate        = Prefix + "-metrics-scraper"
 )
 
 func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Context) (*secretsutil.Certificate, string, error) {
@@ -73,18 +73,6 @@ func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Co
 	return o.deployCertificate(ctx, certConfig, nil)
 }
 
-// cert_names:
-//   kube-apiserver-client-kube-controller-manager
-//     "CN": "system:kube-controller-manager",
-//     secretname: virtual-garden-kube-controller-manager
-//   kube-apiserver-client-admin
-//     "CN": "virtual-garden:client:admin",
-//     secretname: virtual-garden-kubeconfig-for-admin
-//     names !!!
-//   apiservers-metrics-scraper"
-//     "CN": "virtual-garden:client:metrics-scraper",
-//     secretname: virtual-garden-metrics-scraper
-
 func (o *operation) deployKubeApiServerKubeControllerManagerClientCertificate(ctx context.Context, caCertificate *secretsutil.Certificate) (*secretsutil.Certificate, string, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameKubeControllerManagerCertificate,
@@ -120,6 +108,18 @@ func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Contex
 	}
 
 	return o.deployCertificate(ctx, certConfig, kubeconfigGen)
+}
+
+func (o *operation) deployKubeApiServerMetricsScraperCertificate(ctx context.Context, caCertificate *secretsutil.Certificate,
+	loadBalancer string) (*secretsutil.Certificate, string, error) {
+	certConfig := &secretsutil.CertificateSecretConfig{
+		Name:       KubeApiServerSecretNameMetricsScraperCertificate,
+		CertType:   secretsutil.ClientCert,
+		SigningCA:  caCertificate,
+		CommonName: Prefix + ":client:metrics-scraper",
+	}
+
+	return o.deployCertificate(ctx, certConfig, nil)
 }
 
 func (o *operation) deployKubeApiServerAggregatorCACertificate(ctx context.Context) (*secretsutil.Certificate, string, error) {

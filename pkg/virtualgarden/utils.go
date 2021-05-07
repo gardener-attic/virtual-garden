@@ -16,7 +16,7 @@ package virtualgarden
 
 import (
 	"context"
-
+	"encoding/base64"
 	"github.com/ghodss/yaml"
 	v1 "k8s.io/client-go/tools/clientcmd/api/v1"
 
@@ -111,8 +111,7 @@ func (k *kubeconfigGenerator) addKubeconfigToSecretData(certificate *secretsutil
 	if err != nil {
 		return err
 	}
-
-	secretData["kubeconfig"] = kubeconfig
+	secretData["kubeconfig"] = []byte(base64.StdEncoding.EncodeToString(kubeconfig))
 	return nil
 }
 

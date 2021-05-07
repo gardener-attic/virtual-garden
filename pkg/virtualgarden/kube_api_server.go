@@ -64,6 +64,11 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
+	_, metricsScraperCertChecksum, err := o.deployKubeApiServerMetricsScraperCertificate(ctx, apiServerCACertificate, loadbalancer)
+	if err != nil {
+		return err
+	}
+
 	// temporarily
 	fmt.Println("Checksums: ",
 		aggregatorCACertChecksum,
@@ -72,6 +77,7 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		apiServerServerCertChecksum,
 		kubeControllerManagerClientCertChecksum,
 		clientAdminCertChecksum,
+		metricsScraperCertChecksum,
 	)
 
 	return nil
