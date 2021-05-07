@@ -25,6 +25,7 @@ import (
 
 const (
 	KubeApiServerSecretNameAdmissionKubeconfig = Prefix + "-kube-apiserver-admission-kubeconfig"
+	KubeApiServerSecretNameAuditWebhookConfig = "kube-apiserver-audit-webhook-config"
 )
 
 //go:embed resources/validating-webhook-kubeconfig.yaml
@@ -35,6 +36,10 @@ var mutatingWebhookKubeconfig []byte
 
 func (o *operation) deploySecrets(ctx context.Context) error {
 	if err := o.deployKubeApiServerSecretAdmissionKubeconfig(ctx); err != nil {
+		return err
+	}
+
+	if err := o.deployKubeApiServerSecretAuditWebhookConfig(ctx); err != nil {
 		return err
 	}
 
@@ -55,6 +60,25 @@ func (o *operation) deployKubeApiServerSecretAdmissionKubeconfig(ctx context.Con
 		}
 		secret.Data["validating-webhook"] = validatingWebhookKubeconfig
 		secret.Data["mutating-webhook"] = mutatingWebhookKubeconfig
+		return nil
+	})
+
+	return err
+}
+
+func (o *operation) deployKubeApiServerSecretAuditWebhookConfig(ctx context.Context) error {
+	config := o.imports.VirtualGarden.KubeAPIServer.AuditWebhookConfig.Config
+	if len(config) == 0 {
+		return nil
+	}
+
+	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: KubeApiServerSecretNameAuditWebhookConfig, Namespace: o.namespace}}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
+		if secret.Data == nil {
+			secret.Data = make(map[string][]byte)
+		}
+		secret.Data["audit-webhook-config.yaml"] = []byte(config)
 		return nil
 	})
 
