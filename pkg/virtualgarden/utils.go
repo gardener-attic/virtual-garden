@@ -101,6 +101,50 @@ func createOrUpdateCertificateSecret(ctx context.Context, c client.Client, objec
 	return utils.ComputeChecksum(secret.Data), nil
 }
 
+func loadOrGenerateServiceAccountSecret(ctx context.Context, c client.Client, objectKey client.ObjectKey, certificateConfig *secretsutil.CertificateSecretConfig) (*secretsutil.Certificate, error) {
+	secret := &corev1.Secret{}
+	if err := c.Get(ctx, objectKey, secret); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, err
+		}
+		return certificateConfig.GenerateCertificate()
+	}
+
+	dataKeyPrivateKey, dataKeyCertificate := secretsutil.DataKeyPrivateKey, secretsutil.DataKeyCertificate
+	if certificateConfig.CertType == secretsutil.CACert {
+		dataKeyPrivateKey, dataKeyCertificate = secretsutil.DataKeyPrivateKeyCA, secretsutil.DataKeyCertificateCA
+	}
+
+	certificate, err := secretsutil.LoadCertificate(objectKey.Name, secret.Data[dataKeyPrivateKey], secret.Data[dataKeyCertificate])
+	if err != nil {
+		return nil, err
+	}
+	certificate.CA = certificateConfig.SigningCA
+
+	return certificate, nil
+}
+
+func createOrUpdateServiceAccountSecret(ctx context.Context, c client.Client, objectKey client.ObjectKey, certificate *secretsutil.Certificate) (string, error) {
+	const key = "service_account.key"
+
+	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: objectKey.Name, Namespace: objectKey.Namespace}}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, c, secret, func() error {
+		secret.Type = corev1.SecretTypeOpaque
+
+		if secret.Data == nil {
+			secret.Data = make(map[string][]byte)
+		}
+		secret.Data[key] = certificate.PrivateKeyPEM
+
+		return nil
+	}); err != nil {
+		return "", err
+	}
+
+	return utils.ComputeChecksum(secret.Data), nil
+}
+
 type kubeconfigGenerator struct {
 	user   string
 	server string

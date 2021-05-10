@@ -20,6 +20,8 @@ import (
 	_ "embed"
 	"fmt"
 
+	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
+
 	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +38,7 @@ const (
 	KubeApiServerSecretNameAuditWebhookConfig  = "kube-apiserver-audit-webhook-config"
 	KubeApiServerSecretNameBasicAuth           = Prefix + "-kube-apiserver-basic-auth"
 	KubeApiServerSecretNameEncryptionConfig    = Prefix + "-kube-apiserver-encryption-config"
+	KubeApiServerSecretNameServiceAccountKey   = Prefix + "-service-account-key"
 )
 
 //go:embed resources/validating-webhook-kubeconfig.yaml
@@ -61,6 +64,10 @@ func (o *operation) deployKubeAPIServerSecrets(ctx context.Context) error {
 		return err
 	}
 
+	if _, _, err := o.deployKubeApiServerSecretServiceAccountKey(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -70,6 +77,7 @@ func (o *operation) deleteKubeAPIServerSecrets(ctx context.Context) error {
 		KubeApiServerSecretNameAuditWebhookConfig,
 		KubeApiServerSecretNameBasicAuth,
 		KubeApiServerSecretNameEncryptionConfig,
+		KubeApiServerSecretNameServiceAccountKey,
 	} {
 		secret := o.emptySecret(name)
 		if err := o.client.Delete(ctx, secret); client.IgnoreNotFound(err) != nil {
@@ -220,6 +228,34 @@ func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
 	}
 
 	return yaml.Marshal(&encryptionConfig)
+}
+
+// NEEDS TO BE REWORKED
+// Issues:
+// - the data map of the secret has another key than usual for a private key
+// - the secret contains only the private key, but not the certificate
+// Therefore the loading fails if the secret does already exist.
+func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Context) (*secretsutil.Certificate, string, error) {
+	certConfig := &secretsutil.CertificateSecretConfig{
+		Name: KubeApiServerSecretNameServiceAccountKey,
+		CertType:   secretsutil.ServerCert,
+		//Hosts ?
+		CommonName: Prefix + ":ca:kube-apiserver",
+	}
+
+	objectKey := client.ObjectKey{Name: certConfig.Name, Namespace: o.namespace}
+
+	cert, err := loadOrGenerateServiceAccountSecret(ctx, o.client, objectKey, certConfig)
+	if err != nil {
+		return nil, "", err
+	}
+
+	checksum, err := createOrUpdateServiceAccountSecret(ctx, o.client, objectKey, cert)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return cert, checksum, nil
 }
 
 func (o *operation) emptySecret(name string) *corev1.Secret {

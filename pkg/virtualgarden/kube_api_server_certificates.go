@@ -70,7 +70,7 @@ func (o *operation) deployKubeAPIServerCertificates(ctx context.Context, loadbal
 		return err
 	}
 
-	_, metricsScraperCertChecksum, err := o.deployKubeApiServerMetricsScraperCertificate(ctx, apiServerCACertificate, loadbalancer)
+	_, metricsScraperCertChecksum, err := o.deployKubeApiServerMetricsScraperCertificate(ctx, apiServerCACertificate)
 	if err != nil {
 		return err
 	}
@@ -184,8 +184,7 @@ func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Contex
 	return o.deployCertificate(ctx, certConfig, kubeconfigGen)
 }
 
-func (o *operation) deployKubeApiServerMetricsScraperCertificate(ctx context.Context, caCertificate *secretsutil.Certificate,
-	loadBalancer string) (*secretsutil.Certificate, string, error) {
+func (o *operation) deployKubeApiServerMetricsScraperCertificate(ctx context.Context, caCertificate *secretsutil.Certificate) (*secretsutil.Certificate, string, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameMetricsScraperCertificate,
 		CertType:   secretsutil.ClientCert,
