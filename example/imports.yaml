@@ -1,5 +1,7 @@
 cluster: |
-  ... add kubeconfig of host cluster
+  apiVersion: v1
+  kind: Config
+# ... <please insert your kubeconfig here>
 
 hostingCluster:
   namespace: garden-123
@@ -16,6 +18,7 @@ virtualGarden:
 #    hvpa: {}
 
   kubeAPIServer:
+    replicas: 1
     exposure:
       sni:
         hostnames:
@@ -23,6 +26,10 @@ virtualGarden:
         dnsClass: gardendns
         ttl: 120
         # secretName: gardener-dashboard-tls
+    dnsAccessDomain: my.dns.domain
+    gardenerControlplane:
+      validatingWebhookEnabled: true
+      mutatingWebhookEnabled: true
 
 credentials:
   mycredentials:
