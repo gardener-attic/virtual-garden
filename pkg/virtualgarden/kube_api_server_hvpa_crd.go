@@ -34,6 +34,8 @@ var hvpaCrd []byte
 
 // deployHVPACRD deploys the HVPA CRD.
 func (o *operation) deployHVPACRD(ctx context.Context) error {
+	o.log.Infof("Deploying hvpa crd")
+
 	newCrd := &v1beta1.CustomResourceDefinition{}
 	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(hvpaCrd), 32)
 	err := decoder.Decode(newCrd)
@@ -52,6 +54,7 @@ func (o *operation) deployHVPACRD(ctx context.Context) error {
 
 // deleteHPVACRD deletes the HPVA CRD.
 func (o *operation) deleteHPVACRD(ctx context.Context) error {
+	o.log.Infof("Deleting hvpa crd")
 	return client.IgnoreNotFound(o.client.Delete(ctx, emptyHVPACRD()))
 }
 

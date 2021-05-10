@@ -38,6 +38,8 @@ const (
 )
 
 func (o *operation) deployKubeAPIServerCertificates(ctx context.Context, loadbalancer string) error {
+	o.log.Infof("Deploying secrets containing kube-apiserver certificates")
+
 	aggregatorCACertificate, aggregatorCACertChecksum, err := o.deployKubeApiServerAggregatorCACertificate(ctx)
 	if err != nil {
 		return err
@@ -88,6 +90,8 @@ func (o *operation) deployKubeAPIServerCertificates(ctx context.Context, loadbal
 }
 
 func (o *operation) deleteKubeAPIServerCertificates(ctx context.Context) error {
+	o.log.Infof("Deleting secrets containing kube-apiserver certificates")
+
 	for _, name := range []string{
 		KubeApiServerSecretNameAggregatorCACertificate,
 		KubeApiServerSecretNameAggregatorClientCertificate,

@@ -16,22 +16,26 @@ package virtualgarden
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	_ "embed"
 	"fmt"
 
-	"github.com/gardener/gardener/pkg/utils"
-	"github.com/gardener/virtual-garden/pkg/util"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	configv1 "k8s.io/apiserver/pkg/apis/config/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/gardener/gardener/pkg/utils"
+	"github.com/gardener/virtual-garden/pkg/util"
 )
 
 const (
 	KubeApiServerSecretNameAdmissionKubeconfig = Prefix + "-kube-apiserver-admission-kubeconfig"
 	KubeApiServerSecretNameAuditWebhookConfig  = "kube-apiserver-audit-webhook-config"
 	KubeApiServerSecretNameBasicAuth           = Prefix + "-kube-apiserver-basic-auth"
+	KubeApiServerSecretNameEncryptionConfig    = Prefix + "-kube-apiserver-encryption-config"
 )
 
 //go:embed resources/validating-webhook-kubeconfig.yaml
@@ -53,6 +57,10 @@ func (o *operation) deployKubeAPIServerSecrets(ctx context.Context) error {
 		return err
 	}
 
+	if err := o.deployKubeApiServerSecretEncryptionConfig(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -61,6 +69,7 @@ func (o *operation) deleteKubeAPIServerSecrets(ctx context.Context) error {
 		KubeApiServerSecretNameAdmissionKubeconfig,
 		KubeApiServerSecretNameAuditWebhookConfig,
 		KubeApiServerSecretNameBasicAuth,
+		KubeApiServerSecretNameEncryptionConfig,
 	} {
 		secret := o.emptySecret(name)
 		if err := o.client.Delete(ctx, secret); client.IgnoreNotFound(err) != nil {
@@ -142,6 +151,75 @@ func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context) erro
 	})
 
 	return err
+}
+
+func (o *operation) deployKubeApiServerSecretEncryptionConfig(ctx context.Context) error {
+	const encryptionConfigKey = "encryption-config.yaml"
+
+	var encryptionConfigValue []byte
+
+	secret := o.emptySecret(KubeApiServerSecretNameEncryptionConfig)
+	err := o.client.Get(ctx, util.GetKey(secret), secret)
+	if err != nil {
+		if client.IgnoreNotFound(err) != nil {
+			return err
+		}
+
+		// secret does not exist: generate encryption config
+		encryptionConfigValue, err = o.generateNewEncryptionConfig()
+		if err != nil {
+			return err
+		}
+	} else {
+		// secret exists: use existing value
+		encryptionConfigValue = secret.Data[encryptionConfigKey]
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
+		if secret.Data == nil {
+			secret.Data = make(map[string][]byte)
+		}
+		secret.Data[encryptionConfigKey] = encryptionConfigValue
+		return nil
+	})
+
+	return err
+}
+
+func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
+	secretBytes := make([]byte, 32)
+	if _, err := cryptorand.Read(secretBytes); err != nil {
+		return nil, err
+	}
+
+	secretString := utils.EncodeBase64(secretBytes)
+
+	encryptionConfig := configv1.EncryptionConfiguration{
+		Resources: []configv1.ResourceConfiguration{
+			{
+				Resources: []string{
+					"secrets",
+				},
+				Providers: []configv1.ProviderConfiguration{
+					{
+						AESCBC: &configv1.AESConfiguration{
+							Keys: []configv1.Key{
+								{
+									Name:   "key",
+									Secret: secretString,
+								},
+							},
+						},
+					},
+					{
+						Identity: &configv1.IdentityConfiguration{},
+					},
+				},
+			},
+		},
+	}
+
+	return yaml.Marshal(&encryptionConfig)
 }
 
 func (o *operation) emptySecret(name string) *corev1.Secret {

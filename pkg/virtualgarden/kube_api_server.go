@@ -48,16 +48,17 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 
 // DeleteKubeAPIServer deletes the kube-apiserver and all related resources.
 func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
-	o.log.Infof("Deleting the HPVA CRD")
-	if err := o.deleteHPVACRD(ctx); err != nil {
-		return err
-	}
-
 	if err := o.deleteKubeAPIServerCertificates(ctx); err != nil {
 		return err
 	}
 
 	if err := o.deleteKubeAPIServerSecrets(ctx); err != nil {
+		return err
+	}
+
+	// ...
+
+	if err := o.deleteHPVACRD(ctx); err != nil {
 		return err
 	}
 
