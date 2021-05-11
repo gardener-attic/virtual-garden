@@ -64,7 +64,7 @@ func (o *operation) deployKubeAPIServerSecrets(ctx context.Context) error {
 		return err
 	}
 
-	if _, _, err := o.deployKubeApiServerSecretServiceAccountKey(ctx); err != nil {
+	if err := o.deployKubeApiServerSecretServiceAccountKey(ctx); err != nil {
 		return err
 	}
 
@@ -235,27 +235,48 @@ func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
 // - the data map of the secret has another key than usual for a private key
 // - the secret contains only the private key, but not the certificate
 // Therefore the loading fails if the secret does already exist.
-func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Context) (*secretsutil.Certificate, string, error) {
+func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Context) error {
+	const key = "service_account.key"
+
 	certConfig := &secretsutil.CertificateSecretConfig{
-		Name: KubeApiServerSecretNameServiceAccountKey,
-		CertType:   secretsutil.ServerCert,
-		//Hosts ?
+		Name:       KubeApiServerSecretNameServiceAccountKey,
+		CertType:   secretsutil.CACert,
 		CommonName: Prefix + ":ca:kube-apiserver",
+		DNSNames: []string{
+			"virtual-garden:ca:kube-apiserver",
+		},
 	}
 
-	objectKey := client.ObjectKey{Name: certConfig.Name, Namespace: o.namespace}
+	var value []byte
 
-	cert, err := loadOrGenerateServiceAccountSecret(ctx, o.client, objectKey, certConfig)
+	secret := o.emptySecret(KubeApiServerSecretNameServiceAccountKey)
+	err := o.client.Get(ctx, util.GetKey(secret), secret)
 	if err != nil {
-		return nil, "", err
+		if client.IgnoreNotFound(err) != nil {
+			return err
+		}
+
+		// secret does not exist: generate certificate
+		cert, err := certConfig.GenerateCertificate()
+		if err != nil {
+			return err
+		}
+
+		value = cert.PrivateKeyPEM
+	} else {
+		// secret exists: use existing value
+		value = secret.Data[key]
 	}
 
-	checksum, err := createOrUpdateServiceAccountSecret(ctx, o.client, objectKey, cert)
-	if err != nil {
-		return nil, "", err
-	}
+	_, err = controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
+		if secret.Data == nil {
+			secret.Data = make(map[string][]byte)
+		}
+		secret.Data[key] = value
+		return nil
+	})
 
-	return cert, checksum, nil
+	return err
 }
 
 func (o *operation) emptySecret(name string) *corev1.Secret {
