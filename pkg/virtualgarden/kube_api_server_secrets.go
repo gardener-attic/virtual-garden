@@ -48,6 +48,8 @@ var validatingWebhookKubeconfig []byte
 var mutatingWebhookKubeconfig []byte
 
 func (o *operation) deployKubeAPIServerSecrets(ctx context.Context) error {
+	o.log.Infof("Deploying secrets for the kube-apiserver")
+
 	if err := o.deployKubeApiServerSecretAdmissionKubeconfig(ctx); err != nil {
 		return err
 	}
@@ -72,6 +74,8 @@ func (o *operation) deployKubeAPIServerSecrets(ctx context.Context) error {
 }
 
 func (o *operation) deleteKubeAPIServerSecrets(ctx context.Context) error {
+	o.log.Infof("Deleting secrets for the kube-apiserver")
+
 	for _, name := range []string{
 		KubeApiServerSecretNameAdmissionKubeconfig,
 		KubeApiServerSecretNameAuditWebhookConfig,
