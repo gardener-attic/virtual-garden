@@ -51,7 +51,7 @@ func (o *operation) deployKubeAPIServerConfigMaps(ctx context.Context) error {
 }
 
 func (o *operation) deleteKubeAPIServerConfigMaps(ctx context.Context) error {
-	o.log.Infof("Deploying configmaps for the kube-apiserver")
+	o.log.Infof("Deleting configmaps for the kube-apiserver")
 
 	for _, name := range []string{
 		KubeApiServerConfigMapAdmission,
