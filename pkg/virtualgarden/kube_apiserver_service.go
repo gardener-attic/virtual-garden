@@ -37,11 +37,6 @@ const (
 	kubeAPIServerServicePort     = 443
 )
 
-var kubeAPIServerServiceLabels = map[string]string{
-	"app":       Prefix,
-	"component": "kube-apiserver",
-}
-
 // DeployKubeAPIServerService deploys the service object for the virtual garden kube-apiserver.
 func (o *operation) DeployKubeAPIServerService(ctx context.Context) error {
 	service := emptyKubeAPIServerService(o.namespace)
@@ -64,9 +59,9 @@ func (o *operation) DeployKubeAPIServerService(ctx context.Context) error {
 			delete(service.Annotations, "dns.gardener.cloud/ttl")
 		}
 
-		service.Labels = utils.MergeStringMaps(service.Labels, kubeAPIServerServiceLabels)
+		service.Labels = utils.MergeStringMaps(service.Labels, getKubeAPIServerServiceLabels())
 		service.Spec.Type = corev1.ServiceTypeLoadBalancer
-		service.Spec.Selector = kubeAPIServerServiceLabels
+		service.Spec.Selector = getKubeAPIServerServiceLabels()
 		service.Spec.Ports = reconcileServicePorts(service.Spec.Ports, []corev1.ServicePort{
 			{
 				Name:       kubeAPIServerServicePortName,

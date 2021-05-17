@@ -150,3 +150,10 @@ func (k *kubeconfigGenerator) createKubeconfig(certificate *secretsutil.Certific
 		},
 	}
 }
+
+func getKubeAPIServerServiceLabels() map[string]string {
+	return map[string]string{
+		LabelKeyApp:       Prefix,
+		LabelKeyComponent: "kube-apiserver",
+	}
+}

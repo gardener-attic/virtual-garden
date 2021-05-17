@@ -25,19 +25,25 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	apiserverv1 "k8s.io/apiserver/pkg/apis/apiserver/v1"
+
+	// auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
-	KubeApiServerConfigMapAdmission = Prefix + "-kube-apiserver-admission-config"
-	//KubeApiServerConfigMapAuditPolicy = "kube-apiserver-audit-policy-config"
+	KubeApiServerConfigMapAdmission   = Prefix + "-kube-apiserver-admission-config"
+	KubeApiServerConfigMapAuditPolicy = "kube-apiserver-audit-policy-config"
 )
 
 func (o *operation) deployKubeAPIServerConfigMaps(ctx context.Context) error {
 	o.log.Infof("Deploying configmaps for the kube-apiserver")
 
 	if err := o.deployKubeApiServerConfigMapAdmission(ctx); err != nil {
+		return err
+	}
+
+	if err := o.deployKubeApiServerConfigMapAuditPolicy(ctx); err != nil {
 		return err
 	}
 
@@ -49,7 +55,7 @@ func (o *operation) deleteKubeAPIServerConfigMaps(ctx context.Context) error {
 
 	for _, name := range []string{
 		KubeApiServerConfigMapAdmission,
-		//KubeApiServerConfigMapAuditPolicy,
+		KubeApiServerConfigMapAuditPolicy,
 	} {
 		configmap := o.emptyConfigMap(name)
 		if err := o.client.Delete(ctx, configmap); client.IgnoreNotFound(err) != nil {
@@ -57,6 +63,26 @@ func (o *operation) deleteKubeAPIServerConfigMaps(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+//go:embed resources/audit_policy.yaml
+var auditPolicy []byte
+
+func (o *operation) deployKubeApiServerConfigMapAuditPolicy(ctx context.Context) error {
+	auditPolicyYaml := string(auditPolicy)
+
+	configMap := o.emptyConfigMap(KubeApiServerConfigMapAuditPolicy)
+
+	_, err := controllerutil.CreateOrUpdate(ctx, o.client, configMap, func() error {
+		if len(configMap.Data) == 0 {
+			configMap.Data = make(map[string]string)
+		}
+
+		configMap.Data["audit-policy.yaml"] = auditPolicyYaml
+		return nil
+	})
+
+	return err
 }
 
 func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context) error {
