@@ -5,3 +5,5 @@ const (
 	LabelKeyComponent = "component"
 	LabelKeyRole      = "role"
 )
+
+const kubeAPIServerContainerName = "kube-apiserver"

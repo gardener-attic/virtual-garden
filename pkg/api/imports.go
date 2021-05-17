@@ -85,6 +85,9 @@ type KubeAPIServer struct {
 	DnsAccessDomain      string                 `json:"dnsAccessDomain,omitempty" yaml:"dnsAccessDomain,omitempty"`
 	GardenerControlplane GardenerControlplane   `json:"gardenerControlplane,omitempty" yaml:"gardenerControlplane,omitempty"`
 	AuditWebhookConfig   AuditWebhookConfig     `json:"auditWebhookConfig,omitempty" yaml:"auditWebhookConfig,omitempty"`
+
+	HVPAEnabled bool        `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
+	HVPA        *HvpaConfig `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`
 }
 
 type GardenerControlplane struct {
