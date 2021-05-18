@@ -32,7 +32,7 @@ import (
 )
 
 const (
-   VirtualGardenKubeControllerManagerName = "virtual-garden-kube-controller-manager"
+	VirtualGardenKubeControllerManagerName = "virtual-garden-kube-controller-manager"
 )
 
 func (o *operation) deployKubeAPIServerPodAutoscaling(ctx context.Context) error {

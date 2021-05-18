@@ -37,54 +37,43 @@ const (
 	KubeApiServerSecretNameMetricsScraperCertificate        = Prefix + "-metrics-scraper"
 )
 
-func (o *operation) deployKubeAPIServerCertificates(ctx context.Context, loadbalancer string) error {
+func (o *operation) deployKubeAPIServerCertificates(ctx context.Context, loadbalancer string, checksums map[string]string) error {
 	o.log.Infof("Deploying secrets containing kube-apiserver certificates")
 
-	aggregatorCACertificate, aggregatorCACertChecksum, err := o.deployKubeApiServerAggregatorCACertificate(ctx)
+	aggregatorCACertificate, err := o.deployKubeApiServerAggregatorCACertificate(ctx, checksums)
 	if err != nil {
 		return err
 	}
 
-	_, aggregatorClientCertChecksum, err := o.deployKubeApiServerAggregatorClientCertificate(ctx, aggregatorCACertificate)
+	_, err = o.deployKubeApiServerAggregatorClientCertificate(ctx, aggregatorCACertificate, checksums)
 	if err != nil {
 		return err
 	}
 
-	apiServerCACertificate, apiServerCACertChecksum, err := o.deployKubeApiServerApiServerCACertificate(ctx)
+	apiServerCACertificate, err := o.deployKubeApiServerApiServerCACertificate(ctx, checksums)
 	if err != nil {
 		return err
 	}
 
-	_, apiServerServerCertChecksum, err := o.deployKubeApiServerApiServerServerCertificate(ctx, apiServerCACertificate, loadbalancer)
+	_, err = o.deployKubeApiServerApiServerServerCertificate(ctx, apiServerCACertificate, loadbalancer, checksums)
 	if err != nil {
 		return err
 	}
 
-	_, kubeControllerManagerClientCertChecksum, err := o.deployKubeApiServerKubeControllerManagerClientCertificate(ctx, apiServerCACertificate)
+	_, err = o.deployKubeApiServerKubeControllerManagerClientCertificate(ctx, apiServerCACertificate, checksums)
 	if err != nil {
 		return err
 	}
 
-	_, clientAdminCertChecksum, err := o.deployKubeApiServerClientAdminCertificate(ctx, apiServerCACertificate, loadbalancer)
+	_, err = o.deployKubeApiServerClientAdminCertificate(ctx, apiServerCACertificate, loadbalancer, checksums)
 	if err != nil {
 		return err
 	}
 
-	_, metricsScraperCertChecksum, err := o.deployKubeApiServerMetricsScraperCertificate(ctx, apiServerCACertificate)
+	_, err = o.deployKubeApiServerMetricsScraperCertificate(ctx, apiServerCACertificate, checksums)
 	if err != nil {
 		return err
 	}
-
-	// temporarily
-	fmt.Println("Checksums: ",
-		aggregatorCACertChecksum,
-		aggregatorClientCertChecksum,
-		apiServerCACertChecksum,
-		apiServerServerCertChecksum,
-		kubeControllerManagerClientCertChecksum,
-		clientAdminCertChecksum,
-		metricsScraperCertChecksum,
-	)
 
 	return nil
 }
@@ -109,17 +98,24 @@ func (o *operation) deleteKubeAPIServerCertificates(ctx context.Context) error {
 	return nil
 }
 
-func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Context) (*secretsutil.Certificate, string, error) {
+func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Context, checksums map[string]string) (*secretsutil.Certificate, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameApiServerCACertificate,
 		CertType:   secretsutil.CACert,
 		CommonName: Prefix + ":ca:kube-apiserver",
 	}
-	return o.deployCertificate(ctx, certConfig, nil)
+
+	cert, checksum, err := o.deployCertificate(ctx, certConfig, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	checksums[ChecksumKeyKubeAPIServerCA] = checksum
+	return cert, err
 }
 
 func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Context, caCertificate *secretsutil.Certificate,
-	loadbalancer string) (*secretsutil.Certificate, string, error) {
+	loadbalancer string, checksums map[string]string) (*secretsutil.Certificate, error) {
 	dnsAccessDomain := o.imports.VirtualGarden.KubeAPIServer.DnsAccessDomain
 
 	certConfig := &secretsutil.CertificateSecretConfig{
@@ -146,10 +142,17 @@ func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Co
 			fmt.Sprintf("gardener.%s", dnsAccessDomain),
 		},
 	}
-	return o.deployCertificate(ctx, certConfig, nil)
+
+	cert, checksum, err := o.deployCertificate(ctx, certConfig, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	checksums[ChecksumKeyKubeAPIServerServer] = checksum
+	return cert, err
 }
 
-func (o *operation) deployKubeApiServerKubeControllerManagerClientCertificate(ctx context.Context, caCertificate *secretsutil.Certificate) (*secretsutil.Certificate, string, error) {
+func (o *operation) deployKubeApiServerKubeControllerManagerClientCertificate(ctx context.Context, caCertificate *secretsutil.Certificate, checksums map[string]string) (*secretsutil.Certificate, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameKubeControllerManagerCertificate,
 		CertType:   secretsutil.ClientCert,
@@ -162,11 +165,17 @@ func (o *operation) deployKubeApiServerKubeControllerManagerClientCertificate(ct
 		server: "https://virtual-garden-kube-apiserver:443",
 	}
 
-	return o.deployCertificate(ctx, certConfig, kubeconfigGen)
+	cert, checksum, err := o.deployCertificate(ctx, certConfig, kubeconfigGen)
+	if err != nil {
+		return nil, err
+	}
+
+	checksums[ChecksumKeyKubeControllerManagerClient] = checksum
+	return cert, err
 }
 
 func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Context, caCertificate *secretsutil.Certificate,
-	loadBalancer string) (*secretsutil.Certificate, string, error) {
+	loadBalancer string, checksums map[string]string) (*secretsutil.Certificate, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameClientAdminCertificate,
 		CertType:   secretsutil.ClientCert,
@@ -174,17 +183,23 @@ func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Contex
 		CommonName: Prefix + ":client:admin",
 	}
 
-	// o.imports.VirtualGarden.KubeAPIServer could be nil
-
 	kubeconfigGen := &kubeconfigGenerator{
 		user:   "admin",
 		server: o.infrastructureProvider.GetKubeAPIServerURL(o.imports.VirtualGarden.KubeAPIServer, loadBalancer),
 	}
 
-	return o.deployCertificate(ctx, certConfig, kubeconfigGen)
+	cert, _, err := o.deployCertificate(ctx, certConfig, kubeconfigGen)
+	if err != nil {
+		return nil, err
+	}
+
+	return cert, err
 }
 
-func (o *operation) deployKubeApiServerMetricsScraperCertificate(ctx context.Context, caCertificate *secretsutil.Certificate) (*secretsutil.Certificate, string, error) {
+func (o *operation) deployKubeApiServerMetricsScraperCertificate(
+	ctx context.Context,
+	caCertificate *secretsutil.Certificate,
+	checksums map[string]string) (*secretsutil.Certificate, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameMetricsScraperCertificate,
 		CertType:   secretsutil.ClientCert,
@@ -192,25 +207,44 @@ func (o *operation) deployKubeApiServerMetricsScraperCertificate(ctx context.Con
 		CommonName: Prefix + ":client:metrics-scraper",
 	}
 
-	return o.deployCertificate(ctx, certConfig, nil)
+	cert, _, err := o.deployCertificate(ctx, certConfig, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return cert, err
 }
 
-func (o *operation) deployKubeApiServerAggregatorCACertificate(ctx context.Context) (*secretsutil.Certificate, string, error) {
+func (o *operation) deployKubeApiServerAggregatorCACertificate(ctx context.Context, checksums map[string]string) (*secretsutil.Certificate, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameAggregatorCACertificate,
 		CertType:   secretsutil.CACert,
 		CommonName: Prefix + ":ca:kube-aggregator",
 	}
-	return o.deployCertificate(ctx, certConfig, nil)
+
+	cert, checksum, err := o.deployCertificate(ctx, certConfig, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	checksums[ChecksumKeyKubeAggregatorCA] = checksum
+	return cert, err
 }
 
 func (o *operation) deployKubeApiServerAggregatorClientCertificate(ctx context.Context,
-	caCertificate *secretsutil.Certificate) (*secretsutil.Certificate, string, error) {
+	caCertificate *secretsutil.Certificate, checksums map[string]string) (*secretsutil.Certificate, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameAggregatorClientCertificate,
 		CertType:   secretsutil.ClientCert,
 		SigningCA:  caCertificate,
 		CommonName: Prefix + ":aggregator-client:kube-aggregator",
 	}
-	return o.deployCertificate(ctx, certConfig, nil)
+
+	cert, checksum, err := o.deployCertificate(ctx, certConfig, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	checksums[ChecksumKeyKubeAggregatorClient] = checksum
+	return cert, err
 }

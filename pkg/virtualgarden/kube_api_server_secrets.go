@@ -47,26 +47,26 @@ var validatingWebhookKubeconfig []byte
 //go:embed resources/mutating-webhook-kubeconfig.yaml
 var mutatingWebhookKubeconfig []byte
 
-func (o *operation) deployKubeAPIServerSecrets(ctx context.Context) error {
+func (o *operation) deployKubeAPIServerSecrets(ctx context.Context, checksums map[string]string) error {
 	o.log.Infof("Deploying secrets for the kube-apiserver")
 
 	if err := o.deployKubeApiServerSecretAdmissionKubeconfig(ctx); err != nil {
 		return err
 	}
 
-	if err := o.deployKubeApiServerSecretAuditWebhookConfig(ctx); err != nil {
+	if err := o.deployKubeApiServerSecretAuditWebhookConfig(ctx, checksums); err != nil {
 		return err
 	}
 
-	if err := o.deployKubeApiServerSecretBasicAuth(ctx); err != nil {
+	if err := o.deployKubeApiServerSecretBasicAuth(ctx, checksums); err != nil {
 		return err
 	}
 
-	if err := o.deployKubeApiServerSecretEncryptionConfig(ctx); err != nil {
+	if err := o.deployKubeApiServerSecretEncryptionConfig(ctx, checksums); err != nil {
 		return err
 	}
 
-	if err := o.deployKubeApiServerSecretServiceAccountKey(ctx); err != nil {
+	if err := o.deployKubeApiServerSecretServiceAccountKey(ctx, checksums); err != nil {
 		return err
 	}
 
@@ -92,8 +92,7 @@ func (o *operation) deleteKubeAPIServerSecrets(ctx context.Context) error {
 }
 
 func (o *operation) deployKubeApiServerSecretAdmissionKubeconfig(ctx context.Context) error {
-	controlplane := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane
-	if !controlplane.ValidatingWebhookEnabled && !controlplane.MutatingWebhookEnabled {
+	if !o.isWebhookEnabled() {
 		return nil
 	}
 
@@ -107,12 +106,11 @@ func (o *operation) deployKubeApiServerSecretAdmissionKubeconfig(ctx context.Con
 		secret.Data["mutating-webhook"] = mutatingWebhookKubeconfig
 		return nil
 	})
-
 	return err
 }
 
-func (o *operation) deployKubeApiServerSecretAuditWebhookConfig(ctx context.Context) error {
-	config := o.imports.VirtualGarden.KubeAPIServer.AuditWebhookConfig.Config
+func (o *operation) deployKubeApiServerSecretAuditWebhookConfig(ctx context.Context, checksums map[string]string) error {
+	config := o.getAPIServerAuditWebhookConfig()
 	if len(config) == 0 {
 		return nil
 	}
@@ -126,11 +124,15 @@ func (o *operation) deployKubeApiServerSecretAuditWebhookConfig(ctx context.Cont
 		secret.Data["audit-webhook-config.yaml"] = []byte(config)
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	checksums[ChecksumKeyKubeAPIServerAuditWebhookConfig] = utils.ComputeChecksum(secret.Data)
+	return nil
 }
 
-func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context) error {
+func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, checksums map[string]string) error {
 	const basicAuthKey = "basic_auth.csv"
 
 	var basicAuthValue []byte
@@ -161,11 +163,15 @@ func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context) erro
 		secret.Data[basicAuthKey] = basicAuthValue
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	checksums[ChecksumKeyKubeAPIServerBasicAuth] = utils.ComputeChecksum(secret.Data)
+	return nil
 }
 
-func (o *operation) deployKubeApiServerSecretEncryptionConfig(ctx context.Context) error {
+func (o *operation) deployKubeApiServerSecretEncryptionConfig(ctx context.Context, checksums map[string]string) error {
 	const encryptionConfigKey = "encryption-config.yaml"
 
 	var encryptionConfigValue []byte
@@ -194,8 +200,12 @@ func (o *operation) deployKubeApiServerSecretEncryptionConfig(ctx context.Contex
 		secret.Data[encryptionConfigKey] = encryptionConfigValue
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	checksums[ChecksumKeyKubeAPIServerEncryptionConfig] = utils.ComputeChecksum(secret.Data)
+	return nil
 }
 
 func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
@@ -239,7 +249,7 @@ func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
 // - the data map of the secret has another key than usual for a private key
 // - the secret contains only the private key, but not the certificate
 // Therefore the loading fails if the secret does already exist.
-func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Context) error {
+func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Context, checksums map[string]string) error {
 	const key = "service_account.key"
 
 	certConfig := &secretsutil.CertificateSecretConfig{
@@ -279,8 +289,12 @@ func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Conte
 		secret.Data[key] = value
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	checksums[ChecksumKeyServiceAccountKey] = utils.ComputeChecksum(secret.Data)
+	return nil
 }
 
 func (o *operation) emptySecret(name string) *corev1.Secret {

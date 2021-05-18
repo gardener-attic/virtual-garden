@@ -77,10 +77,11 @@ type KubeAPIServer struct {
 	Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
 	// Exposure contains configuration for the exposure settings.
 	// +optional
-	Exposure             *KubeAPIServerExposure `json:"exposure,omitempty" yaml:"exposure,omitempty"`
-	DnsAccessDomain      string                 `json:"dnsAccessDomain,omitempty" yaml:"dnsAccessDomain,omitempty"`
-	GardenerControlplane GardenerControlplane   `json:"gardenerControlplane,omitempty" yaml:"gardenerControlplane,omitempty"`
-	AuditWebhookConfig   AuditWebhookConfig     `json:"auditWebhookConfig,omitempty" yaml:"auditWebhookConfig,omitempty"`
+	Exposure                 *KubeAPIServerExposure `json:"exposure,omitempty" yaml:"exposure,omitempty"`
+	DnsAccessDomain          string                 `json:"dnsAccessDomain,omitempty" yaml:"dnsAccessDomain,omitempty"`
+	GardenerControlplane     GardenerControlplane   `json:"gardenerControlplane,omitempty" yaml:"gardenerControlplane,omitempty"`
+	AuditWebhookConfig       AuditWebhookConfig     `json:"auditWebhookConfig,omitempty" yaml:"auditWebhookConfig,omitempty"`
+	AuditWebhookBatchMaxSize string                 `json:"auditWebhookBatchMaxSize,omitempty" yaml:"auditWebhookBatchMaxSize,omitempty"`
 
 	HVPAEnabled bool        `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
 	HVPA        *HvpaConfig `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`

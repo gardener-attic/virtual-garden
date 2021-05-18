@@ -19,6 +19,8 @@ import (
 	_ "embed"
 	"encoding/json"
 
+	"github.com/gardener/gardener/pkg/utils"
+
 	"github.com/ghodss/yaml"
 
 	corev1 "k8s.io/api/core/v1"
@@ -36,14 +38,14 @@ const (
 	KubeApiServerConfigMapAuditPolicy = "kube-apiserver-audit-policy-config"
 )
 
-func (o *operation) deployKubeAPIServerConfigMaps(ctx context.Context) error {
+func (o *operation) deployKubeAPIServerConfigMaps(ctx context.Context, checksums map[string]string) error {
 	o.log.Infof("Deploying configmaps for the kube-apiserver")
 
-	if err := o.deployKubeApiServerConfigMapAdmission(ctx); err != nil {
+	if err := o.deployKubeApiServerConfigMapAdmission(ctx, checksums); err != nil {
 		return err
 	}
 
-	if err := o.deployKubeApiServerConfigMapAuditPolicy(ctx); err != nil {
+	if err := o.deployKubeApiServerConfigMapAuditPolicy(ctx, checksums); err != nil {
 		return err
 	}
 
@@ -68,7 +70,7 @@ func (o *operation) deleteKubeAPIServerConfigMaps(ctx context.Context) error {
 //go:embed resources/audit_policy.yaml
 var auditPolicy []byte
 
-func (o *operation) deployKubeApiServerConfigMapAuditPolicy(ctx context.Context) error {
+func (o *operation) deployKubeApiServerConfigMapAuditPolicy(ctx context.Context, checksums map[string]string) error {
 	auditPolicyYaml := string(auditPolicy)
 
 	configMap := o.emptyConfigMap(KubeApiServerConfigMapAuditPolicy)
@@ -81,13 +83,17 @@ func (o *operation) deployKubeApiServerConfigMapAuditPolicy(ctx context.Context)
 		configMap.Data["audit-policy.yaml"] = auditPolicyYaml
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	checksums[ChecksumKeyKubeAPIServerAuditPolicyConfig] = utils.ComputeChecksum(configMap.Data)
+	return nil
 }
 
-func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context) error {
+func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context, checksums map[string]string) error {
 	controlplane := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane
-	if !controlplane.ValidatingWebhookEnabled && !controlplane.MutatingWebhookEnabled {
+	if !o.isWebhookEnabled() {
 		return nil
 	}
 
@@ -137,8 +143,12 @@ func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context) e
 		configMap.Data["configuration.yaml"] = string(admissionConfigYAML)
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	checksums[ChecksumKeyKubeAPIServerAdmissionConfig] = utils.ComputeChecksum(configMap.Data)
+	return nil
 }
 
 func (o *operation) newAdmissionPluginConfiguration(name, kubeConfigPath string) (*apiserverv1.AdmissionPluginConfiguration, error) {

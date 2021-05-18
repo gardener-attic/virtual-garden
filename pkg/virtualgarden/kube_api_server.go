@@ -24,6 +24,9 @@ import (
 // DeployKubeAPIServer deploys a kubernetes api server.
 func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 	o.log.Infof("Deploying the HVPA CRD")
+
+	checksums := make(map[string]string)
+
 	if err := o.deployHVPACRD(ctx); err != nil {
 		return err
 	}
@@ -33,17 +36,17 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
-	err = o.deployKubeAPIServerCertificates(ctx, loadBalancer)
+	err = o.deployKubeAPIServerCertificates(ctx, loadBalancer, checksums)
 	if err != nil {
 		return err
 	}
 
-	err = o.deployKubeAPIServerSecrets(ctx)
+	err = o.deployKubeAPIServerSecrets(ctx, checksums)
 	if err != nil {
 		return err
 	}
 
-	err = o.deployKubeAPIServerConfigMaps(ctx)
+	err = o.deployKubeAPIServerConfigMaps(ctx, checksums)
 	if err != nil {
 		return err
 	}
@@ -58,7 +61,7 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
-	err = o.deployDeployments(ctx)
+	err = o.deployDeployments(ctx, checksums)
 	if err != nil {
 		return err
 	}
@@ -97,6 +100,11 @@ func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (o *operation) isWebhookEnabled() bool {
+	controlplane := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane
+	return controlplane.ValidatingWebhookEnabled || controlplane.MutatingWebhookEnabled
 }
 
 func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (string, error) {

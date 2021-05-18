@@ -30,6 +30,7 @@ virtualGarden:
     gardenerControlplane:
       validatingWebhookEnabled: true
       mutatingWebhookEnabled: true
+    hvpaEnabled: true
 
 credentials:
   mycredentials:
