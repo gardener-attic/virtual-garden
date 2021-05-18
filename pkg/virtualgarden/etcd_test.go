@@ -94,7 +94,7 @@ var _ = Describe("Etcd", func() {
 							BucketName: bucketName,
 						},
 						StorageClassName: &storageClassName,
-						HVPA:             &api.ETCDHVPA{},
+						HVPAEnabled:      true,
 					},
 				},
 			},
@@ -786,7 +786,7 @@ var _ = Describe("Etcd", func() {
 
 		It("should correctly deploy all etcd resources (w/o backup, w/o hvpa)", func() {
 			op.imports.VirtualGarden.ETCD.Backup = nil
-			op.imports.VirtualGarden.ETCD.HVPA = nil
+			op.imports.VirtualGarden.ETCD.HVPAEnabled = false
 
 			gomock.InOrder(
 				c.EXPECT().Get(ctx, client.ObjectKey{Name: storageClassObjectMeta.Name}, gomock.AssignableToTypeOf(&storagev1.StorageClass{})).Return(apierrors.NewNotFound(schema.GroupResource{}, "")),
@@ -898,7 +898,7 @@ var _ = Describe("Etcd", func() {
 
 		It("should correctly delete all etcd resources (w/o backup, w/o pvc handling, w/o hvpa)", func() {
 			op.imports.VirtualGarden.ETCD.Backup = nil
-			op.imports.VirtualGarden.ETCD.HVPA = nil
+			op.imports.VirtualGarden.ETCD.HVPAEnabled = false
 			op.handleETCDPersistentVolumes = false
 
 			gomock.InOrder(

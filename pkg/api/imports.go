@@ -55,9 +55,8 @@ type ETCD struct {
 	// Backup contains configuration for the backup of the main etcd for the virtual garden.
 	// +optional
 	Backup *ETCDBackup `json:"backup,omitempty" yaml:"backup,omitempty"`
-	// HVPA contains configuration for the HVPA for etcd.
-	// +optional
-	HVPA *ETCDHVPA `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`
+
+	HVPAEnabled bool `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
 }
 
 // ETCDBackup contains configuration for the backup of the main etcd for the virtual garden.
@@ -72,9 +71,6 @@ type ETCDBackup struct {
 	// bucket.
 	CredentialsRef string `json:"credentialsRef" yaml:"credentialsRef"`
 }
-
-// ETCDHVPA contains configuration for the HVPA for etcd.
-type ETCDHVPA struct{}
 
 // KubeAPIServer contains configuration for the virtual garden kube-apiserver.
 type KubeAPIServer struct {

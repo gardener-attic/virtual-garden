@@ -65,7 +65,8 @@ func (h *HvpaConfig) GetMaxReplicas(def int32) int32 {
 	return *h.MaxReplicas
 }
 
-func (h *HvpaConfig) GetMinReplicas(def int32) *int32 {
+func (h *HvpaConfig) GetMinReplicas() *int32 {
+	var def int32 = 1
 	if h == nil || h.MinReplicas == nil {
 		return pointer.Int32Ptr(def)
 	}

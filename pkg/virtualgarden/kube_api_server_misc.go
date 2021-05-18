@@ -43,6 +43,7 @@ func (o *operation) deployMisc(ctx context.Context) error {
 }
 
 func (o *operation) deleteMisc(ctx context.Context) error {
+	o.log.Infof("Deleting misc for the kube-apiserver")
 
 	if err := o.deleteKubeAPIServerPodDisruptionBudget(ctx); err != nil {
 		return err
@@ -113,9 +114,9 @@ func (o *operation) deleteKubeAPIServerServiceAccount(ctx context.Context) error
 }
 
 func (o *operation) emptyPodDisruptionBudget() *policyv1.PodDisruptionBudget {
-	return &policyv1.PodDisruptionBudget{ObjectMeta: metav1.ObjectMeta{Name: "virtual-garden-kube-apiserver", Namespace: o.namespace}}
+	return &policyv1.PodDisruptionBudget{ObjectMeta: metav1.ObjectMeta{Name: KubeAPIServerServiceName, Namespace: o.namespace}}
 }
 
 func (o *operation) emptyServiceAccount() *corev1.ServiceAccount {
-	return &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "virtual-garden-kube-apiserver", Namespace: o.namespace}}
+	return &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: KubeAPIServerServiceName, Namespace: o.namespace}}
 }

@@ -30,5 +30,5 @@ func ETCDBackupEnabled(etcd *api.ETCD) bool {
 
 // ETCDHVPAEnabled returns true if the etcd HVPA settings are configured.
 func ETCDHVPAEnabled(etcd *api.ETCD) bool {
-	return etcd != nil && etcd.HVPA != nil
+	return etcd != nil && etcd.HVPAEnabled
 }

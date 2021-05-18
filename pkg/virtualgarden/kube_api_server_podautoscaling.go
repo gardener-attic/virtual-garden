@@ -18,6 +18,7 @@ import (
 	"context"
 	_ "embed"
 
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -30,10 +31,150 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+   VirtualGardenKubeControllerManagerName = "virtual-garden-kube-controller-manager"
+)
+
 func (o *operation) deployKubeAPIServerPodAutoscaling(ctx context.Context) error {
 	o.log.Infof("Deploying manifests for pod autoscaling for the kube-apiserver")
 
 	if err := o.deployKubeApiServerHvpa(ctx); err != nil {
+		return err
+	}
+
+	if err := o.deployKubeApiServerVpa(ctx); err != nil {
+		return err
+	}
+
+	if err := o.deployKubeApiServerVpaForControllerManager(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o *operation) deleteKubeAPIServerPodAutoscaling(ctx context.Context) error {
+	o.log.Infof("Deleting manifests for pod autoscaling for the kube-apiserver")
+
+	if err := o.deleteKubeApiServerHvpa(ctx); err != nil {
+		return err
+	}
+
+	if err := o.deleteKubeApiServerVpa(ctx); err != nil {
+		return err
+	}
+
+	if err := o.deleteKubeApiServerVpaForControllerManager(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o *operation) deployKubeApiServerVpaForControllerManager(ctx context.Context) error {
+	o.log.Infof("Deploying vpa for controller manager for the kube-apiserver")
+	if o.imports.VirtualGarden.KubeAPIServer.HVPAEnabled {
+		return nil
+	}
+
+	vpa := o.emptyKubeAPIServerVpa(VirtualGardenKubeControllerManagerName)
+
+	auto := autoscalingv1beta2.UpdateModeAuto
+
+	_, err := controllerutil.CreateOrUpdate(ctx, o.client, vpa, func() error {
+		vpa.Spec = autoscalingv1beta2.VerticalPodAutoscalerSpec{
+			ResourcePolicy: &autoscalingv1beta2.PodResourcePolicy{
+				ContainerPolicies: []autoscalingv1beta2.ContainerResourcePolicy{
+					{
+						ContainerName: "kube-controller-manager",
+						MaxAllowed: corev1.ResourceList{
+							corev1.ResourceMemory: resource.MustParse("10G"),
+							corev1.ResourceCPU:    resource.MustParse("5"),
+						},
+						MinAllowed: corev1.ResourceList{
+							corev1.ResourceMemory: resource.MustParse("400M"),
+							corev1.ResourceCPU:    resource.MustParse("400m"),
+						},
+					},
+				},
+			},
+			TargetRef: &autoscalingv1.CrossVersionObjectReference{
+				Kind:       "Deployment",
+				Name:       VirtualGardenKubeControllerManagerName,
+				APIVersion: "apps/v1",
+			},
+			UpdatePolicy: &autoscalingv1beta2.PodUpdatePolicy{
+				UpdateMode: &auto,
+			},
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func (o *operation) deleteKubeApiServerVpaForControllerManager(ctx context.Context) error {
+	o.log.Infof("Delete vpa for controller manager for the kube-apiserver")
+
+	hvpa := o.emptyKubeAPIServerVpa(VirtualGardenKubeControllerManagerName)
+
+	if err := o.client.Delete(ctx, hvpa); client.IgnoreNotFound(err) != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (o *operation) deployKubeApiServerVpa(ctx context.Context) error {
+	o.log.Infof("Deploying vpa for the kube-apiserver")
+	if o.imports.VirtualGarden.KubeAPIServer.HVPAEnabled {
+		return nil
+	}
+
+	vpa := o.emptyKubeAPIServerVpa(KubeAPIServerServiceName)
+
+	auto := autoscalingv1beta2.UpdateModeAuto
+
+	_, err := controllerutil.CreateOrUpdate(ctx, o.client, vpa, func() error {
+		vpa.Spec = autoscalingv1beta2.VerticalPodAutoscalerSpec{
+			ResourcePolicy: &autoscalingv1beta2.PodResourcePolicy{
+				ContainerPolicies: []autoscalingv1beta2.ContainerResourcePolicy{
+					{
+						ContainerName: "kube-apiserver",
+						MaxAllowed: corev1.ResourceList{
+							corev1.ResourceMemory: resource.MustParse("25G"),
+							corev1.ResourceCPU:    resource.MustParse("8"),
+						},
+						MinAllowed: corev1.ResourceList{
+							corev1.ResourceMemory: resource.MustParse("400M"),
+							corev1.ResourceCPU:    resource.MustParse("400m"),
+						},
+					},
+				},
+			},
+			TargetRef: &autoscalingv1.CrossVersionObjectReference{
+				Kind:       "Deployment",
+				Name:       KubeAPIServerServiceName,
+				APIVersion: "apps/v1",
+			},
+			UpdatePolicy: &autoscalingv1beta2.PodUpdatePolicy{
+				UpdateMode: &auto,
+			},
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func (o *operation) deleteKubeApiServerVpa(ctx context.Context) error {
+	o.log.Infof("Delete vpa for the kube-apiserver")
+
+	hvpa := o.emptyKubeAPIServerVpa(KubeAPIServerServiceName)
+
+	if err := o.client.Delete(ctx, hvpa); client.IgnoreNotFound(err) != nil {
 		return err
 	}
 
@@ -49,7 +190,7 @@ func (o *operation) deployKubeApiServerHvpa(ctx context.Context) error {
 	hvpaConfig := o.imports.VirtualGarden.KubeAPIServer.HVPA
 
 	maxReplicas := hvpaConfig.GetMaxReplicas(6)
-	minReplicas := hvpaConfig.GetMinReplicas(1)
+	minReplicas := hvpaConfig.GetMinReplicas()
 
 	hvpa := o.emptyKubeAPIServerHvpa()
 
@@ -184,7 +325,7 @@ func (o *operation) deployKubeApiServerHvpa(ctx context.Context) error {
 			hvpa.Spec.WeightBasedScalingIntervals = append(hvpa.Spec.WeightBasedScalingIntervals, hvpav1alpha1.WeightBasedScalingInterval{
 				VpaWeight:         hvpav1alpha1.HpaOnly,
 				StartReplicaCount: *minReplicas,
-				LastReplicaCount:  maxReplicas, // TODO {{ sub (int .Values.hvpa.maxReplicas) 1 }}
+				LastReplicaCount:  maxReplicas - 1,
 			})
 		}
 		hvpa.Spec.WeightBasedScalingIntervals = append(hvpa.Spec.WeightBasedScalingIntervals, hvpav1alpha1.WeightBasedScalingInterval{
@@ -196,23 +337,13 @@ func (o *operation) deployKubeApiServerHvpa(ctx context.Context) error {
 		hvpa.Spec.TargetRef = &autoscalingv2beta1.CrossVersionObjectReference{
 			APIVersion: "apps/v1",
 			Kind:       "Deployment",
-			Name:       "virtual-garden-kube-apiserver",
+			Name:       KubeAPIServerServiceName,
 		}
 
 		return nil
 	})
 
 	return err
-}
-
-func (o *operation) deleteKubeAPIServerPodAutoscaling(ctx context.Context) error {
-	o.log.Infof("Deleting manifests for pod autoscaling for the kube-apiserver")
-
-	if err := o.deleteKubeApiServerHvpa(ctx); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (o *operation) deleteKubeApiServerHvpa(ctx context.Context) error {
@@ -228,5 +359,9 @@ func (o *operation) deleteKubeApiServerHvpa(ctx context.Context) error {
 }
 
 func (o *operation) emptyKubeAPIServerHvpa() *hvpav1alpha1.Hvpa {
-	return &hvpav1alpha1.Hvpa{ObjectMeta: metav1.ObjectMeta{Name: "virtual-garden-kube-apiserver", Namespace: o.namespace}}
+	return &hvpav1alpha1.Hvpa{ObjectMeta: metav1.ObjectMeta{Name: KubeAPIServerServiceName, Namespace: o.namespace}}
+}
+
+func (o *operation) emptyKubeAPIServerVpa(name string) *autoscalingv1beta2.VerticalPodAutoscaler {
+	return &autoscalingv1beta2.VerticalPodAutoscaler{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: o.namespace}}
 }

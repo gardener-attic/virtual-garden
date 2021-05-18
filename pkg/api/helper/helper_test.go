@@ -53,6 +53,5 @@ var _ = Describe("Helper", func() {
 
 		Entry("etcd is nil", nil, BeFalse()),
 		Entry("hvpa is nil", &api.ETCD{}, BeFalse()),
-		Entry("hvpa is not nil", &api.ETCD{HVPA: &api.ETCDHVPA{}}, BeTrue()),
 	)
 })
