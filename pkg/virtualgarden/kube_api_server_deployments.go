@@ -43,6 +43,10 @@ func (o *operation) deployDeployments(ctx context.Context, checksums map[string]
 		return err
 	}
 
+	if err := o.deployKubeAPIServerDeploymentControllerManager(ctx, checksums, basicAuthPw); err != nil {
+		return err
+	}
+
 	return nil
 }
 

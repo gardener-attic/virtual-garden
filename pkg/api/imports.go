@@ -96,6 +96,16 @@ type KubeAPIServer struct {
 
 	AdditionalVolumeMounts []corev1.VolumeMount `json:"additionalVolumeMounts,omitempty" yaml:"additionalVolumeMounts,omitempty"`
 	AdditionalVolumes      []corev1.Volume      `json:"additionalVolumes,omitempty" yaml:"additionalVolumes,omitempty"`
+
+	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty" yaml:"horizontalPodAutoscaler,omitempty"`
+}
+
+type HorizontalPodAutoscaler struct {
+	DownscaleStabilization  string
+	ReadinessDelay          string
+	CpuInitializationPeriod string
+	SyncPeriod              string
+	Tolerance               string
 }
 
 type GardenerControlplane struct {

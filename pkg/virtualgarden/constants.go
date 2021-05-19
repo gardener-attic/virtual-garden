@@ -22,4 +22,15 @@ const (
 	ChecksumKeyServiceAccountKey               = "checksum/secret-service-account-key"                     // secret-service-account-key.yaml
 )
 
+// Names of volumes and corresponding volume mounts
+const (
+	volumeNameKubeAPIServerCA       = "ca-kube-apiserver"
+	volumeNameKubeControllerManager = "kube-controller-manager"
+	volumeNameServiceAccountKey     = "service-account-key"
+)
+
 const kubeAPIServerContainerName = "kube-apiserver"
+
+const (
+	kubeControllerManager = "kube-controller-manager"
+)
