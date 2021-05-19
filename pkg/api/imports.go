@@ -82,19 +82,20 @@ type KubeAPIServer struct {
 	// +optional
 	SNI *SNI `json:"sni,omitempty" yaml:"sni,omitempty"`
 
-	DnsAccessDomain          string                 `json:"dnsAccessDomain,omitempty" yaml:"dnsAccessDomain,omitempty"`
-	GardenerControlplane     GardenerControlplane   `json:"gardenerControlplane,omitempty" yaml:"gardenerControlplane,omitempty"`
+	DnsAccessDomain      string               `json:"dnsAccessDomain,omitempty" yaml:"dnsAccessDomain,omitempty"`
+	GardenerControlplane GardenerControlplane `json:"gardenerControlplane,omitempty" yaml:"gardenerControlplane,omitempty"`
 
-	AuditWebhookConfig       AuditWebhookConfig     `json:"auditWebhookConfig,omitempty" yaml:"auditWebhookConfig,omitempty"`
-	AuditWebhookBatchMaxSize string                 `json:"auditWebhookBatchMaxSize,omitempty" yaml:"auditWebhookBatchMaxSize,omitempty"`
+	AuditWebhookConfig       AuditWebhookConfig `json:"auditWebhookConfig,omitempty" yaml:"auditWebhookConfig,omitempty"`
+	AuditWebhookBatchMaxSize string             `json:"auditWebhookBatchMaxSize,omitempty" yaml:"auditWebhookBatchMaxSize,omitempty"`
 
 	HVPAEnabled bool        `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
 	HVPA        *HvpaConfig `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`
 
-	EventTTL    *string `json:"eventTTL,omitempty" yaml:"eventTTL,omitempty"`
+	EventTTL      *string `json:"eventTTL,omitempty" yaml:"eventTTL,omitempty"`
 	OidcIssuerURL *string `json:"oidcIssuerURL,omitempty" yaml:"oidcIssuerURL,omitempty"`
 
 	AdditionalVolumeMounts []corev1.VolumeMount `json:"additionalVolumeMounts,omitempty" yaml:"additionalVolumeMounts,omitempty"`
+	AdditionalVolumes      []corev1.Volume      `json:"additionalVolumes,omitempty" yaml:"additionalVolumes,omitempty"`
 }
 
 type GardenerControlplane struct {

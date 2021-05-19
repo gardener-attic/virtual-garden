@@ -149,18 +149,16 @@ var _ = Describe("Imports", func() {
 			Context("KubeAPIServer", func() {
 				Context("SNI", func() {
 					It("should pass when no SNI is configured", func() {
-						obj.VirtualGarden.KubeAPIServer = &api.KubeAPIServer{Exposure: &api.KubeAPIServerExposure{}}
+						obj.VirtualGarden.KubeAPIServer = &api.KubeAPIServer{}
 						Expect(ValidateImports(obj)).To(BeEmpty())
 					})
 
 					It("should pass for a valid SNI configuration", func() {
 						obj.VirtualGarden.KubeAPIServer = &api.KubeAPIServer{
-							Exposure: &api.KubeAPIServerExposure{
-								SNI: &api.SNI{
-									Hostnames: []string{"foo.com"},
-									DNSClass:  pointer.StringPtr("bar"),
-									TTL:       pointer.Int32Ptr(62),
-								},
+							SNI: &api.SNI{
+								Hostname: "foo.com",
+								DNSClass: pointer.StringPtr("bar"),
+								TTL:      pointer.Int32Ptr(62),
 							},
 						}
 						Expect(ValidateImports(obj)).To(BeEmpty())
@@ -168,7 +166,7 @@ var _ = Describe("Imports", func() {
 
 					DescribeTable("should fail for invalid SNI configuration",
 						func(sni *api.SNI) {
-							obj.VirtualGarden.KubeAPIServer = &api.KubeAPIServer{Exposure: &api.KubeAPIServerExposure{SNI: sni}}
+							obj.VirtualGarden.KubeAPIServer = &api.KubeAPIServer{SNI: sni}
 							Expect(ValidateImports(obj)).To(ConsistOf(
 								PointTo(MatchFields(IgnoreExtras, Fields{
 									"Type":  Equal(field.ErrorTypeRequired),

@@ -74,8 +74,8 @@ func ValidateVirtualGarden(obj *api.VirtualGarden, credentials map[string]api.Cr
 	}
 
 	if obj.KubeAPIServer != nil {
-		if obj.KubeAPIServer.Exposure != nil && obj.KubeAPIServer.Exposure.SNI != nil {
-			allErrs = append(allErrs, ValidateSNI(obj.KubeAPIServer.Exposure.SNI, fldPath.Child("exposure", "sni"))...)
+		if obj.KubeAPIServer.SNI != nil {
+			allErrs = append(allErrs, ValidateSNI(obj.KubeAPIServer.SNI, fldPath.Child("exposure", "sni"))...)
 		}
 	}
 
@@ -124,7 +124,7 @@ func ValidateETCDBackup(obj *api.ETCDBackup, credentials map[string]api.Credenti
 func ValidateSNI(obj *api.SNI, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if len(obj.Hostnames) == 0 {
+	if len(obj.Hostname) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath.Child("hostnames"), "at least one hostname is required"))
 	}
 	if obj.TTL != nil && (*obj.TTL < 60 || *obj.TTL > 600) {

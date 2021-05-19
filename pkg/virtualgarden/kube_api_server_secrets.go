@@ -18,8 +18,9 @@ import (
 	"context"
 	cryptorand "crypto/rand"
 	_ "embed"
-	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
 	"strings"
+
+	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
 
 	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
@@ -39,7 +40,7 @@ const (
 	KubeApiServerSecretNameEncryptionConfig    = Prefix + "-kube-apiserver-encryption-config"
 	KubeApiServerSecretNameServiceAccountKey   = Prefix + "-service-account-key"
 
-    pwUsers = ",admin,admin,system:masters"
+	pwUsers = ",admin,admin,system:masters"
 )
 
 //go:embed resources/validating-webhook-kubeconfig.yaml

@@ -200,10 +200,10 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 							VolumeMounts: o.getAPIServerVolumeMounts(),
 						}, // end first and only container
 					}, // end Containers
-					DNSPolicy: corev1.DNSClusterFirst,
-					RestartPolicy: corev1.RestartPolicyAlways,
+					DNSPolicy:                     corev1.DNSClusterFirst,
+					RestartPolicy:                 corev1.RestartPolicyAlways,
 					TerminationGracePeriodSeconds: pointer.Int64Ptr(30),
-					Volumes: o.getAPIServerVolumes(),
+					Volumes:                       o.getAPIServerVolumes(),
 				},
 			},
 		}
@@ -357,64 +357,63 @@ func (o *operation) getAPIServerVolumeMounts() []corev1.VolumeMount {
 	// TODO
 	volumeMounts := []corev1.VolumeMount{}
 
-
 	volumeMounts = append(volumeMounts, corev1.VolumeMount{
-		Name: "kube-apiserver-audit-policy-config",
+		Name:      "kube-apiserver-audit-policy-config",
 		MountPath: "/etc/kube-apiserver/audit",
 	})
 
 	if len(o.getAPIServerAuditWebhookConfig()) > 0 {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
-			Name: "kube-apiserver-audit-webhook-config",
+			Name:      "kube-apiserver-audit-webhook-config",
 			MountPath: "/etc/kube-apiserver/auditwebhook",
 		})
 	}
 
 	if o.hasEncryptionConfig() {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
-			Name: "kube-apiserver-encryption-config",
+			Name:      "kube-apiserver-encryption-config",
 			MountPath: "/etc/kube-apiserver/encryption",
 		})
 	}
 
 	volumeMounts = append(volumeMounts,
 		corev1.VolumeMount{
-			Name: "ca-kube-apiserver",
+			Name:      "ca-kube-apiserver",
 			MountPath: "/srv/kubernetes/ca",
 		},
 		corev1.VolumeMount{
-			Name: "ca-etcd",
+			Name:      "ca-etcd",
 			MountPath: "/srv/kubernetes/etcd/ca",
 		},
 		corev1.VolumeMount{
-			Name: "ca-front-proxy",
+			Name:      "ca-front-proxy",
 			MountPath: "/srv/kubernetes/aggregator-ca",
 		},
 		corev1.VolumeMount{
-			Name: "etcd-client-tls",
+			Name:      "etcd-client-tls",
 			MountPath: "/srv/kubernetes/etcd/client",
 		},
 		corev1.VolumeMount{
-			Name: "kube-apiserver",
+			Name:      "kube-apiserver",
 			MountPath: "/srv/kubernetes/apiserver",
 		},
 		corev1.VolumeMount{
-			Name: "service-account-key",
+			Name:      "service-account-key",
 			MountPath: "/srv/kubernetes/service-account-key",
 		},
 		corev1.VolumeMount{
-			Name: "kube-apiserver-basic-auth",
+			Name:      "kube-apiserver-basic-auth",
 			MountPath: "/srv/kubernetes/auth",
 		},
 		corev1.VolumeMount{
-			Name: "kube-aggregator",
+			Name:      "kube-aggregator",
 			MountPath: "/srv/kubernetes/aggregator",
 		},
 	)
 
 	if o.isSNIEnabled() {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
-			Name: "sni-tls",
+			Name:      "sni-tls",
 			MountPath: "/srv/kubernetes/sni-tls",
 		})
 	}
@@ -425,34 +424,34 @@ func (o *operation) getAPIServerVolumeMounts() []corev1.VolumeMount {
 
 	volumeMounts = append(volumeMounts,
 		corev1.VolumeMount{
-			Name: "fedora-rhel6-openelec-cabundle",
+			Name:      "fedora-rhel6-openelec-cabundle",
 			MountPath: "/etc/pki/tls",
-			ReadOnly: true,
+			ReadOnly:  true,
 		},
 		corev1.VolumeMount{
-			Name: "centos-rhel7-cabundle",
+			Name:      "centos-rhel7-cabundle",
 			MountPath: "/etc/pki/ca-trust/extracted/pem",
-			ReadOnly: true,
+			ReadOnly:  true,
 		},
 		corev1.VolumeMount{
-			Name: "etc-ssl",
+			Name:      "etc-ssl",
 			MountPath: "/etc/ssl",
-			ReadOnly: true,
+			ReadOnly:  true,
 		},
 	)
 
 	if o.isWebhookEnabled() {
 		volumeMounts = append(volumeMounts,
 			corev1.VolumeMount{
-				Name: "kube-apiserver-admission-config",
+				Name:      "kube-apiserver-admission-config",
 				MountPath: "/etc/gardener-apiserver/admission",
 			},
 			corev1.VolumeMount{
-				Name: "kube-apiserver-admission-kubeconfig",
+				Name:      "kube-apiserver-admission-kubeconfig",
 				MountPath: "/var/run/secrets/admission-kubeconfig",
 			},
 			corev1.VolumeMount{
-				Name: "kube-apiserver-admission-tokens",
+				Name:      "kube-apiserver-admission-tokens",
 				MountPath: "/var/run/secrets/admission-tokens",
 			},
 		)
@@ -463,8 +462,212 @@ func (o *operation) getAPIServerVolumeMounts() []corev1.VolumeMount {
 }
 
 func (o *operation) getAPIServerVolumes() []corev1.Volume {
-	// TODO
-	return nil
+	volumes := []corev1.Volume{}
+
+	if o.hasEncryptionConfig() {
+		volumes = append(volumes, corev1.Volume{
+			Name: "kube-apiserver-encryption-config",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: KubeApiServerSecretNameEncryptionConfig,
+				},
+			},
+		})
+	}
+
+	volumes = append(volumes, corev1.Volume{
+		Name: "kube-apiserver-audit-policy-config",
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "kube-apiserver-audit-policy-config",
+				},
+			},
+		},
+	})
+
+	if len(o.getAPIServerAuditWebhookConfig()) > 0 {
+		volumes = append(volumes, corev1.Volume{
+			Name: "kube-apiserver-audit-webhook-config",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: KubeApiServerSecretNameAuditWebhookConfig,
+				},
+			},
+		})
+	}
+
+	volumes = append(volumes,
+		corev1.Volume{
+			Name: "ca-kube-apiserver",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: "virtual-garden-kube-apiserver-ca",
+				},
+			},
+		},
+		corev1.Volume{
+			Name: "ca-etcd",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: "virtual-garden-etcd-main-ca",
+				},
+			},
+		},
+		corev1.Volume{
+			Name: "ca-front-proxy",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: "virtual-garden-kube-aggregator-ca",
+				},
+			},
+		},
+		corev1.Volume{
+			Name: "kube-apiserver",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: "virtual-garden-kube-apiserver",
+				},
+			},
+		},
+		corev1.Volume{
+			Name: "etcd-client-tls",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: "virtual-garden-etcd-main-client",
+				},
+			},
+		},
+		corev1.Volume{
+			Name: "kube-apiserver-basic-auth",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: "virtual-garden-kube-apiserver-basic-auth",
+				},
+			},
+		},
+		corev1.Volume{
+			Name: "service-account-key",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: "virtual-garden-service-account-key",
+				},
+			},
+		},
+		corev1.Volume{
+			Name: "kube-aggregator",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: "virtual-garden-kube-aggregator",
+				},
+			},
+		},
+	)
+
+	if o.isSNIEnabled() {
+		volumes = append(volumes, corev1.Volume{
+			Name: "sni-tls",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: o.imports.VirtualGarden.KubeAPIServer.SNI.SecretName,
+				},
+			},
+		})
+	}
+
+	if o.isWebhookEnabled() {
+		volumes = append(volumes,
+			corev1.Volume{
+				Name: "kube-apiserver-admission-config",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "virtual-garden-kube-apiserver-admission-config",
+						},
+					},
+				},
+			},
+			corev1.Volume{
+				Name: "kube-apiserver-admission-kubeconfig",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: "virtual-garden-kube-apiserver-admission-kubeconfig",
+					},
+				},
+			},
+		)
+
+		projections := []corev1.VolumeProjection{}
+		if o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane.ValidatingWebhookEnabled {
+			projections = append(projections, corev1.VolumeProjection{
+				ServiceAccountToken: &corev1.ServiceAccountTokenProjection{
+					Audience:          "validating-webhook",
+					ExpirationSeconds: pointer.Int64Ptr(3600),
+					Path:              "validating-webhook-token",
+				},
+			})
+
+		}
+		if o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane.MutatingWebhookEnabled {
+			projections = append(projections, corev1.VolumeProjection{
+				ServiceAccountToken: &corev1.ServiceAccountTokenProjection{
+					Audience:          "mutating-webhook",
+					ExpirationSeconds: pointer.Int64Ptr(3600),
+					Path:              "mutating-webhook-token",
+				},
+			})
+
+		}
+		volumes = append(volumes,
+			corev1.Volume{
+				Name: "kube-apiserver-admission-tokens",
+				VolumeSource: corev1.VolumeSource{
+					Projected: &corev1.ProjectedVolumeSource{
+						Sources: projections,
+					},
+				},
+			},
+		)
+
+		// locations are taken from
+		// https://github.com/golang/go/blob/1bb247a469e306c57a5e0eaba788efb8b3b1acef/src/crypto/x509/root_linux.go#L7-L15
+		// we cannot be sure on which Node OS the Seed Cluster is running so, it's safer to mount them all
+
+		hostPathDirectoryOrCreate := corev1.HostPathDirectoryOrCreate
+		volumes = append(volumes,
+			corev1.Volume{
+				Name: "fedora-rhel6-openelec-cabundle",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{
+						Path: "/etc/pki/tls",
+						Type: &hostPathDirectoryOrCreate,
+					},
+				},
+			},
+			corev1.Volume{
+				Name: "centos-rhel7-cabundle",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{
+						Path: "/etc/pki/ca-trust/extracted/pem",
+						Type: &hostPathDirectoryOrCreate,
+					},
+				},
+			},
+			corev1.Volume{
+				Name: "etc-ssl",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{
+						Path: "/etc/ssl",
+						Type: &hostPathDirectoryOrCreate,
+					},
+				},
+			},
+		)
+
+		volumes = append(volumes, o.imports.VirtualGarden.KubeAPIServer.AdditionalVolumes...)
+	}
+
+	return volumes
 }
 
 func (o *operation) emptyDeployment(name string) *appsv1.Deployment {
