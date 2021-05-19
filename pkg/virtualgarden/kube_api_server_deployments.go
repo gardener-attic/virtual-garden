@@ -36,10 +36,10 @@ const (
 	KubeAPIServerDeploymentNameControllerManager = Prefix + "-kube-controller-manager"
 )
 
-func (o *operation) deployDeployments(ctx context.Context, checksums map[string]string) error {
+func (o *operation) deployDeployments(ctx context.Context, checksums map[string]string, basicAuthPw string) error {
 	o.log.Infof("Deploying deployments for the kube-apiserver")
 
-	if err := o.deployKubeAPIServerDeployment(ctx, checksums); err != nil {
+	if err := o.deployKubeAPIServerDeployment(ctx, checksums, basicAuthPw); err != nil {
 		return err
 	}
 
@@ -61,7 +61,7 @@ func (o *operation) deleteDeployments(ctx context.Context) error {
 	return nil
 }
 
-func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums map[string]string) error {
+func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums map[string]string, basicAuthPw string) error {
 	o.log.Infof("Deploying PodDisruptionBudget for the kube-apiserver")
 
 	deployment := o.emptyDeployment(KubeAPIServerDeploymentNameAPIServer)
@@ -154,7 +154,7 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 										Path:        "/livez",
 										Port:        intstr.IntOrString{Type: intstr.Int, IntVal: 443},
 										Scheme:      corev1.URISchemeHTTPS,
-										HTTPHeaders: o.getAPIServerHeaders(),
+										HTTPHeaders: o.getAPIServerHeaders(basicAuthPw),
 									},
 								},
 								InitialDelaySeconds: 15,
@@ -169,7 +169,7 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 										Path:        "/readyz",
 										Port:        intstr.IntOrString{Type: intstr.Int, IntVal: 443},
 										Scheme:      corev1.URISchemeHTTPS,
-										HTTPHeaders: o.getAPIServerHeaders(),
+										HTTPHeaders: o.getAPIServerHeaders(basicAuthPw),
 									},
 								},
 								InitialDelaySeconds: 10,
@@ -197,11 +197,13 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 									corev1.ResourceMemory: resource.MustParse("512Mi"),
 								},
 							},
-
-							// TO BE CONTINUED ...
-
-						},
-					},
+							VolumeMounts: o.getAPIServerVolumeMounts(),
+						}, // end first and only container
+					}, // end Containers
+					DNSPolicy: corev1.DNSClusterFirst,
+					RestartPolicy: corev1.RestartPolicyAlways,
+					TerminationGracePeriodSeconds: pointer.Int64Ptr(30),
+					Volumes: o.getAPIServerVolumes(),
 				},
 			},
 		}
@@ -296,7 +298,7 @@ func (o *operation) getAPIServerCommand() []string {
 	command = append(command, "--tls-private-key-file=/srv/kubernetes/apiserver/tls.key")
 	command = append(command, "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA")
 	if o.isSNIEnabled() {
-		command = append(command, fmt.Sprintf("--tls-sni-cert-key=/srv/kubernetes/sni-tls/tls.crt,/srv/kubernetes/sni-tls/tls.key:%s", o.getSNIHostnames()))
+		command = append(command, fmt.Sprintf("--tls-sni-cert-key=/srv/kubernetes/sni-tls/tls.crt,/srv/kubernetes/sni-tls/tls.key:%s", o.getSNIHostname()))
 	}
 	command = append(command, "--watch-cache-sizes=secrets#500,configmaps#500")
 	command = append(command, "--v=2")
@@ -315,45 +317,155 @@ func (o *operation) getAuditWebhookBatchMaxSize() string {
 }
 
 func (o *operation) hasEncryptionConfig() bool {
-	// TODO
-	// {{- if .Values.apiServer.encryption.config }}
 	return true
 }
 
 func (o *operation) getAPIServerEventTTL() string {
-	// TODO
-	// {{- if .Values.apiServer.eventTTL }}
-	return "24h"
+	if o.imports.VirtualGarden.KubeAPIServer.EventTTL == nil {
+		return "24h"
+	}
+
+	return *o.imports.VirtualGarden.KubeAPIServer.EventTTL
 }
 
 func (o *operation) getAPIServerOIDCIssuerURL() string {
-	// TODO
-	// {{ .Values.apiServer.oidcIssuerURL }}
-	return "x"
+	if o.imports.VirtualGarden.KubeAPIServer.OidcIssuerURL == nil {
+		return "https://identity.ingress.garden2.dev.k8s.ondemand.com"
+	}
+
+	return *o.imports.VirtualGarden.KubeAPIServer.OidcIssuerURL
 }
 
 func (o *operation) isSNIEnabled() bool {
-	// TODO
-	// {{- if .Values.sni.enabled }}
-	return true
+	return o.imports.VirtualGarden.KubeAPIServer.SNI != nil
 }
 
-func (o *operation) getSNIHostnames() string {
-	// TODO
-	// {{ .Values.sni.hostnames }}
-	return "hostnames"
+func (o *operation) getSNIHostname() string {
+	return o.imports.VirtualGarden.KubeAPIServer.SNI.Hostname
 }
 
-func (o *operation) getAPIServerHeaders() []corev1.HTTPHeader {
-	// TODO
-	// .Values.tls.kubeAPIServer.basicAuthPassword
-	p := ""
+func (o *operation) getAPIServerHeaders(basicAuthPw string) []corev1.HTTPHeader {
 	return []corev1.HTTPHeader{
 		{
 			Name:  "Authorization",
-			Value: "Basic " + utils.EncodeBase64([]byte("admin:"+p)),
+			Value: "Basic " + utils.EncodeBase64([]byte("admin:"+basicAuthPw)),
 		},
 	}
+}
+
+func (o *operation) getAPIServerVolumeMounts() []corev1.VolumeMount {
+	// TODO
+	volumeMounts := []corev1.VolumeMount{}
+
+
+	volumeMounts = append(volumeMounts, corev1.VolumeMount{
+		Name: "kube-apiserver-audit-policy-config",
+		MountPath: "/etc/kube-apiserver/audit",
+	})
+
+	if len(o.getAPIServerAuditWebhookConfig()) > 0 {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name: "kube-apiserver-audit-webhook-config",
+			MountPath: "/etc/kube-apiserver/auditwebhook",
+		})
+	}
+
+	if o.hasEncryptionConfig() {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name: "kube-apiserver-encryption-config",
+			MountPath: "/etc/kube-apiserver/encryption",
+		})
+	}
+
+	volumeMounts = append(volumeMounts,
+		corev1.VolumeMount{
+			Name: "ca-kube-apiserver",
+			MountPath: "/srv/kubernetes/ca",
+		},
+		corev1.VolumeMount{
+			Name: "ca-etcd",
+			MountPath: "/srv/kubernetes/etcd/ca",
+		},
+		corev1.VolumeMount{
+			Name: "ca-front-proxy",
+			MountPath: "/srv/kubernetes/aggregator-ca",
+		},
+		corev1.VolumeMount{
+			Name: "etcd-client-tls",
+			MountPath: "/srv/kubernetes/etcd/client",
+		},
+		corev1.VolumeMount{
+			Name: "kube-apiserver",
+			MountPath: "/srv/kubernetes/apiserver",
+		},
+		corev1.VolumeMount{
+			Name: "service-account-key",
+			MountPath: "/srv/kubernetes/service-account-key",
+		},
+		corev1.VolumeMount{
+			Name: "kube-apiserver-basic-auth",
+			MountPath: "/srv/kubernetes/auth",
+		},
+		corev1.VolumeMount{
+			Name: "kube-aggregator",
+			MountPath: "/srv/kubernetes/aggregator",
+		},
+	)
+
+	if o.isSNIEnabled() {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name: "sni-tls",
+			MountPath: "/srv/kubernetes/sni-tls",
+		})
+	}
+
+	// locations are taken from
+	// https://github.com/golang/go/blob/1bb247a469e306c57a5e0eaba788efb8b3b1acef/src/crypto/x509/root_linux.go#L7-L15
+	// we cannot be sure on which Node OS the Seed Cluster is running so, it's safer to mount them all
+
+	volumeMounts = append(volumeMounts,
+		corev1.VolumeMount{
+			Name: "fedora-rhel6-openelec-cabundle",
+			MountPath: "/etc/pki/tls",
+			ReadOnly: true,
+		},
+		corev1.VolumeMount{
+			Name: "centos-rhel7-cabundle",
+			MountPath: "/etc/pki/ca-trust/extracted/pem",
+			ReadOnly: true,
+		},
+		corev1.VolumeMount{
+			Name: "etc-ssl",
+			MountPath: "/etc/ssl",
+			ReadOnly: true,
+		},
+	)
+
+	if o.isWebhookEnabled() {
+		volumeMounts = append(volumeMounts,
+			corev1.VolumeMount{
+				Name: "kube-apiserver-admission-config",
+				MountPath: "/etc/gardener-apiserver/admission",
+			},
+			corev1.VolumeMount{
+				Name: "kube-apiserver-admission-kubeconfig",
+				MountPath: "/var/run/secrets/admission-kubeconfig",
+			},
+		)
+	}
+
+	// volumeMounts:
+	//        {{- if (include "virtual-garden.hasWebhookTokens" .Values.apiServer.admission) }}
+	//        - name: kube-apiserver-admission-tokens
+	//          mountPath: /var/run/secrets/admission-tokens
+	//        {{- end }}
+	//        {{- if .Values.apiServer.additionalVolumeMounts }}
+	//        {{- .Values.apiServer.additionalVolumeMounts | toYaml | nindent 8 }}
+}
+
+func (o *operation) getAPIServerVolumes() []corev1.Volume {
+	// TODO
+	return nil
 }
 
 func (o *operation) emptyDeployment(name string) *appsv1.Deployment {

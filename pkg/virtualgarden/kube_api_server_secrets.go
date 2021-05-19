@@ -18,9 +18,8 @@ import (
 	"context"
 	cryptorand "crypto/rand"
 	_ "embed"
-	"fmt"
-
 	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
@@ -39,6 +38,8 @@ const (
 	KubeApiServerSecretNameBasicAuth           = Prefix + "-kube-apiserver-basic-auth"
 	KubeApiServerSecretNameEncryptionConfig    = Prefix + "-kube-apiserver-encryption-config"
 	KubeApiServerSecretNameServiceAccountKey   = Prefix + "-service-account-key"
+
+    pwUsers = ",admin,admin,system:masters"
 )
 
 //go:embed resources/validating-webhook-kubeconfig.yaml
@@ -47,30 +48,31 @@ var validatingWebhookKubeconfig []byte
 //go:embed resources/mutating-webhook-kubeconfig.yaml
 var mutatingWebhookKubeconfig []byte
 
-func (o *operation) deployKubeAPIServerSecrets(ctx context.Context, checksums map[string]string) error {
+func (o *operation) deployKubeAPIServerSecrets(ctx context.Context, checksums map[string]string) (string, error) {
 	o.log.Infof("Deploying secrets for the kube-apiserver")
 
 	if err := o.deployKubeApiServerSecretAdmissionKubeconfig(ctx); err != nil {
-		return err
+		return "", err
 	}
 
 	if err := o.deployKubeApiServerSecretAuditWebhookConfig(ctx, checksums); err != nil {
-		return err
+		return "", err
 	}
 
-	if err := o.deployKubeApiServerSecretBasicAuth(ctx, checksums); err != nil {
-		return err
+	basicAuthPw, err := o.deployKubeApiServerSecretBasicAuth(ctx, checksums)
+	if err != nil {
+		return "", err
 	}
 
 	if err := o.deployKubeApiServerSecretEncryptionConfig(ctx, checksums); err != nil {
-		return err
+		return "", err
 	}
 
 	if err := o.deployKubeApiServerSecretServiceAccountKey(ctx, checksums); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return basicAuthPw, nil
 }
 
 func (o *operation) deleteKubeAPIServerSecrets(ctx context.Context) error {
@@ -132,7 +134,7 @@ func (o *operation) deployKubeApiServerSecretAuditWebhookConfig(ctx context.Cont
 	return nil
 }
 
-func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, checksums map[string]string) error {
+func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, checksums map[string]string) (string, error) {
 	const basicAuthKey = "basic_auth.csv"
 
 	var basicAuthValue []byte
@@ -141,20 +143,22 @@ func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, chec
 	err := o.client.Get(ctx, util.GetKey(secret), secret)
 	if err != nil {
 		if client.IgnoreNotFound(err) != nil {
-			return err
+			return "", err
 		}
 
 		// secret does not exist: generate password
 		pw, err2 := utils.GenerateRandomString(32)
 		if err2 != nil {
-			return err2
+			return "", err2
 		}
 
-		basicAuthValue = []byte(fmt.Sprintf("%s,admin,admin,system:masters", pw))
+		basicAuthValue = []byte(pw + pwUsers)
 	} else {
 		// secret exists: use existing value
 		basicAuthValue = secret.Data[basicAuthKey]
 	}
+
+	returnPw := strings.TrimSuffix(string(basicAuthValue), pwUsers)
 
 	_, err = controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
 		if secret.Data == nil {
@@ -164,11 +168,11 @@ func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, chec
 		return nil
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	checksums[ChecksumKeyKubeAPIServerBasicAuth] = utils.ComputeChecksum(secret.Data)
-	return nil
+	return returnPw, nil
 }
 
 func (o *operation) deployKubeApiServerSecretEncryptionConfig(ctx context.Context, checksums map[string]string) error {

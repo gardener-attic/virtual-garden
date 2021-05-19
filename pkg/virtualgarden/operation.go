@@ -110,3 +110,4 @@ func (o *operation) progressReporter(_ context.Context, stats *flow.Stats) {
 	}
 	o.log.Infof("%d%% of all tasks completed (%d/%d)%s", stats.ProgressPercent(), stats.Failed.Len()+stats.Succeeded.Len(), stats.All.Len(), executionNow)
 }
+

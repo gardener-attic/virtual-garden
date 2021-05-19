@@ -75,16 +75,22 @@ type ETCDBackup struct {
 // KubeAPIServer contains configuration for the virtual garden kube-apiserver.
 type KubeAPIServer struct {
 	Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
-	// Exposure contains configuration for the exposure settings.
+
+	// SNI contains configuration for SNI settings for the virtual garden.
 	// +optional
-	Exposure                 *KubeAPIServerExposure `json:"exposure,omitempty" yaml:"exposure,omitempty"`
+	SNI *SNI `json:"sni,omitempty" yaml:"sni,omitempty"`
+
 	DnsAccessDomain          string                 `json:"dnsAccessDomain,omitempty" yaml:"dnsAccessDomain,omitempty"`
 	GardenerControlplane     GardenerControlplane   `json:"gardenerControlplane,omitempty" yaml:"gardenerControlplane,omitempty"`
+
 	AuditWebhookConfig       AuditWebhookConfig     `json:"auditWebhookConfig,omitempty" yaml:"auditWebhookConfig,omitempty"`
 	AuditWebhookBatchMaxSize string                 `json:"auditWebhookBatchMaxSize,omitempty" yaml:"auditWebhookBatchMaxSize,omitempty"`
 
 	HVPAEnabled bool        `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
 	HVPA        *HvpaConfig `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`
+
+	EventTTL    *string `json:"eventTTL,omitempty" yaml:"eventTTL,omitempty"`
+	OidcIssuerURL *string `json:"oidcIssuerURL,omitempty" yaml:"oidcIssuerURL,omitempty"`
 }
 
 type GardenerControlplane struct {
@@ -96,19 +102,11 @@ type AuditWebhookConfig struct {
 	Config string `json:"config,omitempty" yaml:"config,omitempty"`
 }
 
-// KubeAPIServerExposure contains configuration for the exposure settings for the virtual garden kube-apiserver.
-type KubeAPIServerExposure struct {
-	// SNI contains configuration for SNI settings for the virtual garden.
-	// +optional
-	SNI *SNI `json:"sni,omitempty" yaml:"sni,omitempty"`
-}
-
 // SNI contains configuration for SNI settings for the virtual garden.
 type SNI struct {
-	// Hostname is the list of hostnames for the virtual garden kube-apiserver. It is used to create DNS entries
+	// Hostname is the hostname for the virtual garden kube-apiserver. It is used to create DNS entries
 	// pointing to it.
-	// +optional
-	Hostnames []string `json:"hostnames,omitempty" yaml:"hostnames,omitempty"`
+	Hostname string `json:"hostname,omitempty" yaml:"hostname,omitempty"`
 	// DNSClass is the DNS class that shall be used to create the DNS entries for the given hostnames.
 	// +optional
 	DNSClass *string `json:"dnsClass,omitempty" yaml:"dnsClass,omitempty"`
