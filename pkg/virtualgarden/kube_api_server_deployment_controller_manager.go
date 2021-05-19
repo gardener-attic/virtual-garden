@@ -172,20 +172,9 @@ func (o *operation) getKubeControllerManagerVolumeMounts() []corev1.VolumeMount 
 
 func (o *operation) getKubeControllerManagerVolumes() []corev1.Volume {
 	return []corev1.Volume{
-		volumeWithSecretSource(volumeNameKubeAPIServerCA, "virtual-garden-kube-apiserver-ca"),
-		volumeWithSecretSource(volumeNameKubeControllerManager, "virtual-garden-kube-controller-manager"),
-		volumeWithSecretSource(volumeNameServiceAccountKey, "virtual-garden-service-account-key"),
-	}
-}
-
-func volumeWithSecretSource(volumeName, secretName string) corev1.Volume {
-	return corev1.Volume{
-		Name: volumeName,
-		VolumeSource: corev1.VolumeSource{
-			Secret: &corev1.SecretVolumeSource{
-				SecretName: secretName,
-			},
-		},
+		volumeWithSecretSource(volumeNameKubeAPIServerCA, KubeApiServerSecretNameApiServerCACertificate),
+		volumeWithSecretSource(volumeNameKubeControllerManager, KubeApiServerSecretNameKubeControllerManagerCertificate),
+		volumeWithSecretSource(volumeNameServiceAccountKey, KubeApiServerSecretNameServiceAccountKey),
 	}
 }
 

@@ -24,9 +24,25 @@ const (
 
 // Names of volumes and corresponding volume mounts
 const (
-	volumeNameKubeAPIServerCA       = "ca-kube-apiserver"
-	volumeNameKubeControllerManager = "kube-controller-manager"
-	volumeNameServiceAccountKey     = "service-account-key"
+	volumeNameKubeAggregator                   = "kube-aggregator"
+	volumeNameKubeAPIServer                    = "kube-apiserver"
+	volumeNameKubeAPIServerCA                  = "ca-kube-apiserver"
+	volumeNameKubeAPIServerBasicAuth           = "kube-apiserver-basic-auth"
+	volumeNameKubeAPIServerAdmissionConfig     = "kube-apiserver-admission-config"
+	volumeNameKubeAPIServerAdmissionKubeconfig = "kube-apiserver-admission-kubeconfig"
+	volumeNameKubeAPIServerAdmissionTokens     = "kube-apiserver-admission-tokens"
+	volumeNameKubeAPIServerEncryptionConfig    = "kube-apiserver-encryption-config"
+	volumeNameKubeAPIServerAuditPolicyConfig   = "kube-apiserver-audit-policy-config"
+	volumeNameKubeAPIServerAuditWebhookConfig  = "kube-apiserver-audit-webhook-config"
+	volumeNameKubeControllerManager            = "kube-controller-manager"
+	volumeNameServiceAccountKey                = "service-account-key"
+	volumeNameCAETCD                           = "ca-etcd"
+	volumeNameCAFrontProxy                     = "ca-front-proxy"
+	volumeNameETCDClientTLS                    = "etcd-client-tls"
+	volumeNameSNITLS                           = "sni-tls"
+	volumeNameFedora                           = "fedora-rhel6-openelec-cabundle"
+	volumeNameCentos                           = "centos-rhel7-cabundle"
+	volumeNameETCSSL                           = "etc-ssl"
 )
 
 const kubeAPIServerContainerName = "kube-apiserver"

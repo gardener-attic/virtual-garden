@@ -26,12 +26,10 @@ import (
 )
 
 const (
-	KubeApiServerSecretNameAggregatorCACertificate     = Prefix + "-kube-aggregator-ca"
-	KubeApiServerSecretNameAggregatorClientCertificate = Prefix + "-kube-aggregator"
-
-	KubeApiServerSecretNameApiServerCACertificate     = Prefix + "-kube-apiserver-ca"
-	KubeApiServerSecretNameApiServerServerCertificate = Prefix + "-kube-apiserver"
-
+	KubeApiServerSecretNameAggregatorCACertificate          = Prefix + "-kube-aggregator-ca"
+	KubeApiServerSecretNameAggregatorClientCertificate      = Prefix + "-kube-aggregator"
+	KubeApiServerSecretNameApiServerCACertificate           = Prefix + "-kube-apiserver-ca"
+	KubeApiServerSecretNameApiServerServerCertificate       = Prefix + "-kube-apiserver"
 	KubeApiServerSecretNameKubeControllerManagerCertificate = Prefix + "-kube-controller-manager"
 	KubeApiServerSecretNameClientAdminCertificate           = Prefix + "-kubeconfig-for-admin"
 	KubeApiServerSecretNameMetricsScraperCertificate        = Prefix + "-metrics-scraper"
