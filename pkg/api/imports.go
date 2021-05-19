@@ -14,6 +14,8 @@
 
 package api
 
+import corev1 "k8s.io/api/core/v1"
+
 // Imports defines the structure for the required configuration values from other components.
 type Imports struct {
 	// Cluster is the kubeconfig of the hosting cluster into which the virtual garden shall be installed.
@@ -91,6 +93,8 @@ type KubeAPIServer struct {
 
 	EventTTL    *string `json:"eventTTL,omitempty" yaml:"eventTTL,omitempty"`
 	OidcIssuerURL *string `json:"oidcIssuerURL,omitempty" yaml:"oidcIssuerURL,omitempty"`
+
+	AdditionalVolumeMounts []corev1.VolumeMount `json:"additionalVolumeMounts,omitempty" yaml:"additionalVolumeMounts,omitempty"`
 }
 
 type GardenerControlplane struct {

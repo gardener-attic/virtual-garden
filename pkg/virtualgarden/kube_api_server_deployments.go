@@ -451,16 +451,15 @@ func (o *operation) getAPIServerVolumeMounts() []corev1.VolumeMount {
 				Name: "kube-apiserver-admission-kubeconfig",
 				MountPath: "/var/run/secrets/admission-kubeconfig",
 			},
+			corev1.VolumeMount{
+				Name: "kube-apiserver-admission-tokens",
+				MountPath: "/var/run/secrets/admission-tokens",
+			},
 		)
 	}
 
-	// volumeMounts:
-	//        {{- if (include "virtual-garden.hasWebhookTokens" .Values.apiServer.admission) }}
-	//        - name: kube-apiserver-admission-tokens
-	//          mountPath: /var/run/secrets/admission-tokens
-	//        {{- end }}
-	//        {{- if .Values.apiServer.additionalVolumeMounts }}
-	//        {{- .Values.apiServer.additionalVolumeMounts | toYaml | nindent 8 }}
+	volumeMounts = append(volumeMounts, o.imports.VirtualGarden.KubeAPIServer.AdditionalVolumeMounts...)
+	return volumeMounts
 }
 
 func (o *operation) getAPIServerVolumes() []corev1.Volume {
