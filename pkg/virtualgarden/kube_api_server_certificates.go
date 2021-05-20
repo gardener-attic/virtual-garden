@@ -179,6 +179,9 @@ func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Contex
 		CertType:   secretsutil.ClientCert,
 		SigningCA:  caCertificate,
 		CommonName: Prefix + ":client:admin",
+		Organization: []string{
+			"system:masters",
+		},
 	}
 
 	kubeconfigGen := &kubeconfigGenerator{
