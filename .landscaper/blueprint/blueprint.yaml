@@ -76,7 +76,30 @@ imports:
             additionalProperties:
               type: string
 
-exports: []
+exports:
+- name: kubeApiserverCaPem
+  schema:
+    type: string
+
+- name: etcdCaPem
+  schema:
+    type: string
+
+- name: etcdClientTlsPem
+  schema:
+    type: string
+
+- name: etcdClientTlsKeyPem
+  schema:
+    type: string
+
+- name: kubeconfigYaml
+  schema:
+    type: string
+
+- name: virtualGardenEndpoint
+  schema:
+    type: string
 
 exportExecutions: []
 
