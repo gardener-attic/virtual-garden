@@ -28,6 +28,9 @@ type Options struct {
 	OperationType OperationType
 	// ImportsPath is the path to the imports file.
 	ImportsPath string
+	// ExportsPath is the path to the exports file. The parent directory exists; the export file itself must be created.
+	// The format of the exports file must be json or yaml.
+	ExportsPath string
 	// HandleNamespace defines whether the namespace configured in the imports.
 	HandleNamespace bool
 	// HandleETCDPersistentVolumes defines whether the PV(C)s that are getting automatically created by the etcd
@@ -53,6 +56,7 @@ func (o *Options) InitializeFromEnvironment() {
 		o.OperationType = OperationType(op)
 	}
 	o.ImportsPath = os.Getenv("IMPORTS_PATH")
+	o.ExportsPath = os.Getenv("EXPORTS_PATH")
 }
 
 // validate validates all the required options.
@@ -63,6 +67,10 @@ func (o *Options) validate(args []string) error {
 
 	if len(o.ImportsPath) == 0 {
 		return fmt.Errorf("missing path for imports file")
+	}
+
+	if len(o.ExportsPath) == 0 {
+		return fmt.Errorf("missing path for exports file")
 	}
 
 	if len(args) != 0 {

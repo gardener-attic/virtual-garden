@@ -114,7 +114,18 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 	log.Infof("Initialization %q operation complete.", opts.OperationType)
 
 	if opts.OperationType == OperationTypeReconcile {
-		return operation.Reconcile(ctx)
+		exports, err := operation.Reconcile(ctx)
+		if err != nil {
+			return err
+		}
+
+		log.Infof("Writing exports file to EXPORTS_PATH(%s)", opts.ExportsPath)
+		err = loader.ToFile(exports, opts.ExportsPath)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	} else if opts.OperationType == OperationTypeDelete {
 		return operation.Delete(ctx)
 	}

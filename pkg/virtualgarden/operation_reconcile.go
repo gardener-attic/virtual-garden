@@ -17,11 +17,13 @@ package virtualgarden
 import (
 	"context"
 
+	"github.com/gardener/virtual-garden/pkg/api"
+
 	"github.com/gardener/gardener/pkg/utils/flow"
 )
 
 // Reconcile runs the reconcile operation.
-func (o *operation) Reconcile(ctx context.Context) error {
+func (o *operation) Reconcile(ctx context.Context) (*api.Exports, error) {
 	var (
 		graph = flow.NewGraph("Virtual Garden Reconciliation")
 
@@ -52,9 +54,14 @@ func (o *operation) Reconcile(ctx context.Context) error {
 		})
 	)
 
-	return graph.Compile().Run(flow.Opts{
+	err := graph.Compile().Run(flow.Opts{
 		Context:          ctx,
 		Logger:           o.log,
 		ProgressReporter: flow.NewImmediateProgressReporter(o.progressReporter),
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &o.exports, nil
 }

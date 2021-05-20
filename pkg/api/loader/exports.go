@@ -12,13 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package api
+package loader
 
-type Exports struct {
-	KubeApiserverCaPem    string `json:"kubeApiserverCaPem,omitempty" yaml:"kubeApiserverCaPem,omitempty"`
-	EtcdCaPem             string `json:"etcdCaPem,omitempty" yaml:"etcdCaPem,omitempty"`
-	EtcdClientTlsPem      string `json:"etcdClientTlsPem,omitempty" yaml:"etcdClientTlsPem,omitempty"`
-	EtcdClientTlsKeyPem   string `json:"etcdClientTlsKeyPem,omitempty" yaml:"etcdClientTlsKeyPem,omitempty"`
-	KubeconfigYaml        string `json:"kubeconfigYaml,omitempty" yaml:"kubeconfigYaml,omitempty"`
-	VirtualGardenEndpoint string `json:"virtualGardenEndpoint,omitempty" yaml:"virtualGardenEndpoint,omitempty"`
+import (
+	"io/ioutil"
+	"os"
+
+	"github.com/gardener/virtual-garden/pkg/api"
+	"gopkg.in/yaml.v2"
+)
+
+func ToFile(exports *api.Exports, path string) error {
+	b, err := yaml.Marshal(exports)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(path, b, os.ModePerm)
+	return err
 }

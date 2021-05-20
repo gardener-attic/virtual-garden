@@ -50,7 +50,7 @@ func (o *operation) deployETCDCACertificate(ctx context.Context) (*secretsutil.C
 		return nil, "", err
 	}
 
-	o.exports.EtcdCaPem = caCertificate.CertificatePEM
+	o.exports.EtcdCaPem = string(caCertificate.CertificatePEM)
 
 	return caCertificate, caCertChecksum, nil
 }
@@ -85,8 +85,8 @@ func (o *operation) deployETCDClientCertificate(ctx context.Context, caCertifica
 		return nil, "", err
 	}
 
-	o.exports.EtcdClientTlsKeyPem = cert.PrivateKeyPEM
-	o.exports.EtcdClientTlsPem = cert.CertificatePEM
+	o.exports.EtcdClientTlsKeyPem = string(cert.PrivateKeyPEM)
+	o.exports.EtcdClientTlsPem = string(cert.CertificatePEM)
 
 	return cert, clientCertChecksum, err
 }

@@ -108,7 +108,7 @@ func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Contex
 		return nil, err
 	}
 
-	o.exports.KubeApiserverCaPem = cert.CertificatePEM
+	o.exports.KubeApiserverCaPem = string(cert.CertificatePEM)
 
 	checksums[ChecksumKeyKubeAPIServerCA] = checksum
 	return cert, err
@@ -196,7 +196,7 @@ func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Contex
 		return nil, err
 	}
 
-	o.exports.KubeconfigYaml = kubeconfig
+	o.exports.KubeconfigYaml = string(kubeconfig)
 
 	return cert, err
 }

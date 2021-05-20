@@ -31,7 +31,7 @@ import (
 // Interface is an interface for the operation.
 type Interface interface {
 	// Reconcile performs a reconcile operation.
-	Reconcile(context.Context) error
+	Reconcile(context.Context) (*api.Exports, error)
 	// Delete performs a delete operation.
 	Delete(context.Context) error
 }
