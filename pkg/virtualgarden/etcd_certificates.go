@@ -45,7 +45,14 @@ func (o *operation) deployETCDCACertificate(ctx context.Context) (*secretsutil.C
 		CertType:   secretsutil.CACert,
 		CommonName: Prefix + ":ca:etcd",
 	}
-	return o.deployCertificate(ctx, certConfig, nil)
+	caCertificate, caCertChecksum, _, err := o.deployCertificate(ctx, certConfig, nil)
+	if err != nil {
+		return nil, "", err
+	}
+
+	o.exports.EtcdCaPem = caCertificate.CertificatePEM
+
+	return caCertificate, caCertChecksum, nil
 }
 
 func (o *operation) deployETCDServerCertificate(ctx context.Context, caCertificate *secretsutil.Certificate, role string) (*secretsutil.Certificate, string, error) {
@@ -62,7 +69,8 @@ func (o *operation) deployETCDServerCertificate(ctx context.Context, caCertifica
 			fmt.Sprintf("%s-etcd-%s-client.%s.svc.cluster.local", Prefix, role, o.namespace),
 		},
 	}
-	return o.deployCertificate(ctx, certConfig, nil)
+	cert, clientCertChecksum, _, err := o.deployCertificate(ctx, certConfig, nil)
+	return cert, clientCertChecksum, err
 }
 
 func (o *operation) deployETCDClientCertificate(ctx context.Context, caCertificate *secretsutil.Certificate) (*secretsutil.Certificate, string, error) {
@@ -72,7 +80,15 @@ func (o *operation) deployETCDClientCertificate(ctx context.Context, caCertifica
 		SigningCA:  caCertificate,
 		CommonName: Prefix + ":client:etcd",
 	}
-	return o.deployCertificate(ctx, certConfig, nil)
+	cert, clientCertChecksum, _, err := o.deployCertificate(ctx, certConfig, nil)
+	if err != nil {
+		return nil, "", err
+	}
+
+	o.exports.EtcdClientTlsKeyPem = cert.PrivateKeyPEM
+	o.exports.EtcdClientTlsPem = cert.CertificatePEM
+
+	return cert, clientCertChecksum, err
 }
 
 func (o *operation) deleteETCDCertificateSecrets(ctx context.Context) error {
@@ -89,18 +105,19 @@ func (o *operation) deleteETCDCertificateSecrets(ctx context.Context) error {
 	return nil
 }
 
-func (o *operation) deployCertificate(ctx context.Context, certConfig *secretsutil.CertificateSecretConfig, kubeconfigGen *kubeconfigGenerator) (*secretsutil.Certificate, string, error) {
+func (o *operation) deployCertificate(ctx context.Context, certConfig *secretsutil.CertificateSecretConfig,
+	kubeconfigGen *kubeconfigGenerator) (*secretsutil.Certificate, string, []byte, error) {
 	objectKey := client.ObjectKey{Name: certConfig.Name, Namespace: o.namespace}
 
 	cert, err := loadOrGenerateCertificateSecret(ctx, o.client, objectKey, certConfig)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 
-	checksum, err := createOrUpdateCertificateSecret(ctx, o.client, objectKey, cert, kubeconfigGen)
+	checksum, kubeconfig, err := createOrUpdateCertificateSecret(ctx, o.client, objectKey, cert, kubeconfigGen)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 
-	return cert, checksum, nil
+	return cert, checksum, kubeconfig, nil
 }

@@ -103,10 +103,12 @@ func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Contex
 		CommonName: Prefix + ":ca:kube-apiserver",
 	}
 
-	cert, checksum, err := o.deployCertificate(ctx, certConfig, nil)
+	cert, checksum, _, err := o.deployCertificate(ctx, certConfig, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	o.exports.KubeApiserverCaPem = cert.CertificatePEM
 
 	checksums[ChecksumKeyKubeAPIServerCA] = checksum
 	return cert, err
@@ -141,7 +143,7 @@ func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Co
 		},
 	}
 
-	cert, checksum, err := o.deployCertificate(ctx, certConfig, nil)
+	cert, checksum, _, err := o.deployCertificate(ctx, certConfig, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +165,7 @@ func (o *operation) deployKubeApiServerKubeControllerManagerClientCertificate(ct
 		server: "https://virtual-garden-kube-apiserver:443",
 	}
 
-	cert, checksum, err := o.deployCertificate(ctx, certConfig, kubeconfigGen)
+	cert, checksum, _, err := o.deployCertificate(ctx, certConfig, kubeconfigGen)
 	if err != nil {
 		return nil, err
 	}
@@ -189,10 +191,12 @@ func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Contex
 		server: o.infrastructureProvider.GetKubeAPIServerURL(o.imports.VirtualGarden.KubeAPIServer, loadBalancer),
 	}
 
-	cert, _, err := o.deployCertificate(ctx, certConfig, kubeconfigGen)
+	cert, _, kubeconfig, err := o.deployCertificate(ctx, certConfig, kubeconfigGen)
 	if err != nil {
 		return nil, err
 	}
+
+	o.exports.KubeconfigYaml = kubeconfig
 
 	return cert, err
 }
@@ -208,7 +212,7 @@ func (o *operation) deployKubeApiServerMetricsScraperCertificate(
 		CommonName: Prefix + ":client:metrics-scraper",
 	}
 
-	cert, _, err := o.deployCertificate(ctx, certConfig, nil)
+	cert, _, _, err := o.deployCertificate(ctx, certConfig, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +227,7 @@ func (o *operation) deployKubeApiServerAggregatorCACertificate(ctx context.Conte
 		CommonName: Prefix + ":ca:kube-aggregator",
 	}
 
-	cert, checksum, err := o.deployCertificate(ctx, certConfig, nil)
+	cert, checksum, _, err := o.deployCertificate(ctx, certConfig, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +245,7 @@ func (o *operation) deployKubeApiServerAggregatorClientCertificate(ctx context.C
 		CommonName: Prefix + ":aggregator-client:kube-aggregator",
 	}
 
-	cert, checksum, err := o.deployCertificate(ctx, certConfig, nil)
+	cert, checksum, _, err := o.deployCertificate(ctx, certConfig, nil)
 	if err != nil {
 		return nil, err
 	}

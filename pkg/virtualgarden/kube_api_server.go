@@ -116,6 +116,8 @@ func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (strin
 		return err != nil || loadBalancer != ""
 	}, 10, time.Second)
 
+	o.exports.VirtualGardenEndpoint = loadBalancer
+
 	return loadBalancer, err
 }
 

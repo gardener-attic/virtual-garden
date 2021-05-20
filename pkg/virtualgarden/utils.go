@@ -77,8 +77,10 @@ func loadOrGenerateCertificateSecret(ctx context.Context, c client.Client, objec
 }
 
 func createOrUpdateCertificateSecret(ctx context.Context, c client.Client, objectKey client.ObjectKey,
-	certificate *secretsutil.Certificate, kubeconfigGenerator *kubeconfigGenerator) (string, error) {
+	certificate *secretsutil.Certificate, kubeconfigGenerator *kubeconfigGenerator) (string, []byte, error) {
 	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: objectKey.Name, Namespace: objectKey.Namespace}}
+
+	var kubeconfig []byte
 
 	if _, err := controllerutil.CreateOrUpdate(ctx, c, secret, func() error {
 		secret.Type = corev1.SecretTypeOpaque
@@ -88,17 +90,19 @@ func createOrUpdateCertificateSecret(ctx context.Context, c client.Client, objec
 		secret.Data = certificate.SecretData()
 
 		if kubeconfigGenerator != nil {
-			if err := kubeconfigGenerator.addKubeconfigToSecretData(certificate, secret.Data); err != nil {
-				return err
+			var tmperr error
+			kubeconfig, tmperr = kubeconfigGenerator.addKubeconfigToSecretData(certificate, secret.Data)
+			if tmperr != nil {
+				return tmperr
 			}
 		}
 
 		return nil
 	}); err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return utils.ComputeChecksum(secret.Data), nil
+	return utils.ComputeChecksum(secret.Data), kubeconfig, nil
 }
 
 type kubeconfigGenerator struct {
@@ -106,14 +110,14 @@ type kubeconfigGenerator struct {
 	server string
 }
 
-func (k *kubeconfigGenerator) addKubeconfigToSecretData(certificate *secretsutil.Certificate, secretData map[string][]byte) error {
+func (k *kubeconfigGenerator) addKubeconfigToSecretData(certificate *secretsutil.Certificate, secretData map[string][]byte) ([]byte, error) {
 	kubeconfig, err := yaml.Marshal(k.createKubeconfig(certificate))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	secretData["kubeconfig"] = kubeconfig
-	return nil
+	return kubeconfig, nil
 }
 
 func (k *kubeconfigGenerator) createKubeconfig(certificate *secretsutil.Certificate) *v1.Config {

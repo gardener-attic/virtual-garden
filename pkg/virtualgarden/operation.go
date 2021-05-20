@@ -61,6 +61,8 @@ type operation struct {
 	namespace string
 	// imports contains the imports configuration.
 	imports *api.Imports
+
+	exports api.Exports
 }
 
 // NewOperation returns a new operation structure that implements Interface.
