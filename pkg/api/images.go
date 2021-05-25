@@ -31,7 +31,7 @@ type ImageRefs struct {
 func NewImageRefsFromComponentDescriptor(cd *cdv2.ComponentDescriptor) (*ImageRefs, error) {
 	const (
 		resourceNameETCD                  = "etcd"
-		resourceNameETCDBackupRestore     = "etcdBackupRestore"
+		resourceNameETCDBackupRestore     = "etcd-backup-restore"
 		resourceNameKubeAPIServer         = "kube-apiserver"
 		resourceNameKubeControllerManager = "kube-controller-manager"
 	)

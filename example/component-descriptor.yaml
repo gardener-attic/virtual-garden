@@ -4,24 +4,36 @@ component:
   componentReferences: []
   provider: internal
   repositoryContexts:
-    - baseUrl: "eu.gcr.io/sap-gcp-cp-k8s-stable-hub/examples/landscaper/temp"
-      type: ociRegistry
+  - baseUrl: "eu.gcr.io/sap-gcp-cp-k8s-stable-hub/examples/landscaper/temp"
+    type: ociRegistry
+
+  sources: []
+
   resources:
   - name: etcd
+    type: ociImage
+    version: v3.4.13
     access:
       imageReference: eu.gcr.io/gardener-project/gardener/etcd:v3.4.13
       type: ociRegistry
-  - name: etcdBackupRestore
+  - name: etcd-backup-restore
+    type: ociImage
+    version: v0.11.1
     access:
       imageReference: eu.gcr.io/gardener-project/gardener/etcdbrctl:v0.11.1
       type: ociRegistry
   - name: kube-apiserver
+    type: ociImage
+    version: v1.18.14
     access:
       imageReference: k8s.gcr.io/kube-apiserver:v1.18.14
       type: ociRegistry
   - name: kube-controller-manager
+    type: ociImage
+    version: v1.18.14
     access:
       imageReference: k8s.gcr.io/kube-controller-manager:v1.18.14
       type: ociRegistry
+
 meta:
   schemaVersion: v2

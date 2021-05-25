@@ -18,7 +18,7 @@ import (
 	"io/ioutil"
 
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"gopkg.in/yaml.v2"
+	"github.com/gardener/component-spec/bindings-go/codec"
 )
 
 func ReadComponentDescriptor(componentDescriptorPath string) (*cdv2.ComponentDescriptor, error) {
@@ -28,7 +28,7 @@ func ReadComponentDescriptor(componentDescriptorPath string) (*cdv2.ComponentDes
 	}
 
 	cd := &cdv2.ComponentDescriptor{}
-	if err := yaml.Unmarshal(data, cd); err != nil {
+	if err := codec.Decode(data, cd); err != nil {
 		return nil, err
 	}
 

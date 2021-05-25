@@ -26,7 +26,7 @@ access:
 ...
 ---
 type: ociImage
-name: etcdBackupRestore
+name: etcd-backup-restore
 relation: local
 access:
   type: ociRegistry
