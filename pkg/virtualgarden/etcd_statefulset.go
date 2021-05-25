@@ -117,17 +117,7 @@ func (o *operation) deployETCDStatefulSet(
 		}
 	}
 
-	etcdImage, err := o.getImageFromCompDescr(ctx, "etcd")
-	if err != nil{
-		return err
-	}
-
-	etcdBackupRestoreImage, err := o.getImageFromCompDescr(ctx, "etcdBackupRestore")
-	if err != nil{
-		return err
-	}
-
-	_, err = controllerutil.CreateOrUpdate(ctx, o.client, sts, func() error {
+	_, err := controllerutil.CreateOrUpdate(ctx, o.client, sts, func() error {
 		sts.Labels = utils.MergeStringMaps(sts.Labels, etcdLabels(role))
 		sts.Spec.Replicas = pointer.Int32Ptr(1)
 		sts.Spec.Selector = &metav1.LabelSelector{MatchLabels: etcdLabels(role)}
@@ -170,7 +160,7 @@ func (o *operation) deployETCDStatefulSet(
 				Containers: []corev1.Container{
 					{
 						Name:            etcdContainerName,
-						Image:           etcdImage,
+						Image:           o.etcdImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Command:         []string{etcdConfigMapVolumeMountPath + "/" + ETCDConfigMapDataKeyBootstrapScript},
 						ReadinessProbe: &corev1.Probe{
@@ -251,7 +241,7 @@ func (o *operation) deployETCDStatefulSet(
 					},
 					{
 						Name:            backupRestoreSidecarContainerName,
-						Image:           etcdBackupRestoreImage,
+						Image:           o.etcdBackupRestoreImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Command: append([]string{
 							"etcdbrctl",

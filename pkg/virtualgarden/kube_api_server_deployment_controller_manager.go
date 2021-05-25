@@ -18,10 +18,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gardener/virtual-garden/pkg/api/helper"
+
 	"github.com/gardener/virtual-garden/pkg/api"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -94,7 +95,7 @@ func (o *operation) getKubeControllerManagerLabels() map[string]string {
 }
 
 func (o *operation) getKubeControllerManagerContainers(ctx context.Context) ([]corev1.Container, error) {
-	imageController, err := o.getImageFromCompDescr(ctx, "kube-controller-manager")
+	imageController, err := helper.GetImageFromCompDescr(ctx, "kube-controller-manager")
 	if err != nil {
 		return nil, err
 	}

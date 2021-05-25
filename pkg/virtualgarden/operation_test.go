@@ -38,7 +38,9 @@ var _ = Describe("Operation", func() {
 				}
 			)
 
-			operationInterface, err := NewOperation(c, log, namespace, handleNamespace, handleETCDPersistentVolumes, imports)
+			operationInterface, err := NewOperation(c, log, namespace, handleNamespace, handleETCDPersistentVolumes,
+				imports, "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",
+				"eu.gcr.io/sap-se-gcr-k8s-public/eu_gcr_io/gardener-project/gardener/etcdbrctl:v0.9.1")
 			Expect(err).NotTo(HaveOccurred())
 
 			op, ok := operationInterface.(*operation)

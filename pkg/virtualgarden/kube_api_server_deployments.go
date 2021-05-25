@@ -19,10 +19,11 @@ import (
 	_ "embed"
 	"fmt"
 
+	"github.com/gardener/virtual-garden/pkg/api/helper"
+
 	"github.com/gardener/gardener/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,7 +83,7 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 
 	command := o.getAPIServerCommand()
 
-	imageKubeApiServer, err := o.getImageFromCompDescr(ctx, "kube-apiserver")
+	imageKubeApiServer, err := helper.GetImageFromCompDescr(ctx, "kube-apiserver")
 	if err != nil {
 		return nil
 	}
