@@ -19,14 +19,12 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/gardener/virtual-garden/pkg/api/helper"
-
 	"github.com/gardener/gardener/pkg/utils"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -83,13 +81,8 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 
 	command := o.getAPIServerCommand()
 
-	imageKubeApiServer, err := helper.GetImageFromCompDescr(ctx, "kube-apiserver")
-	if err != nil {
-		return nil
-	}
-
 	// create/update
-	_, err = controllerutil.CreateOrUpdate(ctx, o.client, deployment, func() error {
+	_, err := controllerutil.CreateOrUpdate(ctx, o.client, deployment, func() error {
 		deployment.ObjectMeta.Labels = getKubeAPIServerServiceLabels()
 
 		deployment.Spec = appsv1.DeploymentSpec{
@@ -148,7 +141,7 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 					Containers: []corev1.Container{
 						{
 							Name:            kubeAPIServerContainerName,
-							Image:           imageKubeApiServer,
+							Image:           o.imageRefs.KubeAPIServerImage,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Command:         command,
 							Lifecycle: &corev1.Lifecycle{

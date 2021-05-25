@@ -19,7 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gardener/virtual-garden/pkg/api/helper"
+	"github.com/gardener/virtual-garden/pkg/api"
+
 	"github.com/gardener/virtual-garden/pkg/api/loader"
 	"github.com/gardener/virtual-garden/pkg/api/validation"
 	"github.com/gardener/virtual-garden/pkg/virtualgarden"
@@ -97,13 +98,13 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 
 	imports.HostingCluster.Kubeconfig = imports.Cluster
 
-	etcdImage, err := helper.GetImageFromCompDescr(ctx, "etcd")
-	if err != nil{
+	cd, err := loader.ReadComponentDescriptor(opts.ComponentDescriptorPath)
+	if err != nil {
 		return err
 	}
 
-	etcdBackupRestoreImage, err := helper.GetImageFromCompDescr(ctx, "etcdBackupRestore")
-	if err != nil{
+	imageRefs, err := api.NewImageRefsFromComponentDescriptor(cd)
+	if err != nil {
 		return err
 	}
 
@@ -119,7 +120,7 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 	}
 
 	operation, err := virtualgarden.NewOperation(client, log, imports.HostingCluster.Namespace, opts.HandleNamespace,
-		opts.HandleETCDPersistentVolumes, imports, etcdImage, etcdBackupRestoreImage)
+		opts.HandleETCDPersistentVolumes, imports, imageRefs)
 	if err != nil {
 		return err
 	}

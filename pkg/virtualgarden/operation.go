@@ -63,8 +63,9 @@ type operation struct {
 
 	exports api.Exports
 
-	etcdImage string
-	etcdBackupRestoreImage string
+	// imageRefs contains the image references from the component descriptor that are needed for the Deployments and
+	// StatefulSet.
+	imageRefs *api.ImageRefs
 }
 
 // NewOperation returns a new operation structure that implements Interface.
@@ -74,7 +75,7 @@ func NewOperation(
 	namespace string,
 	handleNamespace, handleETCDPersistentVolumes bool,
 	imports *api.Imports,
-	etcdImage, etcdBackupRestoreImage string,
+	imageRefs *api.ImageRefs,
 ) (Interface, error) {
 	op := &operation{
 		client: c,
@@ -85,6 +86,7 @@ func NewOperation(
 
 		namespace: namespace,
 		imports:   imports,
+		imageRefs: imageRefs,
 	}
 
 	infrastructureProvider, err := provider.NewInfrastructureProvider(imports.HostingCluster.InfrastructureProvider)
@@ -100,9 +102,6 @@ func NewOperation(
 		}
 		op.backupProvider = backupProvider
 	}
-
-	op.etcdImage = etcdImage
-	op.etcdBackupRestoreImage = etcdBackupRestoreImage
 
 	return op, nil
 }

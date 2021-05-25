@@ -36,11 +36,15 @@ var _ = Describe("Operation", func() {
 				imports                     = &api.Imports{
 					HostingCluster: api.HostingCluster{InfrastructureProvider: api.InfrastructureProviderGCP},
 				}
+				imageRefs = &api.ImageRefs{
+					ETCDImage:                  "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",
+					ETCDBackupRestoreImage:     "eu.gcr.io/sap-se-gcr-k8s-public/eu_gcr_io/gardener-project/gardener/etcdbrctl:v0.9.1",
+					KubeControllerManagerImage: "",
+					KubeAPIServerImage:         "",
+				}
 			)
 
-			operationInterface, err := NewOperation(c, log, namespace, handleNamespace, handleETCDPersistentVolumes,
-				imports, "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",
-				"eu.gcr.io/sap-se-gcr-k8s-public/eu_gcr_io/gardener-project/gardener/etcdbrctl:v0.9.1")
+			operationInterface, err := NewOperation(c, log, namespace, handleNamespace, handleETCDPersistentVolumes, imports, imageRefs)
 			Expect(err).NotTo(HaveOccurred())
 
 			op, ok := operationInterface.(*operation)

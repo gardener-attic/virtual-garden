@@ -160,7 +160,7 @@ func (o *operation) deployETCDStatefulSet(
 				Containers: []corev1.Container{
 					{
 						Name:            etcdContainerName,
-						Image:           o.etcdImage,
+						Image:           o.imageRefs.ETCDImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Command:         []string{etcdConfigMapVolumeMountPath + "/" + ETCDConfigMapDataKeyBootstrapScript},
 						ReadinessProbe: &corev1.Probe{
@@ -241,7 +241,7 @@ func (o *operation) deployETCDStatefulSet(
 					},
 					{
 						Name:            backupRestoreSidecarContainerName,
-						Image:           o.etcdBackupRestoreImage,
+						Image:           o.imageRefs.ETCDBackupRestoreImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Command: append([]string{
 							"etcdbrctl",

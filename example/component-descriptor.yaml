@@ -1,0 +1,27 @@
+component:
+  name: github.com/gardener/virtualgarden/test
+  version: v1.0.7
+  componentReferences: []
+  provider: internal
+  repositoryContexts:
+    - baseUrl: "eu.gcr.io/sap-gcp-cp-k8s-stable-hub/examples/landscaper/temp"
+      type: ociRegistry
+  resources:
+  - name: etcd
+    access:
+      imageReference: eu.gcr.io/gardener-project/gardener/etcd:v3.4.13
+      type: ociRegistry
+  - name: etcdBackupRestore
+    access:
+      imageReference: eu.gcr.io/gardener-project/gardener/etcdbrctl:v0.11.1
+      type: ociRegistry
+  - name: kube-apiserver
+    access:
+      imageReference: k8s.gcr.io/kube-apiserver:v1.18.14
+      type: ociRegistry
+  - name: kube-controller-manager
+    access:
+      imageReference: k8s.gcr.io/kube-controller-manager:v1.18.14
+      type: ociRegistry
+meta:
+  schemaVersion: v2

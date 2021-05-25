@@ -18,14 +18,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/virtual-garden/pkg/api/helper"
-
 	"github.com/gardener/virtual-garden/pkg/api"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -35,12 +33,7 @@ func (o *operation) deployKubeAPIServerDeploymentControllerManager(ctx context.C
 
 	deployment := o.emptyDeployment(KubeAPIServerDeploymentNameControllerManager)
 
-	container, err := o.getKubeControllerManagerContainers(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = controllerutil.CreateOrUpdate(ctx, o.client, deployment, func() error {
+	_, err := controllerutil.CreateOrUpdate(ctx, o.client, deployment, func() error {
 		deployment.ObjectMeta.Labels = o.getKubeControllerManagerLabels()
 
 		deployment.Spec = appsv1.DeploymentSpec{
@@ -63,7 +56,7 @@ func (o *operation) deployKubeAPIServerDeploymentControllerManager(ctx context.C
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken:  pointer.BoolPtr(false),
 					PriorityClassName:             "garden-controlplane",
-					Containers:                    container,
+					Containers:                    o.getKubeControllerManagerContainers(),
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					SchedulerName:                 "default-scheduler",
@@ -94,16 +87,11 @@ func (o *operation) getKubeControllerManagerLabels() map[string]string {
 	}
 }
 
-func (o *operation) getKubeControllerManagerContainers(ctx context.Context) ([]corev1.Container, error) {
-	imageController, err := helper.GetImageFromCompDescr(ctx, "kube-controller-manager")
-	if err != nil {
-		return nil, err
-	}
-
+func (o *operation) getKubeControllerManagerContainers() []corev1.Container {
 	return []corev1.Container{
 		{
 			Name:            kubeControllerManager,
-			Image:           imageController,
+			Image:           o.imageRefs.KubeControllerManagerImage,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         o.getKubeControllerManagerCommand(),
 			LivenessProbe: &corev1.Probe{
@@ -134,7 +122,7 @@ func (o *operation) getKubeControllerManagerContainers(ctx context.Context) ([]c
 			TerminationMessagePolicy: corev1.TerminationMessageReadFile,
 			VolumeMounts:             o.getKubeControllerManagerVolumeMounts(),
 		},
-	}, nil
+	}
 }
 
 func (o *operation) getKubeControllerManagerCommand() []string {
