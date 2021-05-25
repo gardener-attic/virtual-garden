@@ -34,7 +34,12 @@ func (o *operation) deployKubeAPIServerDeploymentControllerManager(ctx context.C
 
 	deployment := o.emptyDeployment(KubeAPIServerDeploymentNameControllerManager)
 
-	_, err := controllerutil.CreateOrUpdate(ctx, o.client, deployment, func() error {
+	container, err := o.getKubeControllerManagerContainers(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, o.client, deployment, func() error {
 		deployment.ObjectMeta.Labels = o.getKubeControllerManagerLabels()
 
 		deployment.Spec = appsv1.DeploymentSpec{
@@ -57,7 +62,7 @@ func (o *operation) deployKubeAPIServerDeploymentControllerManager(ctx context.C
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken:  pointer.BoolPtr(false),
 					PriorityClassName:             "garden-controlplane",
-					Containers:                    o.getKubeControllerManagerContainers(),
+					Containers:                    container,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					SchedulerName:                 "default-scheduler",
@@ -88,11 +93,16 @@ func (o *operation) getKubeControllerManagerLabels() map[string]string {
 	}
 }
 
-func (o *operation) getKubeControllerManagerContainers() []corev1.Container {
+func (o *operation) getKubeControllerManagerContainers(ctx context.Context) ([]corev1.Container, error) {
+	imageController, err := o.getImageFromCompDescr(ctx, "kube-controller-manager")
+	if err != nil {
+		return nil, err
+	}
+
 	return []corev1.Container{
 		{
 			Name:            kubeControllerManager,
-			Image:           "eu.gcr.io/sap-se-gcr-k8s-public/k8s_gcr_io/kube-controller-manager:v1.18.14",
+			Image:           imageController,
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         o.getKubeControllerManagerCommand(),
 			LivenessProbe: &corev1.Probe{
@@ -123,7 +133,7 @@ func (o *operation) getKubeControllerManagerContainers() []corev1.Container {
 			TerminationMessagePolicy: corev1.TerminationMessageReadFile,
 			VolumeMounts:             o.getKubeControllerManagerVolumeMounts(),
 		},
-	}
+	}, nil
 }
 
 func (o *operation) getKubeControllerManagerCommand() []string {

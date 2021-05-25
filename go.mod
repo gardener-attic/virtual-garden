@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	cloud.google.com/go/storage v1.6.0
+	github.com/gardener/component-spec/bindings-go v0.0.36
 	github.com/gardener/gardener v1.19.0
 	github.com/gardener/hvpa-controller v0.3.1
 	github.com/ghodss/yaml v1.0.0
@@ -13,7 +14,7 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b
+	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5
 	google.golang.org/api v0.20.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.20.2

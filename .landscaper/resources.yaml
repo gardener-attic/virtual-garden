@@ -16,3 +16,37 @@ access:
   type: ociRegistry
   imageReference: eu.gcr.io/gardener-project/virtual-garden-container-deployer:${VERSION}
 ...
+---
+type: ociImage
+name: etcd
+relation: local
+access:
+  type: ociRegistry
+  imageReference: eu.gcr.io/gardener-project/gardener/etcd:v3.4.13
+...
+---
+type: ociImage
+name: etcdBackupRestore
+relation: local
+access:
+  type: ociRegistry
+  imageReference: eu.gcr.io/gardener-project/gardener/etcdbrctl:v0.11.1
+...
+---
+type: ociImage
+name: kube-apiserver
+relation: external
+access:
+  type: ociRegistry
+  imageReference: k8s.gcr.io/kube-apiserver:v1.18.14
+...
+---
+type: ociImage
+name: kube-controller-manager
+relation: external
+access:
+  type: ociRegistry
+  imageReference: k8s.gcr.io/kube-controller-manager:v1.18.14
+...
+
+

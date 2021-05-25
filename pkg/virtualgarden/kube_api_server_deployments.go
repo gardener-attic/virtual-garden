@@ -82,8 +82,13 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 
 	command := o.getAPIServerCommand()
 
+	imageKubeApiServer, err := o.getImageFromCompDescr(ctx, "kube-apiserver")
+	if err != nil {
+		return nil
+	}
+
 	// create/update
-	_, err := controllerutil.CreateOrUpdate(ctx, o.client, deployment, func() error {
+	_, err = controllerutil.CreateOrUpdate(ctx, o.client, deployment, func() error {
 		deployment.ObjectMeta.Labels = getKubeAPIServerServiceLabels()
 
 		deployment.Spec = appsv1.DeploymentSpec{
@@ -142,7 +147,7 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 					Containers: []corev1.Container{
 						{
 							Name:            kubeAPIServerContainerName,
-							Image:           "eu.gcr.io/sap-se-gcr-k8s-public/k8s_gcr_io/kube-apiserver:v1.18.14",
+							Image:           imageKubeApiServer,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Command:         command,
 							Lifecycle: &corev1.Lifecycle{

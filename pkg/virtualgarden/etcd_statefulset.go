@@ -117,7 +117,17 @@ func (o *operation) deployETCDStatefulSet(
 		}
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, o.client, sts, func() error {
+	etcdImage, err := o.getImageFromCompDescr(ctx, "etcd")
+	if err != nil{
+		return err
+	}
+
+	etcdBackupRestoreImage, err := o.getImageFromCompDescr(ctx, "etcdBackupRestore")
+	if err != nil{
+		return err
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, o.client, sts, func() error {
 		sts.Labels = utils.MergeStringMaps(sts.Labels, etcdLabels(role))
 		sts.Spec.Replicas = pointer.Int32Ptr(1)
 		sts.Spec.Selector = &metav1.LabelSelector{MatchLabels: etcdLabels(role)}
@@ -160,7 +170,7 @@ func (o *operation) deployETCDStatefulSet(
 				Containers: []corev1.Container{
 					{
 						Name:            etcdContainerName,
-						Image:           "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",
+						Image:           etcdImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Command:         []string{etcdConfigMapVolumeMountPath + "/" + ETCDConfigMapDataKeyBootstrapScript},
 						ReadinessProbe: &corev1.Probe{
@@ -241,7 +251,7 @@ func (o *operation) deployETCDStatefulSet(
 					},
 					{
 						Name:            backupRestoreSidecarContainerName,
-						Image:           "eu.gcr.io/sap-se-gcr-k8s-public/eu_gcr_io/gardener-project/gardener/etcdbrctl:v0.9.1",
+						Image:           etcdBackupRestoreImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Command: append([]string{
 							"etcdbrctl",

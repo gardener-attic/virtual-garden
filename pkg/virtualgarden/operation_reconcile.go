@@ -16,6 +16,7 @@ package virtualgarden
 
 import (
 	"context"
+	"github.com/gardener/virtual-garden/pkg/api/helper"
 
 	"github.com/gardener/virtual-garden/pkg/api"
 
@@ -36,21 +37,21 @@ func (o *operation) Reconcile(ctx context.Context) (*api.Exports, error) {
 			Fn:           o.DeployKubeAPIServerService,
 			Dependencies: flow.NewTaskIDs(createNamespace),
 		})
-		//deployBackupBucket = graph.Add(flow.Task{
-		//	Name:         "Deploying the backup bucket for the main etcd",
-		//	Fn:           flow.TaskFn(o.DeployBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
-		//	Dependencies: flow.NewTaskIDs(createNamespace),
-		//})
-		//createETCD = graph.Add(flow.Task{
-		//	Name:         "Deploying the main and events etcds",
-		//	Fn:           o.DeployETCD,
-		//	Dependencies: flow.NewTaskIDs(createNamespace, deployBackupBucket),
-		//})
+		deployBackupBucket = graph.Add(flow.Task{
+			Name:         "Deploying the backup bucket for the main etcd",
+			Fn:           flow.TaskFn(o.DeployBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
+			Dependencies: flow.NewTaskIDs(createNamespace),
+		})
+		createETCD = graph.Add(flow.Task{
+			Name:         "Deploying the main and events etcds",
+			Fn:           o.DeployETCD,
+			Dependencies: flow.NewTaskIDs(createNamespace, deployBackupBucket),
+		})
 
 		_ = graph.Add(flow.Task{
 			Name:         "Deploying kube-apiserver",
 			Fn:           o.DeployKubeAPIServer,
-			Dependencies: flow.NewTaskIDs(createKubeAPIServerService), // createETCD),
+			Dependencies: flow.NewTaskIDs(createKubeAPIServerService, createETCD),
 		})
 	)
 
