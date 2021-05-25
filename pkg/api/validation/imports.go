@@ -73,9 +73,11 @@ func ValidateVirtualGarden(obj *api.VirtualGarden, credentials map[string]api.Cr
 		}
 	}
 
+	if obj.KubeAPIServer != nil {
 		if obj.KubeAPIServer.SNI != nil {
 			allErrs = append(allErrs, ValidateSNI(obj.KubeAPIServer.SNI, fldPath.Child("exposure", "sni"))...)
 		}
+	}
 
 	return allErrs
 }

@@ -256,7 +256,7 @@ func (o *operation) deployKubeApiServerHvpa(ctx context.Context) error {
 				UpdatePolicy: hvpav1alpha1.UpdatePolicy{
 					UpdateMode: hvpaConfig.GetVpaScaleUpMode(hvpav1alpha1.UpdateModeAuto),
 				},
-				MinChange: hvpaConfig.GetVpaScaleUpMinChange(hvpav1alpha1.ScaleParams{
+				MinChange: *hvpaConfig.GetVpaScaleUpMinChange(&hvpav1alpha1.ScaleParams{
 					CPU: hvpav1alpha1.ChangeParams{
 						Value:      pointer.StringPtr("300m"),
 						Percentage: pointer.Int32Ptr(80),
@@ -272,7 +272,7 @@ func (o *operation) deployKubeApiServerHvpa(ctx context.Context) error {
 				UpdatePolicy: hvpav1alpha1.UpdatePolicy{
 					UpdateMode: hvpaConfig.GetVpaScaleDownMode(hvpav1alpha1.UpdateModeAuto),
 				},
-				MinChange: hvpaConfig.GetVpaScaleDownMinChange(hvpav1alpha1.ScaleParams{
+				MinChange: *hvpaConfig.GetVpaScaleDownMinChange(&hvpav1alpha1.ScaleParams{
 					CPU: hvpav1alpha1.ChangeParams{
 						Value:      pointer.StringPtr("600m"),
 						Percentage: pointer.Int32Ptr(80),
