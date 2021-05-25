@@ -19,6 +19,31 @@ imports:
 
   - name: virtualGarden
     schema:
+      definitions:
+        scaleParams:
+          type: object
+            properties:
+              cpu:
+                type: object
+                properties:
+                  value:
+                    type: string
+                  percentage:
+                    type: integer
+              memory:
+                type: object
+                properties:
+                  value:
+                    type: string
+                  percentage:
+                    type: integer
+              replicas:
+                type: object
+                properties:
+                  value:
+                    type: string
+                  percentage:
+                    type: integer
       type: object
       properties:
         etcd:
@@ -37,8 +62,8 @@ imports:
                   type: string
                 credentialsRef:
                   type: string
-            hvpa:
-              type: object
+            hvpaEnabled:
+              type: boolean
         kubeAPIServer:
           type: object
           properties:
@@ -46,20 +71,113 @@ imports:
               type: integer
               default:
                 value: 6
-            exposure:
+            sni:
               type: object
               properties:
-                sni:
+                hostname:
+                  type: string
+                dnsClass:
+                  type: string
+                ttl:
+                  type: integer
+                secretName:
+                  type: string
+            dnsAccessDomain:
+              type: string
+            gardenerControlplane:
+              type: object
+              properties:
+                validatingWebhookEnabled:
+                  type: boolean
+                mutatingWebhookEnabled:
+                  type: boolean
+            auditWebhookConfig:
+              type: object
+                properties:
+                  config:
+                    type: string
+            auditWebhookBatchMaxSize:
+              type: string
+            hvpaEnabled:
+              type: string
+            hvpa:
+              type: object
+                properties:
+                  maxReplicas:
+                    type: integer
+                  minReplicas:
+                    type: integer
+                  targetAverageUtilizationCpu:
+                    type: integer
+                  targetAverageUtilizationMemory:
+                    type: integer
+                  vpaScaleUpMode:
+                    type: string
+                  vpaScaleDownMode:
+                    type: string
+                  vpaScaleUpStabilization:
+                    type: object
+                      properties:
+                        stabilizationDuration:
+                          type: string
+                        minChange:
+                          "$ref": "#/definitions/scaleParams"
+                  vpaScaleDownStabilization:
+                    type: object
+                      properties:
+                        stabilizationDuration:
+                          type: string
+                        minChange:
+                          "$ref": "#/definitions/scaleParams"
+                  limitsRequestsGapScaleParams:
+                    "$ref": "#/definitions/scaleParams"
+                  maintenanceWindow:
+                    type: object
+                    properties:
+                      begin:
+                        type: string
+                      end:
+                        type: string
+            eventTTL:
+              type: string
+            oidcIssuerURL:
+              type: string
+            additionalVolumeMounts:
+              type: array
+              items:
+                volumeMount:
                   type: object
                   properties:
-                    hostnames:
-                      type: array
-                      items:
-                        type: string
-                    dnsClass:
+                    name:
                       type: string
-                    ttl:
-                      type: integer
+                    readOnly:
+                      type: boolean
+                    mountPath:
+                      type: string
+                    subPath:
+                      type: string
+                    mountPropagation:
+                      type: string
+                    subPathExpr:
+                      type: string
+            additionalVolumes:
+              type: array
+              items:
+                volume:
+                type: object
+            horizontalPodAutoscaler:
+              type: object
+              properties:
+                downscaleStabilization:
+                  type: string
+                readinessDelay:
+                  type: string
+                cpuInitializationPeriod:
+                  type: string
+                syncPeriod:
+                  type: string
+                tolerance:
+                  type: string
 
   - name: credentials
     description: "credentials map"

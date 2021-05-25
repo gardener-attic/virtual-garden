@@ -101,11 +101,11 @@ type KubeAPIServer struct {
 }
 
 type HorizontalPodAutoscaler struct {
-	DownscaleStabilization  string
-	ReadinessDelay          string
-	CpuInitializationPeriod string
-	SyncPeriod              string
-	Tolerance               string
+	DownscaleStabilization  string `json:"downscaleStabilization,omitempty" yaml:"downscaleStabilization,omitempty"`
+	ReadinessDelay          string `json:"readinessDelay,omitempty" yaml:"readinessDelay,omitempty"`
+	CpuInitializationPeriod string `json:"cpuInitializationPeriod,omitempty" yaml:"cpuInitializationPeriod,omitempty"`
+	SyncPeriod              string `json:"syncPeriod,omitempty" yaml:"syncPeriod,omitempty"`
+	Tolerance               string `json:"tolerance,omitempty" yaml:"tolerance,omitempty"`
 }
 
 type GardenerControlplane struct {
