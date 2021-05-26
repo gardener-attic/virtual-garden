@@ -27,11 +27,10 @@ var _ = Describe("Operation", func() {
 	Describe("#NewOperation", func() {
 		It("should return the correct operation object", func() {
 			var (
-				c                           = mockclient.NewMockClient(gomock.NewController(GinkgoT()))
-				log                         = logrus.New()
-				namespace                   = "foo"
-				handleETCDPersistentVolumes = true
-				imports                     = &api.Imports{
+				c         = mockclient.NewMockClient(gomock.NewController(GinkgoT()))
+				log       = logrus.New()
+				namespace = "foo"
+				imports   = &api.Imports{
 					HostingCluster: api.HostingCluster{InfrastructureProvider: api.InfrastructureProviderGCP},
 					VirtualGarden: api.VirtualGarden{
 						CreateNamespace: true,
@@ -45,7 +44,7 @@ var _ = Describe("Operation", func() {
 				}
 			)
 
-			operationInterface, err := NewOperation(c, log, namespace, handleETCDPersistentVolumes, imports, imageRefs)
+			operationInterface, err := NewOperation(c, log, namespace, imports, imageRefs)
 			Expect(err).NotTo(HaveOccurred())
 
 			op, ok := operationInterface.(*operation)
@@ -55,7 +54,6 @@ var _ = Describe("Operation", func() {
 			Expect(op.namespace).To(Equal(namespace))
 			Expect(op.imports.VirtualGarden.CreateNamespace).To(Equal(imports.VirtualGarden.CreateNamespace))
 			Expect(op.imports.VirtualGarden.DeleteNamespace).To(Equal(false))
-			Expect(op.handleETCDPersistentVolumes).To(Equal(handleETCDPersistentVolumes))
 			Expect(op.imports).To(Equal(imports))
 		})
 	})

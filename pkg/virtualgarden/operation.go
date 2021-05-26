@@ -52,10 +52,6 @@ type operation struct {
 	// backupProvider is a specific implementation for backup providers.
 	backupProvider provider.BackupProvider
 
-	// handleETCDPersistentVolumes controls whether the persistent volume (claim)s for the etcd statefulsets shall be
-	// deleted automatically when the virtual garden is destroyed
-	handleETCDPersistentVolumes bool
-
 	// namespace is the namespace in the hosting cluster into which the virtual garden shall be deployed.
 	namespace string
 
@@ -74,15 +70,12 @@ func NewOperation(
 	c client.Client,
 	log *logrus.Logger,
 	namespace string,
-	handleETCDPersistentVolumes bool,
 	imports *api.Imports,
 	imageRefs *api.ImageRefs,
 ) (Interface, error) {
 	op := &operation{
 		client: c,
 		log:    log,
-
-		handleETCDPersistentVolumes: handleETCDPersistentVolumes,
 
 		namespace: namespace,
 		imports:   imports,

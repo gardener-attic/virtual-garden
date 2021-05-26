@@ -81,20 +81,20 @@ var _ = Describe("Etcd", func() {
 		c = mockclient.NewMockClient(ctrl)
 
 		op = &operation{
-			client:                      c,
-			log:                         &logrus.Logger{Out: ioutil.Discard},
-			handleETCDPersistentVolumes: true,
-			namespace:                   namespace,
-			infrastructureProvider:      fake.NewInfrastructureProvider(infrastructureStorageClassProvisioner, infrastructureStorageClassParameters),
-			backupProvider:              fake.NewBackupProvider(backupStorageProviderName, backupSecretData, backupEnvironment),
+			client:                 c,
+			log:                    &logrus.Logger{Out: ioutil.Discard},
+			namespace:              namespace,
+			infrastructureProvider: fake.NewInfrastructureProvider(infrastructureStorageClassProvisioner, infrastructureStorageClassParameters),
+			backupProvider:         fake.NewBackupProvider(backupStorageProviderName, backupSecretData, backupEnvironment),
 			imports: &api.Imports{
 				VirtualGarden: api.VirtualGarden{
 					ETCD: &api.ETCD{
 						Backup: &api.ETCDBackup{
 							BucketName: bucketName,
 						},
-						StorageClassName: &storageClassName,
-						HVPAEnabled:      true,
+						StorageClassName:            &storageClassName,
+						HVPAEnabled:                 true,
+						HandleETCDPersistentVolumes: true,
 					},
 				},
 			},
@@ -903,7 +903,7 @@ var _ = Describe("Etcd", func() {
 		It("should correctly delete all etcd resources (w/o backup, w/o pvc handling, w/o hvpa)", func() {
 			op.imports.VirtualGarden.ETCD.Backup = nil
 			op.imports.VirtualGarden.ETCD.HVPAEnabled = false
-			op.handleETCDPersistentVolumes = false
+			op.imports.VirtualGarden.ETCD.HandleETCDPersistentVolumes = false
 
 			gomock.InOrder(
 				c.EXPECT().Delete(ctx, &appsv1.StatefulSet{ObjectMeta: objectMeta(ETCDStatefulSetName(ETCDRoleMain), namespace)}),

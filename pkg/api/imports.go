@@ -64,6 +64,11 @@ type ETCD struct {
 	Backup *ETCDBackup `json:"backup,omitempty" yaml:"backup,omitempty"`
 
 	HVPAEnabled bool `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
+
+	// HandleETCDPersistentVolumes defines whether the PV(C)s that are getting automatically created by the etcd
+	// statefulset shall be handled or not (false by default). If true then they will be deleted when the virtual
+	// garden is deleted. Otherwise, they will remain in the system for manual cleanup (to prevent data loss).
+	HandleETCDPersistentVolumes bool `json:"handleETCDPersistentVolumes,omitempty" yaml:"handleETCDPersistentVolumes,omitempty"`
 }
 
 // ETCDBackup contains configuration for the backup of the main etcd for the virtual garden.

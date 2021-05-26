@@ -33,11 +33,6 @@ type Options struct {
 	ExportsPath string
 	// ComponentDescriptorPath is the path to the component descriptor file.
 	ComponentDescriptorPath string
-
-	// HandleETCDPersistentVolumes defines whether the PV(C)s that are getting automatically created by the etcd
-	// statefulset shall be handled or not (false by default). If true then they will be deleted when the virtual
-	// garden is deleted. Otherwise, they will remain in the system for manual cleanup (to prevent data loss).
-	HandleETCDPersistentVolumes bool
 }
 
 // NewOptions returns a new options structure.
@@ -47,7 +42,6 @@ func NewOptions() *Options {
 
 // AddFlags adds flags for a specific Scheduler to the specified FlagSet.
 func (o *Options) AddFlags(fs *pflag.FlagSet) {
-	fs.BoolVar(&o.HandleETCDPersistentVolumes, "handle-etcd-persistent-volumes", false, "delete PV(C)s for the etcds automatically when virtual garden is deleted")
 }
 
 // InitializeFromEnvironment initializes the options from the found environment variables.

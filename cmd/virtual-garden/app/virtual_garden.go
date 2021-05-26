@@ -119,8 +119,7 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 		return err
 	}
 
-	operation, err := virtualgarden.NewOperation(client, log, imports.HostingCluster.Namespace,
-		opts.HandleETCDPersistentVolumes, imports, imageRefs)
+	operation, err := virtualgarden.NewOperation(client, log, imports.HostingCluster.Namespace, imports, imageRefs)
 	if err != nil {
 		return err
 	}

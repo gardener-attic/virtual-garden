@@ -346,7 +346,7 @@ func (o *operation) deleteETCDStatefulSet(ctx context.Context, role string) erro
 		return err
 	}
 
-	if o.handleETCDPersistentVolumes {
+	if o.imports.VirtualGarden.ETCD != nil && o.imports.VirtualGarden.ETCD.HandleETCDPersistentVolumes {
 		return client.IgnoreNotFound(o.client.Delete(ctx, emptyETCDPersistentVolumeClaim(o.namespace, role)))
 	}
 
