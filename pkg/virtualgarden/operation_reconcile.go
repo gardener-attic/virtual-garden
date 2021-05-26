@@ -31,7 +31,7 @@ func (o *operation) Reconcile(ctx context.Context) (*api.Exports, error) {
 
 		createNamespace = graph.Add(flow.Task{
 			Name: "Creating namespace for virtual-garden deployment in hosting cluster",
-			Fn:   flow.TaskFn(o.CreateNamespace).SkipIf(!o.handleNamespace),
+			Fn:   flow.TaskFn(o.CreateNamespace).SkipIf(!o.imports.VirtualGarden.CreateNamespace),
 		})
 		createKubeAPIServerService = graph.Add(flow.Task{
 			Name:         "Deploying the service for exposing the virtual garden kube-apiserver",

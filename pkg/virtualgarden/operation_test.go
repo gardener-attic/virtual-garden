@@ -17,7 +17,6 @@ package virtualgarden
 import (
 	"github.com/gardener/virtual-garden/pkg/api"
 	mockclient "github.com/gardener/virtual-garden/pkg/mock/controller-runtime/client"
-
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -31,10 +30,12 @@ var _ = Describe("Operation", func() {
 				c                           = mockclient.NewMockClient(gomock.NewController(GinkgoT()))
 				log                         = logrus.New()
 				namespace                   = "foo"
-				handleNamespace             = true
 				handleETCDPersistentVolumes = true
 				imports                     = &api.Imports{
 					HostingCluster: api.HostingCluster{InfrastructureProvider: api.InfrastructureProviderGCP},
+					VirtualGarden: api.VirtualGarden{
+						CreateNamespace: true,
+					},
 				}
 				imageRefs = &api.ImageRefs{
 					ETCDImage:                  "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",
@@ -44,7 +45,7 @@ var _ = Describe("Operation", func() {
 				}
 			)
 
-			operationInterface, err := NewOperation(c, log, namespace, handleNamespace, handleETCDPersistentVolumes, imports, imageRefs)
+			operationInterface, err := NewOperation(c, log, namespace, handleETCDPersistentVolumes, imports, imageRefs)
 			Expect(err).NotTo(HaveOccurred())
 
 			op, ok := operationInterface.(*operation)
@@ -52,7 +53,8 @@ var _ = Describe("Operation", func() {
 			Expect(op.client).To(Equal(c))
 			Expect(op.log).To(Equal(log))
 			Expect(op.namespace).To(Equal(namespace))
-			Expect(op.handleNamespace).To(Equal(handleNamespace))
+			Expect(op.imports.VirtualGarden.CreateNamespace).To(Equal(imports.VirtualGarden.CreateNamespace))
+			Expect(op.imports.VirtualGarden.DeleteNamespace).To(Equal(false))
 			Expect(op.handleETCDPersistentVolumes).To(Equal(handleETCDPersistentVolumes))
 			Expect(op.imports).To(Equal(imports))
 		})

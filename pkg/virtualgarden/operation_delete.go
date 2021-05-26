@@ -50,7 +50,7 @@ func (o *operation) Delete(ctx context.Context) error {
 
 		_ = graph.Add(flow.Task{
 			Name:         "Deleting namespace for virtual-garden deployment in hosting cluster",
-			Fn:           flow.TaskFn(o.DeleteNamespace).SkipIf(!o.handleNamespace),
+			Fn:           flow.TaskFn(o.DeleteNamespace).SkipIf(!o.imports.VirtualGarden.DeleteNamespace),
 			Dependencies: flow.NewTaskIDs(deleteKubeAPIServerService),
 		})
 	)

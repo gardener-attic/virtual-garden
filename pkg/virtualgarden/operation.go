@@ -42,22 +42,23 @@ const Prefix = "virtual-garden"
 type operation struct {
 	// client is the Kubernetes client for the hosting cluster.
 	client client.Client
+
 	// log is a logger.
 	log logrus.FieldLogger
 
 	// infrastructureProvider is a specific implementation for infrastructure providers.
 	infrastructureProvider provider.InfrastructureProvider
+
 	// backupProvider is a specific implementation for backup providers.
 	backupProvider provider.BackupProvider
 
-	// handleNamespace controls whether the namespace shall be created/deleted.
-	handleNamespace bool
 	// handleETCDPersistentVolumes controls whether the persistent volume (claim)s for the etcd statefulsets shall be
 	// deleted automatically when the virtual garden is destroyed
 	handleETCDPersistentVolumes bool
 
 	// namespace is the namespace in the hosting cluster into which the virtual garden shall be deployed.
 	namespace string
+
 	// imports contains the imports configuration.
 	imports *api.Imports
 
@@ -73,7 +74,7 @@ func NewOperation(
 	c client.Client,
 	log *logrus.Logger,
 	namespace string,
-	handleNamespace, handleETCDPersistentVolumes bool,
+	handleETCDPersistentVolumes bool,
 	imports *api.Imports,
 	imageRefs *api.ImageRefs,
 ) (Interface, error) {
@@ -81,7 +82,6 @@ func NewOperation(
 		client: c,
 		log:    log,
 
-		handleNamespace:             handleNamespace,
 		handleETCDPersistentVolumes: handleETCDPersistentVolumes,
 
 		namespace: namespace,
