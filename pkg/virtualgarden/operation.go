@@ -65,7 +65,7 @@ type operation struct {
 
 	// imageRefs contains the image references from the component descriptor that are needed for the Deployments and
 	// StatefulSet.
-	imageRefs *api.ImageRefs
+	imageRefs api.ImageRefs
 }
 
 // NewOperation returns a new operation structure that implements Interface.
@@ -86,7 +86,7 @@ func NewOperation(
 
 		namespace: namespace,
 		imports:   imports,
-		imageRefs: imageRefs,
+		imageRefs: *imageRefs,
 	}
 
 	infrastructureProvider, err := provider.NewInfrastructureProvider(imports.HostingCluster.InfrastructureProvider)

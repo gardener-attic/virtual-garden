@@ -98,6 +98,10 @@ var _ = Describe("Etcd", func() {
 					},
 				},
 			},
+			imageRefs: api.ImageRefs{
+				ETCDImage:              "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",
+				ETCDBackupRestoreImage: "eu.gcr.io/sap-se-gcr-k8s-public/eu_gcr_io/gardener-project/gardener/etcdbrctl:v0.9.1",
+			},
 		}
 	})
 

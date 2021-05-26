@@ -31,8 +31,8 @@ func (o *operation) Delete(ctx context.Context) error {
 		})
 
 		deleteETCD = graph.Add(flow.Task{
-			Name: "Deleting the main and events etcds",
-			Fn:   o.DeleteETCD,
+			Name:         "Deleting the main and events etcds",
+			Fn:           o.DeleteETCD,
 			Dependencies: flow.NewTaskIDs(deleteKubeAPIServer),
 		})
 
@@ -43,8 +43,8 @@ func (o *operation) Delete(ctx context.Context) error {
 		})
 
 		deleteKubeAPIServerService = graph.Add(flow.Task{
-			Name: "Deleting the service for exposing the virtual garden kube-apiserver",
-			Fn:   o.DeleteKubeAPIServerService,
+			Name:         "Deleting the service for exposing the virtual garden kube-apiserver",
+			Fn:           o.DeleteKubeAPIServerService,
 			Dependencies: flow.NewTaskIDs(deleteBackupBucket),
 		})
 
