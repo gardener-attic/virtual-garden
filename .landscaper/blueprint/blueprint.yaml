@@ -178,6 +178,10 @@ imports:
                   type: string
                 tolerance:
                   type: string
+        createNamespace:
+          type: string
+        deleteNamespace:
+          type: string
 
   - name: credentials
     description: "credentials map"
