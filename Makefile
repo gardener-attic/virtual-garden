@@ -45,7 +45,7 @@ install:
 install-requirements:
 	@go install -mod=vendor $(REPO_ROOT)/vendor/github.com/onsi/ginkgo/ginkgo
 	@go install -mod=vendor github.com/golang/mock/mockgen
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install-requirements.sh
+	@$(REPO_ROOT)/hack/install-requirements.sh
 
 .PHONY: revendor
 revendor:
@@ -58,17 +58,9 @@ revendor:
 clean:
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/clean.sh ./cmd/... ./pkg/... ./test/...
 
-.PHONY: check-generate
-check-generate:
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-generate.sh $(REPO_ROOT)
-
 .PHONY: check
 check:
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
-
-.PHONY: generate
-generate:
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate.sh ./charts/... ./cmd/... ./pkg/... ./test/...
 
 .PHONY: format
 format:
@@ -94,4 +86,4 @@ test-clean:
 verify: check format test
 
 .PHONY: verify-extended
-verify-extended: install-requirements check-generate check format test-cov test-clean
+verify-extended: install-requirements check format test-cov test-clean
