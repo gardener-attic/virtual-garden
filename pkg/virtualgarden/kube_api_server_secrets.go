@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/gardener/gardener/pkg/utils"
-	"github.com/gardener/virtual-garden/pkg/util"
 )
 
 const (
@@ -141,7 +140,7 @@ func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, chec
 	var basicAuthValue []byte
 
 	secret := o.emptySecret(KubeApiServerSecretNameBasicAuth)
-	err := o.client.Get(ctx, util.GetKey(secret), secret)
+	err := o.client.Get(ctx, client.ObjectKeyFromObject(secret), secret)
 	if err != nil {
 		if client.IgnoreNotFound(err) != nil {
 			return "", err
@@ -182,7 +181,7 @@ func (o *operation) deployKubeApiServerSecretEncryptionConfig(ctx context.Contex
 	var encryptionConfigValue []byte
 
 	secret := o.emptySecret(KubeApiServerSecretNameEncryptionConfig)
-	err := o.client.Get(ctx, util.GetKey(secret), secret)
+	err := o.client.Get(ctx, client.ObjectKeyFromObject(secret), secret)
 	if err != nil {
 		if client.IgnoreNotFound(err) != nil {
 			return err
@@ -269,7 +268,7 @@ func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Conte
 	var value []byte
 
 	secret := o.emptySecret(KubeApiServerSecretNameServiceAccountKey)
-	err := o.client.Get(ctx, util.GetKey(secret), secret)
+	err := o.client.Get(ctx, client.ObjectKeyFromObject(secret), secret)
 	if err != nil {
 		if client.IgnoreNotFound(err) != nil {
 			return err

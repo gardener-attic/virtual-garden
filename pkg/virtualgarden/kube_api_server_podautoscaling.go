@@ -350,11 +350,7 @@ func (o *operation) deployKubeApiServerHvpa(ctx context.Context) error {
 func (o *operation) deleteKubeApiServerHvpa(ctx context.Context) error {
 	o.log.Infof("Delete hvpa for the kube-apiserver")
 
-	hvpa := o.emptyKubeAPIServerHvpa()
-
-	hvpaCrd := emptyHVPACRD()
-	err := o.client.Get(ctx, client.ObjectKeyFromObject(hvpaCrd), hvpaCrd)
-	if err != nil {
+	if _, err := o.getHVPACRD(ctx); err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil
 		}
@@ -362,6 +358,7 @@ func (o *operation) deleteKubeApiServerHvpa(ctx context.Context) error {
 		return err
 	}
 
+	hvpa := o.emptyKubeAPIServerHvpa()
 	if err := o.client.Delete(ctx, hvpa); client.IgnoreNotFound(err) != nil {
 		return err
 	}

@@ -18,6 +18,8 @@ import (
 	"context"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/gardener/virtual-garden/pkg/util"
 )
 
@@ -124,7 +126,7 @@ func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (strin
 func (o *operation) computeKubeAPIServerLoadBalancerOnce(ctx context.Context) (string, error) {
 	service := emptyKubeAPIServerService(o.namespace)
 
-	err := o.client.Get(ctx, util.GetKey(service), service)
+	err := o.client.Get(ctx, client.ObjectKeyFromObject(service), service)
 	if err != nil {
 		return "", err
 	}

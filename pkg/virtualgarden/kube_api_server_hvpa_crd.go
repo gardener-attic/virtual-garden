@@ -58,6 +58,16 @@ func (o *operation) deleteHPVACRD(ctx context.Context) error {
 	return client.IgnoreNotFound(o.client.Delete(ctx, emptyHVPACRD()))
 }
 
+func (o *operation) getHVPACRD(ctx context.Context) (*v1beta1.CustomResourceDefinition, error) {
+	hvpaCrd := emptyHVPACRD()
+	err := o.client.Get(ctx, client.ObjectKeyFromObject(hvpaCrd), hvpaCrd)
+	if err != nil {
+		return nil, err
+	}
+
+	return hvpaCrd, nil
+}
+
 func emptyHVPACRD() *v1beta1.CustomResourceDefinition {
 	return &v1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
