@@ -32,9 +32,7 @@ var _ = Describe("Operation", func() {
 				namespace = "foo"
 				imports   = &api.Imports{
 					HostingCluster: api.HostingCluster{InfrastructureProvider: api.InfrastructureProviderGCP},
-					VirtualGarden: api.VirtualGarden{
-						CreateNamespace: true,
-					},
+					VirtualGarden:  api.VirtualGarden{},
 				}
 				imageRefs = &api.ImageRefs{
 					ETCDImage:                  "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",
@@ -52,7 +50,6 @@ var _ = Describe("Operation", func() {
 			Expect(op.client).To(Equal(c))
 			Expect(op.log).To(Equal(log))
 			Expect(op.namespace).To(Equal(namespace))
-			Expect(op.imports.VirtualGarden.CreateNamespace).To(Equal(imports.VirtualGarden.CreateNamespace))
 			Expect(op.imports.VirtualGarden.DeleteNamespace).To(Equal(false))
 			Expect(op.imports).To(Equal(imports))
 		})

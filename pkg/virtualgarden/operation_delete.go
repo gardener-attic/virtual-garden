@@ -17,6 +17,8 @@ package virtualgarden
 import (
 	"context"
 
+	"github.com/gardener/virtual-garden/pkg/api/helper"
+
 	"github.com/gardener/gardener/pkg/utils/flow"
 )
 
@@ -38,7 +40,7 @@ func (o *operation) Delete(ctx context.Context) error {
 
 		deleteBackupBucket = graph.Add(flow.Task{
 			Name:         "Deleting the backup bucket for the main etcd",
-			Fn:           o.DeleteBackupBucket,
+			Fn:           flow.TaskFn(o.DeleteBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
 			Dependencies: flow.NewTaskIDs(deleteETCD),
 		})
 

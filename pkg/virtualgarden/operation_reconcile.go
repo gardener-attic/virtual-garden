@@ -31,28 +31,31 @@ func (o *operation) Reconcile(ctx context.Context) (*api.Exports, error) {
 
 		createNamespace = graph.Add(flow.Task{
 			Name: "Creating namespace for virtual-garden deployment in hosting cluster",
-			Fn:   flow.TaskFn(o.CreateNamespace).SkipIf(!o.imports.VirtualGarden.CreateNamespace),
+			Fn:   o.CreateNamespace,
 		})
+
 		createKubeAPIServerService = graph.Add(flow.Task{
 			Name:         "Deploying the service for exposing the virtual garden kube-apiserver",
 			Fn:           o.DeployKubeAPIServerService,
 			Dependencies: flow.NewTaskIDs(createNamespace),
 		})
+
 		deployBackupBucket = graph.Add(flow.Task{
 			Name:         "Deploying the backup bucket for the main etcd",
 			Fn:           flow.TaskFn(o.DeployBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
-			Dependencies: flow.NewTaskIDs(createNamespace),
+			Dependencies: flow.NewTaskIDs(createKubeAPIServerService),
 		})
+
 		createETCD = graph.Add(flow.Task{
 			Name:         "Deploying the main and events etcds",
 			Fn:           o.DeployETCD,
-			Dependencies: flow.NewTaskIDs(createNamespace, deployBackupBucket),
+			Dependencies: flow.NewTaskIDs(deployBackupBucket),
 		})
 
 		_ = graph.Add(flow.Task{
 			Name:         "Deploying kube-apiserver",
 			Fn:           o.DeployKubeAPIServer,
-			Dependencies: flow.NewTaskIDs(createKubeAPIServerService, createETCD),
+			Dependencies: flow.NewTaskIDs(createETCD),
 		})
 	)
 

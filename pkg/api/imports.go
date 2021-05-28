@@ -48,8 +48,6 @@ type VirtualGarden struct {
 	// +optional
 	KubeAPIServer *KubeAPIServer `json:"kubeAPIServer,omitempty" yaml:"kubeAPIServer,omitempty"`
 
-	// CreateNamespace controls if the namespace should be created
-	CreateNamespace bool `json:"createNamespace,omitempty" yaml:"createNamespace,omitempty"`
 	// DeleteNamespace controls if the namespace should be deleted
 	DeleteNamespace bool `json:"deleteNamespace,omitempty" yaml:"deleteNamespace,omitempty"`
 }

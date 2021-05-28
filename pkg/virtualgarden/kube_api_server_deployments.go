@@ -529,44 +529,44 @@ func (o *operation) getAPIServerVolumes() []corev1.Volume {
 				},
 			},
 		)
-
-		// locations are taken from
-		// https://github.com/golang/go/blob/1bb247a469e306c57a5e0eaba788efb8b3b1acef/src/crypto/x509/root_linux.go#L7-L15
-		// we cannot be sure on which Node OS the Seed Cluster is running so, it's safer to mount them all
-
-		hostPathDirectoryOrCreate := corev1.HostPathDirectoryOrCreate
-		volumes = append(volumes,
-			corev1.Volume{
-				Name: volumeNameFedora,
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{
-						Path: "/etc/pki/tls",
-						Type: &hostPathDirectoryOrCreate,
-					},
-				},
-			},
-			corev1.Volume{
-				Name: volumeNameCentos,
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{
-						Path: "/etc/pki/ca-trust/extracted/pem",
-						Type: &hostPathDirectoryOrCreate,
-					},
-				},
-			},
-			corev1.Volume{
-				Name: volumeNameETCSSL,
-				VolumeSource: corev1.VolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{
-						Path: "/etc/ssl",
-						Type: &hostPathDirectoryOrCreate,
-					},
-				},
-			},
-		)
-
-		volumes = append(volumes, o.imports.VirtualGarden.KubeAPIServer.AdditionalVolumes...)
 	}
+
+	// locations are taken from
+	// https://github.com/golang/go/blob/1bb247a469e306c57a5e0eaba788efb8b3b1acef/src/crypto/x509/root_linux.go#L7-L15
+	// we cannot be sure on which Node OS the Seed Cluster is running so, it's safer to mount them all
+
+	hostPathDirectoryOrCreate := corev1.HostPathDirectoryOrCreate
+	volumes = append(volumes,
+		corev1.Volume{
+			Name: volumeNameFedora,
+			VolumeSource: corev1.VolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: "/etc/pki/tls",
+					Type: &hostPathDirectoryOrCreate,
+				},
+			},
+		},
+		corev1.Volume{
+			Name: volumeNameCentos,
+			VolumeSource: corev1.VolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: "/etc/pki/ca-trust/extracted/pem",
+					Type: &hostPathDirectoryOrCreate,
+				},
+			},
+		},
+		corev1.Volume{
+			Name: volumeNameETCSSL,
+			VolumeSource: corev1.VolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: "/etc/ssl",
+					Type: &hostPathDirectoryOrCreate,
+				},
+			},
+		},
+	)
+
+	volumes = append(volumes, o.imports.VirtualGarden.KubeAPIServer.AdditionalVolumes...)
 
 	return volumes
 }

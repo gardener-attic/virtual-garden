@@ -15,6 +15,7 @@
 package loader
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
@@ -27,10 +28,14 @@ func ReadComponentDescriptor(componentDescriptorPath string) (*cdv2.ComponentDes
 		return nil, err
 	}
 
-	cd := &cdv2.ComponentDescriptor{}
-	if err := codec.Decode(data, cd); err != nil {
+	cdList := &cdv2.ComponentDescriptorList{}
+	if err := codec.Decode(data, cdList); err != nil {
 		return nil, err
 	}
 
-	return cd, nil
+	if len(cdList.Components) != 1 {
+		return nil, fmt.Errorf("Component descriptor list does not contain a unique entry")
+	}
+
+	return &cdList.Components[0], nil
 }

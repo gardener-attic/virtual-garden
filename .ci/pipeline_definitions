@@ -11,7 +11,7 @@ virtual-garden:
         dockerimages:
           virtual-garden-container-deployer:
             registry: 'gcr-readwrite'
-            image: eu.gcr.io/gardener-project/garden/virtual-garden-container-deployer
+            image: eu.gcr.io/gardener-project/virtual-garden-container-deployer
 
   jobs:
     head-update:

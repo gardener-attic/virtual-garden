@@ -101,7 +101,7 @@ imports:
             auditWebhookBatchMaxSize:
               type: string
             hvpaEnabled:
-              type: string
+              type: boolean
             hvpa:
               type: object
                 properties:
@@ -180,10 +180,8 @@ imports:
                   type: string
                 tolerance:
                   type: string
-        createNamespace:
-          type: string
         deleteNamespace:
-          type: string
+          type: boolean
 
   - name: credentials
     description: "credentials map"

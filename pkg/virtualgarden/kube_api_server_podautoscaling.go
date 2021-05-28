@@ -21,6 +21,7 @@ import (
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	autoscalingv1beta2 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 	"k8s.io/utils/pointer"
@@ -350,6 +351,16 @@ func (o *operation) deleteKubeApiServerHvpa(ctx context.Context) error {
 	o.log.Infof("Delete hvpa for the kube-apiserver")
 
 	hvpa := o.emptyKubeAPIServerHvpa()
+
+	hvpaCrd := emptyHVPACRD()
+	err := o.client.Get(ctx, client.ObjectKeyFromObject(hvpaCrd), hvpaCrd)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
 
 	if err := o.client.Delete(ctx, hvpa); client.IgnoreNotFound(err) != nil {
 		return err
