@@ -9,9 +9,9 @@ virtual-garden:
       component_descriptor: ~
       publish:
         dockerimages:
-          landscaper-controller:
+          virtual-garden-container-deployer:
             registry: 'gcr-readwrite'
-            image: eu.gcr.io/gardener-project/garden/virtual
+            image: eu.gcr.io/gardener-project/garden/virtual-garden-container-deployer
 
   jobs:
     head-update:

@@ -10,14 +10,6 @@ input:
 ...
 ---
 type: ociImage
-name: virtual-garden-container-deployer
-relation: local
-access:
-  type: ociRegistry
-  imageReference: eu.gcr.io/gardener-project/virtual-garden-container-deployer:${VERSION}
-...
----
-type: ociImage
 name: etcd
 relation: local
 access:
