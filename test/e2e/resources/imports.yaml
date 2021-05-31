@@ -13,7 +13,7 @@ virtualGarden:
   etcd:
     storageClassName: my-virtual-garden-storage-class
     backup:
-      infrastructureProvider: gcp # aws|gcp|alicloud
+      infrastructureProvider: fake # aws|gcp|alicloud
       region: europe-west555
       bucketName: my-virtual-garden-backup
       credentialsRef: mycredentials
@@ -102,7 +102,7 @@ virtualGarden:
 
 credentials:
   mycredentials:
-    type: gcp
+    type: fake
     data:
       serviceaccount.json: |
         {
