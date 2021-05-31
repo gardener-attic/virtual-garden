@@ -12,11 +12,11 @@ virtualGarden:
 
   etcd:
     storageClassName: my-virtual-garden-storage-class
-#   backup:
-#     infrastructureProvider: gcp # aws|gcp|alicloud
-#     region: europe-west555
-#     bucketName: my-virtual-garden-backup
-#     credentialsRef: mycredentials
+    backup:
+      infrastructureProvider: gcp # aws|gcp|alicloud
+      region: europe-west555
+      bucketName: my-virtual-garden-backup
+      credentialsRef: mycredentials
     handleETCDPersistentVolumes: true
     hvpaEnabled: true
 

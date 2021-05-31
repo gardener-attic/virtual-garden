@@ -42,6 +42,7 @@ var ValidInfrastructureProviderTypes = sets.NewString(
 	string(api.InfrastructureProviderAWS),
 	string(api.InfrastructureProviderGCP),
 	string(api.InfrastructureProviderAlicloud),
+	string(api.InfrastructureProviderFake),
 )
 
 // ValidateCluster validates the cluster.

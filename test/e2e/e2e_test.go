@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/gardener/virtual-garden/cmd/virtual-garden/app"
@@ -123,10 +124,10 @@ func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imp
 	if helper.KubeAPIServerSNIEnabled(imports.VirtualGarden.KubeAPIServer) {
 		Expect(kubeAPIServerService.Annotations).To(HaveKeyWithValue("dns.gardener.cloud/dnsnames", imports.VirtualGarden.KubeAPIServer.SNI.Hostname))
 		if val := imports.VirtualGarden.KubeAPIServer.SNI.DNSClass; val != nil {
-			Expect(kubeAPIServerService.Annotations).To(HaveKeyWithValue("dns.gardener.cloud/class", val))
+			Expect(kubeAPIServerService.Annotations).To(HaveKeyWithValue("dns.gardener.cloud/class", *val))
 		}
 		if val := imports.VirtualGarden.KubeAPIServer.SNI.TTL; val != nil {
-			Expect(kubeAPIServerService.Annotations).To(HaveKeyWithValue("dns.gardener.cloud/ttl", val))
+			Expect(kubeAPIServerService.Annotations).To(HaveKeyWithValue("dns.gardener.cloud/ttl", strconv.Itoa(int(*val))))
 		}
 	} else {
 		Expect(kubeAPIServerService.Annotations).NotTo(HaveKey("dns.gardener.cloud/dnsnames"))

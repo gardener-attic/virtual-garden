@@ -68,12 +68,9 @@ var _ = Describe("Etcd", func() {
 		infrastructureStorageClassProvisioner = "FaKe"
 		infrastructureStorageClassParameters  = map[string]string{"foo": "bar"}
 
-		bucketName                = "main-backup"
-		backupStorageProviderName = "fAkE"
-		backupSecretData          = map[string][]byte{"foo": []byte("bar")}
-		backupEnvironment         = []corev1.EnvVar{{Name: "some", Value: "data"}}
-
-		op *operation
+		bucketName       = "main-backup"
+		backupSecretData = map[string][]byte{"foo": []byte("bar")}
+		op               *operation
 	)
 
 	BeforeEach(func() {
@@ -85,7 +82,7 @@ var _ = Describe("Etcd", func() {
 			log:                    &logrus.Logger{Out: ioutil.Discard},
 			namespace:              namespace,
 			infrastructureProvider: fake.NewInfrastructureProvider(infrastructureStorageClassProvisioner, infrastructureStorageClassParameters),
-			backupProvider:         fake.NewBackupProvider(backupStorageProviderName, backupSecretData, backupEnvironment),
+			backupProvider:         fake.NewBackupProvider(backupSecretData),
 			imports: &api.Imports{
 				VirtualGarden: api.VirtualGarden{
 					ETCD: &api.ETCD{
@@ -255,7 +252,7 @@ var _ = Describe("Etcd", func() {
 								Name:  "STORAGE_CONTAINER",
 								Value: bucketName,
 							},
-						}, backupEnvironment...)
+						}, fake.FakeEnv...)
 						additionalPodAnnotations = map[string]string{"checksum/secret-etcd-backup": secretChecksumBackup}
 						additionalVolumes = []corev1.Volume{
 							{
@@ -276,7 +273,7 @@ var _ = Describe("Etcd", func() {
 						additionalCommand = []string{
 							"--schedule=0 */24 * * *",
 							"--defragmentation-schedule=0 1 * * *",
-							"--storage-provider=" + backupStorageProviderName,
+							"--storage-provider=" + fake.FakeProviderName,
 							"--store-prefix=virtual-garden-etcd-main",
 							"--delta-snapshot-period=5m",
 							"--delta-snapshot-memory-limit=104857600",

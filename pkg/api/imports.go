@@ -157,4 +157,6 @@ const (
 	InfrastructureProviderAWS InfrastructureProviderType = "aws"
 	// InfrastructureProviderGCP is a constant for the GCP infrastructure provider.
 	InfrastructureProviderGCP InfrastructureProviderType = "gcp"
+	// InfrastructureProviderFake is a constant for fake infrastructure provider.
+	InfrastructureProviderFake InfrastructureProviderType = "fake"
 )

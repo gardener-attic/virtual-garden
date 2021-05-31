@@ -21,6 +21,7 @@ import (
 	"github.com/gardener/virtual-garden/pkg/api"
 	"github.com/gardener/virtual-garden/pkg/provider/alicloud"
 	"github.com/gardener/virtual-garden/pkg/provider/aws"
+	"github.com/gardener/virtual-garden/pkg/provider/fake"
 	"github.com/gardener/virtual-garden/pkg/provider/gcp"
 
 	corev1 "k8s.io/api/core/v1"
@@ -65,7 +66,8 @@ type BackupProvider interface {
 }
 
 // NewBackupProvider returns a new InfrastructureProvider interface for the given provider type.
-func NewBackupProvider(providerType api.InfrastructureProviderType, credentials map[string]api.Credentials, credentialsRef string) (BackupProvider, error) {
+func NewBackupProvider(providerType api.InfrastructureProviderType, credentials map[string]api.Credentials,
+	credentialsRef string) (BackupProvider, error) {
 	creds, ok := credentials[credentialsRef]
 	if !ok {
 		return nil, fmt.Errorf("could not find referenced credentials with name %q", credentialsRef)
@@ -77,6 +79,13 @@ func NewBackupProvider(providerType api.InfrastructureProviderType, credentials 
 	switch providerType {
 	case api.InfrastructureProviderGCP:
 		return gcp.NewBackupProvider(creds.Data)
+	case api.InfrastructureProviderFake:
+		backupSecretData := map[string][]byte{}
+
+		for k, v := range creds.Data {
+			backupSecretData[k] = []byte(v)
+		}
+		return fake.NewBackupProvider(backupSecretData), nil
 	}
 
 	return nil, fmt.Errorf("unsupported backup provider type: %q", providerType)
