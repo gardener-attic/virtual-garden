@@ -31,9 +31,10 @@ func ToFile(exports *api.Exports, path string) error {
 
 	folderPath := filepath.Dir(path)
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
-		os.MkdirAll(folderPath, 0700)
+		if err := os.MkdirAll(folderPath, 0700); err != nil {
+			return err
+		}
 	}
 
-	err = ioutil.WriteFile(path, b, os.ModePerm)
-	return err
+	return ioutil.WriteFile(path, b, os.ModePerm)
 }
