@@ -31,8 +31,6 @@ type Imports struct {
 
 // HostingCluster contains settings for the hosting cluster that runs the virtual garden.
 type HostingCluster struct {
-	// Kubeconfig is the kubeconfig of the hosting cluster into which the virtual garden shall be installed.
-	Kubeconfig string `json:"kubeconfig" yaml:"kubeconfig"`
 	// Namespace is a namespace in the hosting cluster into which the virtual garden shall be installed.
 	Namespace string `json:"namespace" yaml:"namespace"`
 	// InfrastructureProvider is the provider type of the underlying infrastructure of the hosting cluster.

@@ -27,6 +27,7 @@ import (
 func ValidateImports(obj *api.Imports) field.ErrorList {
 	allErrs := field.ErrorList{}
 
+	allErrs = append(allErrs, ValidateCluster(&obj.Cluster, field.NewPath("cluster"))...)
 	allErrs = append(allErrs, ValidateHostingCluster(&obj.HostingCluster, field.NewPath("hostingCluster"))...)
 	allErrs = append(allErrs, ValidateVirtualGarden(&obj.VirtualGarden, obj.Credentials, field.NewPath("virtualGarden"))...)
 	for name, credentials := range obj.Credentials {
@@ -43,13 +44,21 @@ var ValidInfrastructureProviderTypes = sets.NewString(
 	string(api.InfrastructureProviderAlicloud),
 )
 
+// ValidateCluster validates the cluster.
+func ValidateCluster(obj *string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if len(*obj) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath, "kubeconfig cluster is required"))
+	}
+
+	return allErrs
+}
+
 // ValidateHostingCluster validates a HostingCluster object.
 func ValidateHostingCluster(obj *api.HostingCluster, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if len(obj.Kubeconfig) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("kubeconfig"), "kubeconfig of hosting cluster is required"))
-	}
 	if len(obj.Namespace) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath.Child("namespace"), "namespace for deployment in hosting cluster is required"))
 	}

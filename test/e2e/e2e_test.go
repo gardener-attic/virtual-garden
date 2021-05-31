@@ -19,6 +19,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"os"
+	"path"
 	"time"
 
 	"github.com/gardener/virtual-garden/cmd/virtual-garden/app"
@@ -58,6 +59,10 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 
 	BeforeSuite(func() {
 		// Read options to figure out what is being tested.
+		repoRoot := os.Getenv("REPO_ROOT")
+		os.Setenv("IMPORTS_PATH", path.Join(repoRoot, "test/e2e/resources/imports.yaml"))
+		os.Setenv("EXPORTS_PATH", path.Join(repoRoot, "tmp/export.yaml"))
+		os.Setenv("COMPONENT_DESCRIPTOR_PATH", path.Join(repoRoot, "test/e2e/resources/resolved-component-descriptor.json"))
 		opts = app.NewOptions()
 		opts.InitializeFromEnvironment()
 
@@ -66,13 +71,13 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		Expect(err).To(BeNil())
 
 		// Create Kubernetes client for actual verification calls in the hosting cluster.
-		c, err = app.NewClientFromKubeconfig([]byte(imports.HostingCluster.Kubeconfig))
+		c, err = app.NewClientFromKubeconfig([]byte(imports.Cluster))
 		Expect(err).To(BeNil())
 	})
 
 	AfterSuite(func() {
-		origArgs := setCommandLineArguments()
-		defer func() { os.Args = origArgs[:] }()
+		handleEtcdPersistentVolumes(true)
+		defer handleEtcdPersistentVolumes(false)
 
 		By("Executing virtual garden deployer (deletion)")
 		Expect(os.Setenv("OPERATION", "DELETE")).To(Succeed())
@@ -83,8 +88,8 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 
 	Describe("#NewCommandVirtualGarden.Execute()", func() {
 		It("should correctly create/reconcile and delete the virtual garden (w/o namespace handling)", func() {
-			origArgs := setCommandLineArguments()
-			defer func() { os.Args = origArgs[:] }()
+			handleEtcdPersistentVolumes(true)
+			defer handleEtcdPersistentVolumes(false)
 
 			if opts.OperationType != app.OperationTypeReconcile {
 				return
@@ -423,12 +428,6 @@ func verifyDeletion(ctx context.Context, c client.Client, imports *api.Imports) 
 }
 
 // See https://github.com/onsi/ginkgo/issues/285#issuecomment-290575636
-func setCommandLineArguments() []string {
-	origArgs := os.Args[:]
-	if handleETCDPersistentVolumes {
-		os.Args = append(os.Args[:1], "--handle-etcd-persistent-volumes")
-	} else {
-		os.Args = os.Args[:1]
-	}
-	return origArgs[:]
+func handleEtcdPersistentVolumes(handle bool) {
+
 }

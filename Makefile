@@ -72,7 +72,7 @@ test:
 
 .PHONY: test-e2e
 test-e2e:
-	@IMPORTS_PATH="$(REPO_ROOT)/dev/imports.yaml" ginkgo -v $(REPO_ROOT)/test/e2e
+	ginkgo -v $(REPO_ROOT)/test/e2e
 
 .PHONY: test-cov
 test-cov:

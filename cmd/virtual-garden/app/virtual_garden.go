@@ -96,8 +96,6 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 		return err
 	}
 
-	imports.HostingCluster.Kubeconfig = imports.Cluster
-
 	cd, err := loader.ReadComponentDescriptor(opts.ComponentDescriptorPath)
 	if err != nil {
 		return err
@@ -114,7 +112,7 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 	}
 
 	log.Infof("Creating REST config and Kubernetes client based on given kubeconfig")
-	client, err := NewClientFromKubeconfig([]byte(imports.HostingCluster.Kubeconfig))
+	client, err := NewClientFromKubeconfig([]byte(imports.Cluster))
 	if err != nil {
 		return err
 	}

@@ -34,8 +34,8 @@ var _ = Describe("Imports", func() {
 
 		BeforeEach(func() {
 			obj = &api.Imports{
+				Cluster: "abc",
 				HostingCluster: api.HostingCluster{
-					Kubeconfig:             "abc",
 					Namespace:              "foo",
 					InfrastructureProvider: "gcp",
 				},
@@ -64,14 +64,14 @@ var _ = Describe("Imports", func() {
 
 		Context("hosting cluster", func() {
 			It("should fail for an invalid configuration", func() {
-				obj.HostingCluster.Kubeconfig = ""
+				obj.Cluster = ""
 				obj.HostingCluster.Namespace = ""
 				obj.HostingCluster.InfrastructureProvider = ""
 
 				Expect(ValidateImports(obj)).To(ConsistOf(
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":  Equal(field.ErrorTypeRequired),
-						"Field": Equal("hostingCluster.kubeconfig"),
+						"Field": Equal("cluster"),
 					})),
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":  Equal(field.ErrorTypeRequired),

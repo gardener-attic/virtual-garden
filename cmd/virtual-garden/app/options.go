@@ -72,7 +72,7 @@ func (o *Options) validate(args []string) error {
 		return fmt.Errorf("missing path for component descriptor file")
 	}
 
-	if len(args) != 0 {
+	if len(args) == 0 {
 		return errors.New("arguments are not supported")
 	}
 

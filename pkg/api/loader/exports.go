@@ -17,6 +17,7 @@ package loader
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/gardener/virtual-garden/pkg/api"
 	"gopkg.in/yaml.v2"
@@ -26,6 +27,11 @@ func ToFile(exports *api.Exports, path string) error {
 	b, err := yaml.Marshal(exports)
 	if err != nil {
 		return err
+	}
+
+	folderPath := filepath.Dir(path)
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		os.MkdirAll(folderPath, 0700)
 	}
 
 	err = ioutil.WriteFile(path, b, os.ModePerm)
