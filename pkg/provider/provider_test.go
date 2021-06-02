@@ -52,61 +52,39 @@ var _ = Describe("Provider", func() {
 
 	Describe("#NewBackupProvider", func() {
 		var (
-			fooType        = api.InfrastructureProviderType("foo")
-			barType        = api.InfrastructureProviderType("bar")
-			credentialsRef = "foo"
-			credentials    map[string]api.Credentials
+			fooType = api.InfrastructureProviderType("foo")
 		)
 
-		BeforeEach(func() {
-			credentials = map[string]api.Credentials{credentialsRef: {}}
-		})
-
-		It("should fail if the referenced credentials cannot be found", func() {
-			provider, err := NewBackupProvider("foo", credentials, "")
-			Expect(err).To(MatchError(ContainSubstring("could not find referenced credentials")))
-			Expect(provider).To(BeNil())
-		})
-
-		It("should fail if the referenced credentials type is not equal provider type", func() {
-			credentials[credentialsRef] = api.Credentials{Type: barType}
-
-			provider, err := NewBackupProvider(fooType, credentials, credentialsRef)
-			Expect(err).To(MatchError(ContainSubstring("does not match provider type")))
-			Expect(provider).To(BeNil())
-		})
-
 		It("should fail for alicloud", func() {
-			credentials[credentialsRef] = api.Credentials{Type: api.InfrastructureProviderAlicloud}
+			credentials := api.Credentials{}
 
-			provider, err := NewBackupProvider(api.InfrastructureProviderAlicloud, credentials, credentialsRef)
+			provider, err := NewBackupProvider(api.InfrastructureProviderAlicloud, &credentials)
 			Expect(err).To(MatchError(ContainSubstring("unsupported")))
 			Expect(provider).To(BeNil())
 		})
 
 		It("should fail for aws", func() {
-			credentials[credentialsRef] = api.Credentials{Type: api.InfrastructureProviderAWS}
+			credentials := api.Credentials{}
 
-			provider, err := NewBackupProvider(api.InfrastructureProviderAWS, credentials, credentialsRef)
+			provider, err := NewBackupProvider(api.InfrastructureProviderAWS, &credentials)
 			Expect(err).To(MatchError(ContainSubstring("unsupported")))
 			Expect(provider).To(BeNil())
 		})
 
 		It("should succeed for gcp", func() {
-			credentials[credentialsRef] = api.Credentials{
-				Type: api.InfrastructureProviderGCP,
+			credentials := api.Credentials{
 				Data: map[string]string{gcp.DataKeyServiceAccountJSON: "{\"project_id\": \"my-project\"}"},
 			}
 
-			provider, err := NewBackupProvider(api.InfrastructureProviderGCP, credentials, credentialsRef)
+			provider, err := NewBackupProvider(api.InfrastructureProviderGCP, &credentials)
 			Expect(err).To(BeNil())
 			Expect(provider).NotTo(BeNil())
 		})
 
 		It("should fail for unsupported providers", func() {
-			credentials[credentialsRef] = api.Credentials{Type: fooType}
+			credentials := api.Credentials{}
 
-			provider, err := NewBackupProvider(fooType, credentials, credentialsRef)
+			provider, err := NewBackupProvider(fooType, &credentials)
 			Expect(err).To(MatchError(ContainSubstring("unsupported")))
 			Expect(provider).To(BeNil())
 		})

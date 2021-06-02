@@ -15,8 +15,6 @@
 package validation
 
 import (
-	"fmt"
-
 	"github.com/gardener/virtual-garden/pkg/api"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -29,10 +27,7 @@ func ValidateImports(obj *api.Imports) field.ErrorList {
 
 	allErrs = append(allErrs, ValidateCluster(&obj.Cluster, field.NewPath("cluster"))...)
 	allErrs = append(allErrs, ValidateHostingCluster(&obj.HostingCluster, field.NewPath("hostingCluster"))...)
-	allErrs = append(allErrs, ValidateVirtualGarden(&obj.VirtualGarden, obj.Credentials, field.NewPath("virtualGarden"))...)
-	for name, credentials := range obj.Credentials {
-		allErrs = append(allErrs, ValidateCredentials(credentials, field.NewPath("credentials", name))...)
-	}
+	allErrs = append(allErrs, ValidateVirtualGarden(&obj.VirtualGarden, field.NewPath("virtualGarden"))...)
 
 	return allErrs
 }
@@ -71,7 +66,7 @@ func ValidateHostingCluster(obj *api.HostingCluster, fldPath *field.Path) field.
 }
 
 // ValidateVirtualGarden validates a VirtualGarden object.
-func ValidateVirtualGarden(obj *api.VirtualGarden, credentials map[string]api.Credentials, fldPath *field.Path) field.ErrorList {
+func ValidateVirtualGarden(obj *api.VirtualGarden, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if obj.ETCD != nil {
@@ -79,7 +74,7 @@ func ValidateVirtualGarden(obj *api.VirtualGarden, credentials map[string]api.Cr
 			allErrs = append(allErrs, field.Required(fldPath.Child("etcd", "storageClassName"), "storage class name cannot be empty if key is provided"))
 		}
 		if obj.ETCD.Backup != nil {
-			allErrs = append(allErrs, ValidateETCDBackup(obj.ETCD.Backup, credentials, fldPath.Child("etcd", "backup"))...)
+			allErrs = append(allErrs, ValidateETCDBackup(obj.ETCD.Backup, fldPath.Child("etcd", "backup"))...)
 		}
 	}
 
@@ -92,22 +87,8 @@ func ValidateVirtualGarden(obj *api.VirtualGarden, credentials map[string]api.Cr
 	return allErrs
 }
 
-// ValidateCredentials validates a Credentials object.
-func ValidateCredentials(obj api.Credentials, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-
-	if len(obj.Type) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("type"), "type must be given"))
-	}
-	if len(obj.Data) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("data"), "at least one key-value pair must be given"))
-	}
-
-	return allErrs
-}
-
 // ValidateETCDBackup validates an ETCDBackup object.
-func ValidateETCDBackup(obj *api.ETCDBackup, credentials map[string]api.Credentials, fldPath *field.Path) field.ErrorList {
+func ValidateETCDBackup(obj *api.ETCDBackup, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if !ValidInfrastructureProviderTypes.Has(string(obj.InfrastructureProvider)) {
@@ -119,12 +100,8 @@ func ValidateETCDBackup(obj *api.ETCDBackup, credentials map[string]api.Credenti
 	if len(obj.BucketName) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath.Child("bucketName"), "bucketName must be given"))
 	}
-	if len(obj.CredentialsRef) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("credentialsRef"), "credentialsRef must be given"))
-	} else if credentials, ok := credentials[obj.CredentialsRef]; !ok {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("credentialsRef"), obj.CredentialsRef, fmt.Sprintf("%q was not found in .credentials", obj.CredentialsRef)))
-	} else if credentials.Type != obj.InfrastructureProvider {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("credentialsRef"), obj.CredentialsRef, fmt.Sprintf("referenced credentials are not of type %q but %q", obj.InfrastructureProvider, credentials.Type)))
+	if obj.Credentials == nil || len(obj.Credentials.Data) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("credentials"), "etcd backup credentials are emtpy"))
 	}
 
 	return allErrs

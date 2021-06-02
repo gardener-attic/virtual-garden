@@ -45,14 +45,10 @@ var _ = Describe("Imports", func() {
 							InfrastructureProvider: api.InfrastructureProviderGCP,
 							Region:                 "foo",
 							BucketName:             "bar",
-							CredentialsRef:         "baz",
+							Credentials: &api.Credentials{
+								Data: map[string]string{"foo": "bar"},
+							},
 						},
-					},
-				},
-				Credentials: map[string]api.Credentials{
-					"baz": {
-						Type: api.InfrastructureProviderGCP,
-						Data: map[string]string{"foo": "bar"},
 					},
 				},
 			}
@@ -98,7 +94,8 @@ var _ = Describe("Imports", func() {
 						Backup:           &api.ETCDBackup{},
 					}
 
-					Expect(ValidateImports(obj)).To(ConsistOf(
+					result := ValidateImports(obj)
+					Expect(result).To(ConsistOf(
 						PointTo(MatchFields(IgnoreExtras, Fields{
 							"Type":  Equal(field.ErrorTypeRequired),
 							"Field": Equal("virtualGarden.etcd.storageClassName"),
@@ -117,30 +114,18 @@ var _ = Describe("Imports", func() {
 						})),
 						PointTo(MatchFields(IgnoreExtras, Fields{
 							"Type":  Equal(field.ErrorTypeRequired),
-							"Field": Equal("virtualGarden.etcd.backup.credentialsRef"),
+							"Field": Equal("virtualGarden.etcd.backup.credentials"),
 						})),
 					))
 				})
 
 				It("should fail when credentials ref is invalid", func() {
-					obj.VirtualGarden.ETCD.Backup.CredentialsRef = "baz2"
+					obj.VirtualGarden.ETCD.Backup.Credentials = nil
 
 					Expect(ValidateImports(obj)).To(ConsistOf(
 						PointTo(MatchFields(IgnoreExtras, Fields{
-							"Type":  Equal(field.ErrorTypeInvalid),
-							"Field": Equal("virtualGarden.etcd.backup.credentialsRef"),
-						})),
-					))
-				})
-
-				It("should fail when credentials ref points to credentials of different type", func() {
-					obj.VirtualGarden.ETCD.Backup.CredentialsRef = "wrong"
-					obj.Credentials["wrong"] = api.Credentials{Type: "type", Data: map[string]string{"foo": "bar"}}
-
-					Expect(ValidateImports(obj)).To(ConsistOf(
-						PointTo(MatchFields(IgnoreExtras, Fields{
-							"Type":  Equal(field.ErrorTypeInvalid),
-							"Field": Equal("virtualGarden.etcd.backup.credentialsRef"),
+							"Type":  Equal(field.ErrorTypeRequired),
+							"Field": Equal("virtualGarden.etcd.backup.credentials"),
 						})),
 					))
 				})
@@ -183,23 +168,6 @@ var _ = Describe("Imports", func() {
 						Entry("no hostnames, ttl to high", &api.SNI{TTL: pointer.Int32Ptr(1000)}),
 					)
 				})
-			})
-		})
-
-		Context("credentials", func() {
-			It("should fail for an invalid configuration", func() {
-				obj.Credentials["foo"] = api.Credentials{}
-
-				Expect(ValidateImports(obj)).To(ConsistOf(
-					PointTo(MatchFields(IgnoreExtras, Fields{
-						"Type":  Equal(field.ErrorTypeRequired),
-						"Field": Equal("credentials.foo.type"),
-					})),
-					PointTo(MatchFields(IgnoreExtras, Fields{
-						"Type":  Equal(field.ErrorTypeRequired),
-						"Field": Equal("credentials.foo.data"),
-					})),
-				))
 			})
 		})
 	})

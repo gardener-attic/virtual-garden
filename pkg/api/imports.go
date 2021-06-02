@@ -24,9 +24,6 @@ type Imports struct {
 	HostingCluster HostingCluster `json:"hostingCluster" yaml:"hostingCluster"`
 	// VirtualGarden contains configuration for the virtual garden cluster.
 	VirtualGarden VirtualGarden `json:"virtualGarden" yaml:"virtualGarden"`
-	// Credentials maps names to credential pairs. Other structures shall reference those credentials using the names.
-	// +optional
-	Credentials map[string]Credentials `json:"credentials,omitempty" yaml:"credentials,omitempty"`
 }
 
 // HostingCluster contains settings for the hosting cluster that runs the virtual garden.
@@ -75,9 +72,9 @@ type ETCDBackup struct {
 	Region string `json:"region" yaml:"region"`
 	// BucketName is the name of the blob storage bucket.
 	BucketName string `json:"bucketName" yaml:"bucketName"`
-	// CredentialsRef is the name of a key in the credentials that shall be used for the creation of the blob storage
+	// Credentials contain the credentials that shall be used for the creation of the blob storage
 	// bucket.
-	CredentialsRef string `json:"credentialsRef" yaml:"credentialsRef"`
+	Credentials *Credentials `json:"credentials" yaml:"credentials"`
 }
 
 // KubeAPIServer contains configuration for the virtual garden kube-apiserver.
@@ -141,8 +138,6 @@ type SNI struct {
 
 // Credentials contains key-value pairs for credentials for a certain endpoint type.
 type Credentials struct {
-	// Type is the credentials type.
-	Type InfrastructureProviderType `json:"type" yaml:"type"`
 	// Data contains key-value pairs with the credentials information. The keys are specific for the credentials type.
 	Data map[string]string `json:"data" yaml:"data"`
 }

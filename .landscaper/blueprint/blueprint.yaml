@@ -60,8 +60,13 @@ imports:
                   type: string
                 bucketName:
                   type: string
-                credentialsRef:
-                  type: string
+                credentials:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties:
+                        type: string
             handleETCDPersistentVolumes:
               type: boolean
             hvpaEnabled:
@@ -182,21 +187,6 @@ imports:
                   type: string
         deleteNamespace:
           type: boolean
-
-  - name: credentials
-    description: "credentials map"
-    schema:
-      type: object
-      additionalProperties:
-        type: object
-        description: "credentials"
-        properties:
-          type:
-            type: string
-          data:
-            type: object
-            additionalProperties:
-              type: string
 
 exports:
 - name: kubeApiserverCaPem

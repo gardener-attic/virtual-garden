@@ -89,7 +89,8 @@ func NewOperation(
 	op.infrastructureProvider = infrastructureProvider
 
 	if helper.ETCDBackupEnabled(imports.VirtualGarden.ETCD) {
-		backupProvider, err := provider.NewBackupProvider(imports.VirtualGarden.ETCD.Backup.InfrastructureProvider, imports.Credentials, imports.VirtualGarden.ETCD.Backup.CredentialsRef)
+		backupProvider, err := provider.NewBackupProvider(imports.VirtualGarden.ETCD.Backup.InfrastructureProvider,
+			imports.VirtualGarden.ETCD.Backup.Credentials)
 		if err != nil {
 			return nil, err
 		}

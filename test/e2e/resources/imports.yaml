@@ -16,7 +16,13 @@ virtualGarden:
       infrastructureProvider: fake # aws|gcp|alicloud
       region: europe-west555
       bucketName: my-virtual-garden-backup
-      credentialsRef: mycredentials
+      credentials:
+        data:
+          serviceaccount.json: |
+            {
+              "project_id": "test-project",
+              "type": "test-type"
+            }
     handleETCDPersistentVolumes: true
     hvpaEnabled: true
 
@@ -99,13 +105,3 @@ virtualGarden:
           cpuInitializationPeriod: "c"
           syncPeriod: "d"
           tolerance: "e"
-
-credentials:
-  mycredentials:
-    type: fake
-    data:
-      serviceaccount.json: |
-        {
-          "project_id": "test-project",
-          "type": "test-type"
-        }

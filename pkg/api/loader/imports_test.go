@@ -66,7 +66,6 @@ var _ = Describe("Imports", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(imports).To(Equal(&api.Imports{
 					HostingCluster: api.HostingCluster{Namespace: "foo"},
-					Credentials:    map[string]api.Credentials{},
 				}))
 			})
 
@@ -78,7 +77,6 @@ var _ = Describe("Imports", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(imports).To(Equal(&api.Imports{
 					HostingCluster: api.HostingCluster{Namespace: "foo"},
-					Credentials:    map[string]api.Credentials{},
 				}))
 			})
 		})
