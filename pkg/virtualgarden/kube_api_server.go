@@ -29,10 +29,6 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 
 	checksums := make(map[string]string)
 
-	if err := o.deployHVPACRD(ctx); err != nil {
-		return err
-	}
-
 	loadBalancer, err := o.computeKubeAPIServerLoadBalancer(ctx)
 	if err != nil {
 		return err
@@ -94,10 +90,6 @@ func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
 	}
 
 	if err := o.deleteKubeAPIServerCertificates(ctx); err != nil {
-		return err
-	}
-
-	if err := o.deleteHPVACRD(ctx); err != nil {
 		return err
 	}
 

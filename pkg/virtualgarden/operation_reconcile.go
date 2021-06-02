@@ -29,9 +29,15 @@ func (o *operation) Reconcile(ctx context.Context) (*api.Exports, error) {
 	var (
 		graph = flow.NewGraph("Virtual Garden Reconciliation")
 
+		createHVPACRD = graph.Add(flow.Task{
+			Name: "Creating HVPA CRD in hosting cluster",
+			Fn:   o.deployHVPACRD,
+		})
+
 		createNamespace = graph.Add(flow.Task{
-			Name: "Creating namespace for virtual-garden deployment in hosting cluster",
-			Fn:   o.CreateNamespace,
+			Name:         "Creating namespace for virtual-garden deployment in hosting cluster",
+			Fn:           o.CreateNamespace,
+			Dependencies: flow.NewTaskIDs(createHVPACRD),
 		})
 
 		createKubeAPIServerService = graph.Add(flow.Task{

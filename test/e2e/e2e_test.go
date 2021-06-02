@@ -39,7 +39,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -157,9 +156,9 @@ func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imp
 		backupProvider, err = provider.NewBackupProvider(imports.VirtualGarden.ETCD.Backup.InfrastructureProvider, imports.VirtualGarden.ETCD.Backup.Credentials)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err := backupProvider.BucketExists(ctx, imports.VirtualGarden.ETCD.Backup.BucketName)
+		bucketExists, err := backupProvider.BucketExists(ctx, imports.VirtualGarden.ETCD.Backup.BucketName)
 		Expect(err).NotTo(HaveOccurred())
-		//Expect(bucketExists).To(BeTrue())
+		Expect(bucketExists).To(BeTrue())
 	}
 
 	By("Checking that the etcd storage class was created as expected")
@@ -255,7 +254,6 @@ func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imp
 		Expect(etcdServerCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}))
 
 		By("Checking that the etcd statefulset was created as expected (" + role + ")")
-		storageProviderName, _, environment := backupProvider.ComputeETCDBackupConfiguration(virtualgarden.ETCDVolumeMountPathBackupSecret)
 		sts := &appsv1.StatefulSet{}
 		Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDStatefulSetName(role), Namespace: imports.HostingCluster.Namespace}, sts)).To(Succeed())
 
@@ -275,6 +273,7 @@ func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imp
 		Expect(sts.Spec.Template.Labels).To(HaveKeyWithValue("role", role))
 		Expect(sts.Spec.Template.Spec.Containers).To(HaveLen(2))
 		if role == virtualgarden.ETCDRoleMain && helper.ETCDBackupEnabled(imports.VirtualGarden.ETCD) {
+			storageProviderName, _, environment := backupProvider.ComputeETCDBackupConfiguration(virtualgarden.ETCDVolumeMountPathBackupSecret)
 			Expect(sts.Spec.Template.Annotations).To(HaveKey("checksum/secret-etcd-backup"))
 			Expect(sts.Spec.Template.Spec.Containers[1].Env).To(ConsistOf(append([]corev1.EnvVar{{
 				Name:  "STORAGE_CONTAINER",
@@ -312,7 +311,8 @@ func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imp
 		if helper.ETCDHVPAEnabled(imports.VirtualGarden.ETCD) {
 			By("Checking that the etcd HVPA was created as expected (" + role + ")")
 			etcdHVPA := &hvpav1alpha1.Hvpa{}
-			Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDHVPAName(role), Namespace: imports.HostingCluster.Namespace}, etcdHVPA)).To(Or(Succeed(), MatchError(&meta.NoResourceMatchError{}), MatchError(&meta.NoKindMatchError{})))
+			err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDHVPAName(role), Namespace: imports.HostingCluster.Namespace}, etcdHVPA)
+			Expect(err).To(Succeed())
 		}
 	}
 }
@@ -339,10 +339,7 @@ func verifyDeletion(ctx context.Context, c client.Client, imports *api.Imports) 
 		if helper.ETCDHVPAEnabled(imports.VirtualGarden.ETCD) {
 			By("Checking that the etcd HVPA was deleted successfully (" + role + ")")
 			err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDHVPAName(role), Namespace: imports.HostingCluster.Namespace}, &hvpav1alpha1.Hvpa{})
-			Expect(err).To(HaveOccurred())
-			if !apierrors.IsNotFound(err) {
-				Expect(err).To(Or(MatchError(&meta.NoResourceMatchError{}), MatchError(&meta.NoKindMatchError{})))
-			}
+			Expect(apierrors.IsNotFound(err)).To(BeTrue())
 		}
 
 		By("Checking that the etcd statefulset was deleted successfully (" + role + ")")
