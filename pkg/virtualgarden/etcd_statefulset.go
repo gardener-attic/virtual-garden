@@ -156,7 +156,7 @@ func (o *operation) deployETCDStatefulSet(
 						},
 					},
 				},
-				PriorityClassName: "garden-controlplane",
+				PriorityClassName: o.imports.VirtualGarden.PriorityClassName,
 				Containers: []corev1.Container{
 					{
 						Name:            etcdContainerName,

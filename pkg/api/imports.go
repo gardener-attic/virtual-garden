@@ -45,6 +45,8 @@ type VirtualGarden struct {
 
 	// DeleteNamespace controls if the namespace should be deleted
 	DeleteNamespace bool `json:"deleteNamespace,omitempty" yaml:"deleteNamespace,omitempty"`
+
+	PriorityClassName string `json:"priorityClassName,omitempty" yaml:"priorityClassName,omitempty"`
 }
 
 // ETCD contains configuration for the etcd that is used by the virtual garden kube-apiserver.

@@ -93,6 +93,7 @@ var _ = Describe("Etcd", func() {
 						HVPAEnabled:                 true,
 						HandleETCDPersistentVolumes: true,
 					},
+					PriorityClassName: "garden-controlplane",
 				},
 			},
 			imageRefs: api.ImageRefs{

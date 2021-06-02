@@ -55,7 +55,7 @@ func (o *operation) deployKubeAPIServerDeploymentControllerManager(ctx context.C
 				},
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken:  pointer.BoolPtr(false),
-					PriorityClassName:             "garden-controlplane",
+					PriorityClassName:             o.imports.VirtualGarden.PriorityClassName,
 					Containers:                    o.getKubeControllerManagerContainers(),
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					RestartPolicy:                 corev1.RestartPolicyAlways,

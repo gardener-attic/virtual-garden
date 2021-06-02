@@ -15,7 +15,6 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -70,10 +69,6 @@ func (o *Options) validate(args []string) error {
 
 	if len(o.ComponentDescriptorPath) == 0 {
 		return fmt.Errorf("missing path for component descriptor file")
-	}
-
-	if len(args) == 0 {
-		return errors.New("arguments are not supported")
 	}
 
 	return nil

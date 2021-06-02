@@ -187,6 +187,8 @@ imports:
                   type: string
         deleteNamespace:
           type: boolean
+        priorityClassName:
+          type: string
 
 exports:
 - name: kubeApiserverCaPem

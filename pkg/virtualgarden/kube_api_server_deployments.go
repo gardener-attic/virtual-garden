@@ -137,7 +137,7 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 					},
 					AutomountServiceAccountToken: pointer.BoolPtr(false),
 					ServiceAccountName:           KubeAPIServerServiceName,
-					PriorityClassName:            "garden-controlplane",
+					PriorityClassName:            o.imports.VirtualGarden.PriorityClassName,
 					Containers: []corev1.Container{
 						{
 							Name:            kubeAPIServerContainerName,
