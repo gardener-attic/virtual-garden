@@ -18,10 +18,13 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/ghodss/yaml"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -128,6 +131,8 @@ func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imp
 
 		verifyReconciliationOfETCDHVPA(ctx, c, imports, role)
 	}
+
+	verifyReconciliationOfKubeAPIServerCertificates(ctx, c, imports)
 }
 
 func verifyReconciliationOfKubeAPIServerService(ctx context.Context, c client.Client, imports *api.Imports) {
@@ -225,6 +230,7 @@ func verifyReconciliationOfETCDCACertificate(ctx context.Context, c client.Clien
 
 func verifyReconciliationOfETCDClientCertificate(ctx context.Context, c client.Client, imports *api.Imports, etcdCACertificate *secretsutil.Certificate) {
 	By("Checking that the etcd client secret was created as expected")
+
 	etcdSecretClientCert := &corev1.Secret{}
 	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameClientCertificate, Namespace: imports.HostingCluster.Namespace}, etcdSecretClientCert)).To(Succeed())
 
@@ -375,6 +381,66 @@ func verifyReconciliationOfETCDHVPA(ctx context.Context, c client.Client, import
 	}
 }
 
+func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c client.Client, imports *api.Imports) {
+	By("Checking that the certificates for the kube-apiserver were created as expected")
+
+	// KubeApiServerSecretNameAggregatorCACertificate
+	aggCASecret := &corev1.Secret{}
+	objectKey := client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameAggregatorCACertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, aggCASecret)).To(Succeed())
+
+	aggCACertificate, err := secretsutil.LoadCertificate(aggCASecret.Name, aggCASecret.Data[secretsutil.DataKeyPrivateKeyCA], aggCASecret.Data[secretsutil.DataKeyCertificateCA])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(aggCACertificate.Certificate.IsCA).To(BeTrue())
+	Expect(aggCACertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:ca:kube-aggregator"))
+	//  Expect(aggCACertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageCertSign | x509.KeyUsageCRLSign))
+
+	//	compareWithLocalCACertificate(aggCACertificate, "cert/virtual-garden-kube-aggregator-ca.yaml")
+
+	// KubeApiServerSecretNameAggregatorClientCertificate
+	aggClientSecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameAggregatorClientCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, aggClientSecret)).To(Succeed())
+
+	aggClientCertificate, err := secretsutil.LoadCertificate(aggClientSecret.Name, aggClientSecret.Data[secretsutil.DataKeyPrivateKey], aggClientSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(aggClientCertificate.Certificate.IsCA).To(BeFalse())
+	Expect(aggClientCertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:aggregator-client:kube-aggregator"))
+	Expect(aggClientCertificate.Certificate.Issuer.CommonName).To(Equal(aggCACertificate.Certificate.Subject.CommonName))
+	Expect(aggClientCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
+	Expect(aggClientCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}))
+
+	//	compareWithLocalCertificate(aggClientCertificate, "cert/virtual-garden-kube-aggregator.yaml")
+
+	// virtual-garden-kube-apiserver-ca
+	kubeAPIServerCASecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameApiServerCACertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, kubeAPIServerCASecret)).To(Succeed())
+
+	kubeAPIServerCACertificate, err := secretsutil.LoadCertificate(kubeAPIServerCASecret.Name, kubeAPIServerCASecret.Data[secretsutil.DataKeyPrivateKeyCA], kubeAPIServerCASecret.Data[secretsutil.DataKeyCertificateCA])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(kubeAPIServerCACertificate.Certificate.IsCA).To(BeTrue())
+	Expect(kubeAPIServerCACertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:ca:kube-apiserver"))
+	//	Expect(kubeAPIServerCACertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageCertSign | x509.KeyUsageCRLSign))
+
+	//	compareWithLocalCACertificate(kubeAPIServerCACertificate, "temp/cert/virtual-garden-kube-apiserver-ca.yaml")
+
+	// virtual-garden-kube-apiserver
+	kubeAPIServerSecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameApiServerServerCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, kubeAPIServerSecret)).To(Succeed())
+
+	kubeAPIServerCertificate, err := secretsutil.LoadCertificate(kubeAPIServerSecret.Name, kubeAPIServerSecret.Data[secretsutil.DataKeyPrivateKey], kubeAPIServerSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(kubeAPIServerCertificate.Certificate.IsCA).To(BeFalse())
+	Expect(kubeAPIServerCertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:server:kube-apiserver"))
+	Expect(kubeAPIServerCertificate.Certificate.Issuer.CommonName).To(Equal(kubeAPIServerCACertificate.Certificate.Subject.CommonName))
+	Expect(kubeAPIServerCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
+	//	Expect(kubeAPIServerCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}))
+
+	//	compareWithLocalCertificate(kubeAPIServerCertificate, "temp/cert/virtual-garden-kube-apiserver.yaml")
+}
+
 func verifyDeletion(ctx context.Context, c client.Client, imports *api.Imports) {
 	verifyDeletionOfKubeAPIServerService(ctx, c, imports)
 
@@ -509,4 +575,40 @@ func verifyDeletionOfBackupBucket(ctx context.Context, c client.Client, imports 
 // See https://github.com/onsi/ginkgo/issues/285#issuecomment-290575636
 func handleEtcdPersistentVolumes(handle bool) {
 
+}
+
+func CompareWithLocalCACertificate(caCert *secretsutil.Certificate, path string) {
+	localSecret, err := secretFromFile(path)
+	Expect(err).NotTo(HaveOccurred())
+	localCert, err := secretsutil.LoadCertificate(localSecret.Name, localSecret.Data[secretsutil.DataKeyPrivateKeyCA], localSecret.Data[secretsutil.DataKeyCertificateCA])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(localCert.Certificate.IsCA).To(Equal(caCert.Certificate.IsCA)) // both should be true
+	Expect(localCert.Certificate.Subject.CommonName).To(Equal(caCert.Certificate.Subject.CommonName))
+	//Expect(localCert.Certificate.KeyUsage).To(Equal(caCert.Certificate.KeyUsage))
+}
+
+func CompareWithLocalCertificate(cert *secretsutil.Certificate, path string) {
+	localSecret, err := secretFromFile(path)
+	Expect(err).NotTo(HaveOccurred())
+	localCert, err := secretsutil.LoadCertificate(localSecret.Name, localSecret.Data[secretsutil.DataKeyPrivateKey], localSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(localCert.Certificate.IsCA).To(Equal(cert.Certificate.IsCA)) // both should be false
+	Expect(localCert.Certificate.Subject.CommonName).To(Equal(cert.Certificate.Subject.CommonName))
+	Expect(localCert.Certificate.Issuer.CommonName).To(Equal(cert.Certificate.Issuer.CommonName)) // = common name of the ca cert
+	Expect(localCert.Certificate.KeyUsage).To(Equal(cert.Certificate.KeyUsage))
+	//Expect(localCert.Certificate.ExtKeyUsage).To(Equal(cert.Certificate.ExtKeyUsage))
+}
+
+func secretFromFile(path string) (*corev1.Secret, error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	secret := &corev1.Secret{}
+	if err := yaml.Unmarshal(data, secret); err != nil {
+		return nil, err
+	}
+
+	return secret, nil
 }
