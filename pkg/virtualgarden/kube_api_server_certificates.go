@@ -120,7 +120,7 @@ func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Co
 
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameApiServerServerCertificate,
-		CertType:   secretsutil.ServerClientCert,
+		CertType:   secretsutil.ServerCert,
 		SigningCA:  caCertificate,
 		CommonName: Prefix + ":server:kube-apiserver",
 		DNSNames: []string{
