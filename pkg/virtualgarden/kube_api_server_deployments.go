@@ -479,10 +479,10 @@ func (o *operation) getAPIServerVolumes() []corev1.Volume {
 
 	volumes = append(volumes,
 		volumeWithSecretSource(volumeNameKubeAPIServerCA, KubeApiServerSecretNameApiServerCACertificate),
-		volumeWithSecretSource(volumeNameCAETCD, "virtual-garden-etcd-main-ca"),
+		volumeWithSecretSource(volumeNameCAETCD, "virtual-garden-etcd-ca"),
 		volumeWithSecretSource(volumeNameCAFrontProxy, KubeApiServerSecretNameAggregatorCACertificate),
 		volumeWithSecretSource(volumeNameKubeAPIServer, KubeApiServerSecretNameApiServerServerCertificate),
-		volumeWithSecretSource(volumeNameETCDClientTLS, "virtual-garden-etcd-main-client"),
+		volumeWithSecretSource(volumeNameETCDClientTLS, "virtual-garden-etcd-client"),
 		volumeWithSecretSource(volumeNameKubeAPIServerBasicAuth, KubeApiServerSecretNameBasicAuth),
 		volumeWithSecretSource(volumeNameServiceAccountKey, KubeApiServerSecretNameServiceAccountKey),
 		volumeWithSecretSource(volumeNameKubeAggregator, KubeApiServerSecretNameAggregatorClientCertificate),

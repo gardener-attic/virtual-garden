@@ -221,6 +221,10 @@ func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
 	secretString := utils.EncodeBase64(secretBytes)
 
 	encryptionConfig := configv1.EncryptionConfiguration{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "EncryptionConfiguration",
+			APIVersion: "apiserver.config.k8s.io/v1",
+		},
 		Resources: []configv1.ResourceConfiguration{
 			{
 				Resources: []string{
