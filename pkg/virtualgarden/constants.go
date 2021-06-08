@@ -45,6 +45,8 @@ const (
 	volumeNameETCSSL                           = "etc-ssl"
 )
 
+const SecretKeyKubeconfig = "kubeconfig"
+
 const kubeAPIServerContainerName = "kube-apiserver"
 
 const (

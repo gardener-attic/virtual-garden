@@ -116,7 +116,7 @@ func (k *kubeconfigGenerator) addKubeconfigToSecretData(certificate *secretsutil
 		return nil, err
 	}
 
-	secretData["kubeconfig"] = kubeconfig
+	secretData[SecretKeyKubeconfig] = kubeconfig
 	return kubeconfig, nil
 }
 

@@ -393,14 +393,14 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 	Expect(err).NotTo(HaveOccurred())
 	Expect(aggCACertificate.Certificate.IsCA).To(BeTrue())
 	Expect(aggCACertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:ca:kube-aggregator"))
-	//  Expect(aggCACertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageCertSign | x509.KeyUsageCRLSign))
-
-	//	compareWithLocalCACertificate(aggCACertificate, "cert/virtual-garden-kube-aggregator-ca.yaml")
+	Expect(aggCACertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign | x509.KeyUsageCRLSign))
 
 	// KubeApiServerSecretNameAggregatorClientCertificate
 	aggClientSecret := &corev1.Secret{}
 	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameAggregatorClientCertificate, Namespace: imports.HostingCluster.Namespace}
 	Expect(c.Get(ctx, objectKey, aggClientSecret)).To(Succeed())
+
+	Expect(len(aggClientSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
 
 	aggClientCertificate, err := secretsutil.LoadCertificate(aggClientSecret.Name, aggClientSecret.Data[secretsutil.DataKeyPrivateKey], aggClientSecret.Data[secretsutil.DataKeyCertificate])
 	Expect(err).NotTo(HaveOccurred())
@@ -409,8 +409,6 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 	Expect(aggClientCertificate.Certificate.Issuer.CommonName).To(Equal(aggCACertificate.Certificate.Subject.CommonName))
 	Expect(aggClientCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
 	Expect(aggClientCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}))
-
-	//	compareWithLocalCertificate(aggClientCertificate, "cert/virtual-garden-kube-aggregator.yaml")
 
 	// virtual-garden-kube-apiserver-ca
 	kubeAPIServerCASecret := &corev1.Secret{}
@@ -421,14 +419,14 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 	Expect(err).NotTo(HaveOccurred())
 	Expect(kubeAPIServerCACertificate.Certificate.IsCA).To(BeTrue())
 	Expect(kubeAPIServerCACertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:ca:kube-apiserver"))
-	//	Expect(kubeAPIServerCACertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageCertSign | x509.KeyUsageCRLSign))
-
-	//	compareWithLocalCACertificate(kubeAPIServerCACertificate, "temp/cert/virtual-garden-kube-apiserver-ca.yaml")
+	Expect(kubeAPIServerCACertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign | x509.KeyUsageCRLSign))
 
 	// virtual-garden-kube-apiserver
 	kubeAPIServerSecret := &corev1.Secret{}
 	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameApiServerServerCertificate, Namespace: imports.HostingCluster.Namespace}
 	Expect(c.Get(ctx, objectKey, kubeAPIServerSecret)).To(Succeed())
+
+	Expect(len(kubeAPIServerSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
 
 	kubeAPIServerCertificate, err := secretsutil.LoadCertificate(kubeAPIServerSecret.Name, kubeAPIServerSecret.Data[secretsutil.DataKeyPrivateKey], kubeAPIServerSecret.Data[secretsutil.DataKeyCertificate])
 	Expect(err).NotTo(HaveOccurred())
@@ -436,9 +434,55 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 	Expect(kubeAPIServerCertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:server:kube-apiserver"))
 	Expect(kubeAPIServerCertificate.Certificate.Issuer.CommonName).To(Equal(kubeAPIServerCACertificate.Certificate.Subject.CommonName))
 	Expect(kubeAPIServerCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
-	//	Expect(kubeAPIServerCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}))
+	Expect(kubeAPIServerCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}))
 
-	//	compareWithLocalCertificate(kubeAPIServerCertificate, "temp/cert/virtual-garden-kube-apiserver.yaml")
+	// KubeApiServerSecretNameKubeControllerManagerCertificate
+	kubeControllerManagerSecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameKubeControllerManagerCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, kubeControllerManagerSecret)).To(Succeed())
+
+	Expect(len(kubeControllerManagerSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
+	Expect(len(kubeControllerManagerSecret.Data[virtualgarden.SecretKeyKubeconfig]) > 0).To(BeTrue())
+
+	kubeControllerManagerCertificate, err := secretsutil.LoadCertificate(kubeControllerManagerSecret.Name, kubeControllerManagerSecret.Data[secretsutil.DataKeyPrivateKey], kubeControllerManagerSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(kubeControllerManagerCertificate.Certificate.IsCA).To(BeFalse())
+	Expect(kubeControllerManagerCertificate.Certificate.Subject.CommonName).To(Equal("system:kube-controller-manager"))
+	Expect(kubeControllerManagerCertificate.Certificate.Issuer.CommonName).To(Equal(kubeAPIServerCACertificate.Certificate.Subject.CommonName))
+	Expect(kubeControllerManagerCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
+	Expect(kubeControllerManagerCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}))
+
+	// KubeApiServerSecretNameClientAdminCertificate
+	clientAdminSecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameClientAdminCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, clientAdminSecret)).To(Succeed())
+
+	Expect(len(clientAdminSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
+	Expect(len(clientAdminSecret.Data[virtualgarden.SecretKeyKubeconfig]) > 0).To(BeTrue())
+
+	clientAdminCertificate, err := secretsutil.LoadCertificate(clientAdminSecret.Name, clientAdminSecret.Data[secretsutil.DataKeyPrivateKey], clientAdminSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(clientAdminCertificate.Certificate.IsCA).To(BeFalse())
+	Expect(clientAdminCertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:client:admin"))
+	Expect(clientAdminCertificate.Certificate.Issuer.CommonName).To(Equal(kubeAPIServerCACertificate.Certificate.Subject.CommonName))
+	Expect(clientAdminCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
+	Expect(clientAdminCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}))
+
+	// KubeApiServerSecretNameMetricsScraperCertificate
+	metricsScraperSecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameMetricsScraperCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, metricsScraperSecret)).To(Succeed())
+
+	Expect(len(metricsScraperSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
+
+	metricsScraperCertificate, err := secretsutil.LoadCertificate(metricsScraperSecret.Name, metricsScraperSecret.Data[secretsutil.DataKeyPrivateKey], metricsScraperSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(metricsScraperCertificate.Certificate.IsCA).To(BeFalse())
+	Expect(metricsScraperCertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:client:metrics-scraper"))
+	Expect(metricsScraperCertificate.Certificate.Issuer.CommonName).To(Equal(kubeAPIServerCACertificate.Certificate.Subject.CommonName))
+	Expect(metricsScraperCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
+	Expect(metricsScraperCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}))
 }
 
 func verifyDeletion(ctx context.Context, c client.Client, imports *api.Imports) {
@@ -584,7 +628,7 @@ func CompareWithLocalCACertificate(caCert *secretsutil.Certificate, path string)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(localCert.Certificate.IsCA).To(Equal(caCert.Certificate.IsCA)) // both should be true
 	Expect(localCert.Certificate.Subject.CommonName).To(Equal(caCert.Certificate.Subject.CommonName))
-	//Expect(localCert.Certificate.KeyUsage).To(Equal(caCert.Certificate.KeyUsage))
+	//	Expect(localCert.Certificate.KeyUsage).To(Equal(caCert.Certificate.KeyUsage))
 }
 
 func CompareWithLocalCertificate(cert *secretsutil.Certificate, path string) {
@@ -596,7 +640,7 @@ func CompareWithLocalCertificate(cert *secretsutil.Certificate, path string) {
 	Expect(localCert.Certificate.Subject.CommonName).To(Equal(cert.Certificate.Subject.CommonName))
 	Expect(localCert.Certificate.Issuer.CommonName).To(Equal(cert.Certificate.Issuer.CommonName)) // = common name of the ca cert
 	Expect(localCert.Certificate.KeyUsage).To(Equal(cert.Certificate.KeyUsage))
-	//Expect(localCert.Certificate.ExtKeyUsage).To(Equal(cert.Certificate.ExtKeyUsage))
+	Expect(localCert.Certificate.ExtKeyUsage).To(Equal(cert.Certificate.ExtKeyUsage))
 }
 
 func secretFromFile(path string) (*corev1.Secret, error) {
