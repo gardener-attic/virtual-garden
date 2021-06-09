@@ -24,6 +24,8 @@ import (
 	"strconv"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/ghodss/yaml"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -103,9 +105,38 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 			Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
 
 			verifyReconciliation(ctx, c, imports)
+
+			verifyKubeApiServerCall(ctx, c, imports)
 		})
 	})
 })
+
+// verifyKubeApiServerCall checks that the kube-apiserver can accessed.
+// This is done by creating and deleting a namespace on the kube-apiserver.
+func verifyKubeApiServerCall(ctx context.Context, c client.Client, imports *api.Imports) {
+	By("Checking that the kube-apiserver can be accessed")
+	kubeAPIServerClient := newKubeAPIServerClient(ctx, c, imports)
+
+	namespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "test"}}
+
+	err := kubeAPIServerClient.Create(ctx, namespace)
+	Expect(err == nil || apierrors.IsAlreadyExists(err)).To(BeTrue())
+
+	err = kubeAPIServerClient.Delete(ctx, namespace)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func newKubeAPIServerClient(ctx context.Context, c client.Client, imports *api.Imports) client.Client {
+	clientAdminSecret := &corev1.Secret{}
+	objectKey := client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameClientAdminCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, clientAdminSecret)).To(Succeed())
+
+	kubeConfig := clientAdminSecret.Data[secretsutil.DataKeyKubeconfig]
+	kubeAPIServerClient, err := app.NewClientFromKubeconfig(kubeConfig)
+	Expect(err).NotTo(HaveOccurred())
+
+	return kubeAPIServerClient
+}
 
 func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imports) {
 	verifyReconciliationOfKubeAPIServerService(ctx, c, imports)
