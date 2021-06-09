@@ -46,6 +46,10 @@ func (b *infrastructureProvider) GetLoadBalancer(service *corev1.Service) string
 	return ingress[0].IP
 }
 
-func (b *infrastructureProvider) GetKubeAPIServerURL(kubeAPIServer *api.KubeAPIServer, _ string) string {
-	return fmt.Sprintf("https://api.%s:443", kubeAPIServer.DnsAccessDomain)
+func (b *infrastructureProvider) GetKubeAPIServerURL(kubeAPIServer *api.KubeAPIServer, loadBalancer string) string {
+	if kubeAPIServer != nil && len(kubeAPIServer.DnsAccessDomain) > 0 {
+		return fmt.Sprintf("https://api.%s:443", kubeAPIServer.DnsAccessDomain)
+	}
+
+	return fmt.Sprintf("https://%s:443", loadBalancer)
 }

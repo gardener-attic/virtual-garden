@@ -17,6 +17,7 @@ package virtualgarden
 import (
 	"context"
 	"fmt"
+	"net"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -140,6 +141,11 @@ func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Co
 			loadbalancer,
 			fmt.Sprintf("api.%s", dnsAccessDomain),
 			fmt.Sprintf("gardener.%s", dnsAccessDomain),
+		},
+		IPAddresses: []net.IP{
+			net.ParseIP("127.0.0.1"),
+			net.ParseIP("100.64.0.1"),
+			net.ParseIP(loadbalancer),
 		},
 	}
 
