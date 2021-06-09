@@ -4,7 +4,7 @@ cluster: |
 # ... <please insert your kubeconfig here>
 
 hostingCluster:
-  namespace: garden-4
+  namespace: garden
   infrastructureProvider: gcp # aws|gcp|alicloud
 
 virtualGarden:
@@ -12,28 +12,28 @@ virtualGarden:
 
   etcd:
     storageClassName: my-virtual-garden-storage-class
-    backup:
-      infrastructureProvider: fake # aws|gcp|alicloud
-      region: europe-west555
-      bucketName: my-virtual-garden-backup
-      credentials:
-        data:
-          serviceaccount.json: |
-            {
-              "project_id": "test-project",
-              "type": "test-type"
-            }
+#    backup:
+#      infrastructureProvider: fake # aws|gcp|alicloud
+#      region: europe-west555
+#      bucketName: my-virtual-garden-backup
+#      credentials:
+#        data:
+#          serviceaccount.json: |
+#            {
+#              "project_id": "test-project",
+#              "type": "test-type"
+#            }
     handleETCDPersistentVolumes: true
     hvpaEnabled: true
 
   kubeAPIServer:
     replicas: 1
-    sni:
-      hostname: api.dev.gardener.cloud.sap
-      dnsClass: gardendns
-      ttl: 120
-      secretName: gardener-dashboard-tls
-    dnsAccessDomain: my.dns.domain
+#    sni:
+#      hostname: api.dev.gardener.cloud.sap
+#      dnsClass: gardendns
+#      ttl: 120
+#      secretName: gardener-dashboard-tls
+    dnsAccessDomain: localhost
 
     gardenerControlplane:
       validatingWebhookEnabled: false
