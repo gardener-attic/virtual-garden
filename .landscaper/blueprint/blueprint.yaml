@@ -12,6 +12,9 @@ imports:
       properties:
         namespace:
           type: string
+          default:
+            value: garden
+          description: "The namespace into which the kube-api-server and the etcd is deployed. It is recommended not to change the default."
         infrastructureProvider:
           type: string
           default:

@@ -282,10 +282,12 @@ func (o *operation) getAPIServerCommand() []string {
 	command = append(command, "--insecure-port=0")
 	command = append(command, "--max-requests-inflight=800")
 	command = append(command, "--max-mutating-requests-inflight=400")
-	command = append(command, fmt.Sprintf("--oidc-issuer-url=%s", o.getAPIServerOIDCIssuerURL()))
-	command = append(command, "--oidc-client-id=kube-kubectl")
-	command = append(command, "--oidc-username-claim=email")
-	command = append(command, "--oidc-groups-claim=groups")
+	if o.getAPIServerOIDCIssuerURL() != nil {
+		command = append(command, fmt.Sprintf("--oidc-issuer-url=%s", *o.getAPIServerOIDCIssuerURL()))
+		command = append(command, "--oidc-client-id=kube-kubectl")
+		command = append(command, "--oidc-username-claim=email")
+		command = append(command, "--oidc-groups-claim=groups")
+	}
 	command = append(command, "--profiling=false")
 	command = append(command, "--proxy-client-cert-file=/srv/kubernetes/aggregator/tls.crt")
 	command = append(command, "--proxy-client-key-file=/srv/kubernetes/aggregator/tls.key")
@@ -331,12 +333,8 @@ func (o *operation) getAPIServerEventTTL() string {
 	return *o.imports.VirtualGarden.KubeAPIServer.EventTTL
 }
 
-func (o *operation) getAPIServerOIDCIssuerURL() string {
-	if o.imports.VirtualGarden.KubeAPIServer.OidcIssuerURL == nil {
-		return "https://identity.ingress.garden2.dev.k8s.ondemand.com"
-	}
-
-	return *o.imports.VirtualGarden.KubeAPIServer.OidcIssuerURL
+func (o *operation) getAPIServerOIDCIssuerURL() *string {
+	return o.imports.VirtualGarden.KubeAPIServer.OidcIssuerURL
 }
 
 func (o *operation) isSNIEnabled() bool {
