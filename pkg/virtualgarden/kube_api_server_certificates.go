@@ -125,9 +125,7 @@ func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Co
 		SigningCA:  caCertificate,
 		CommonName: Prefix + ":server:kube-apiserver",
 		DNSNames: []string{
-			"127.0.0.1",
 			"localhost",
-			"100.64.0.1",
 			KubeAPIServerServiceName,
 			KubeAPIServerServiceName + ".garden",
 			KubeAPIServerServiceName + ".garden.svc",
