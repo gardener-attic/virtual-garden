@@ -106,7 +106,7 @@ func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (strin
 	var loadBalancer string
 
 	util.Repeat(func() bool {
-		loadBalancer, err := o.computeKubeAPIServerLoadBalancerOnce(ctx)
+		loadBalancer, err = o.computeKubeAPIServerLoadBalancerOnce(ctx)
 		return err != nil || loadBalancer != ""
 	}, 10, time.Second)
 
