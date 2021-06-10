@@ -59,6 +59,9 @@ docker-all: docker-images docker-push
 cnudie:
 	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/generate-cd.sh
 
+.PHONY: push
+push: docker-images docker-push cnudie
+
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
 #####################################################################
