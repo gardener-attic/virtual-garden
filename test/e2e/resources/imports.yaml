@@ -35,7 +35,7 @@ virtualGarden:
 #      ttl: 120
 #      secretName: gardener-dashboard-tls
 
-#    dnsAccessDomain: localhost
+    dnsAccessDomain: ""
 
     gardenerControlplane:
       validatingWebhookEnabled: true
@@ -43,4 +43,40 @@ virtualGarden:
 
 #    auditWebhookConfig:
 #      config: "my-audit-webhook-config"
-#    auditWebhookBatchMaxSize: "1"
+
+    auditWebhookBatchMaxSize: "30"
+
+    hvpaEnabled: true
+
+    hvpa:
+      maxReplicas: 21
+      minReplicas: 1
+      targetAverageUtilizationCpu: 81
+      targetAverageUtilizationMemory: 81
+      vpaScaleUpMode: "Auto"
+      vpaScaleDownMode: "Off"
+      vpaScaleUpStabilization:
+        stabilizationDuration: "11m"
+        minChange:
+          cpu:
+            value: 1001m
+            percentage: 81
+          memory:
+            value: 1501M
+            percentage: 81
+      vpaScaleDownStabilization:
+        stabilizationDuration: "45m"
+        minChange:
+          cpu:
+            value: 1001m
+            percentage: 81
+          memory:
+            value: 1501M
+            percentage: 81
+      limitsRequestsGapScaleParams:
+        cpu:
+          value: "2"
+          percentage: 71
+        memory:
+          value: "3G"
+          percentage: 71

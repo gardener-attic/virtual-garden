@@ -106,6 +106,7 @@ imports:
               type: object
                 properties:
                   config:
+                    description: "The kubeconfig to access audit log server."
                     type: string
             auditWebhookBatchMaxSize:
               type: string

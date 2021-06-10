@@ -194,14 +194,8 @@ func (o *operation) deployKubeApiServerHvpa(ctx context.Context) error {
 	minReplicas := hvpaConfig.GetMinReplicas()
 
 	hvpa := o.emptyKubeAPIServerHvpa()
-
 	_, err := controllerutil.CreateOrUpdate(ctx, o.client, hvpa, func() error {
 		hvpa.Spec.Replicas = pointer.Int32Ptr(1)
-
-		hvpa.Spec.MaintenanceTimeWindow = nil
-		if hvpaConfig != nil {
-			hvpa.Spec.MaintenanceTimeWindow = o.imports.VirtualGarden.KubeAPIServer.HVPA.MaintenanceWindow
-		}
 
 		hvpa.Spec.Hpa = hvpav1alpha1.HpaSpec{
 			Selector: &metav1.LabelSelector{
@@ -339,6 +333,11 @@ func (o *operation) deployKubeApiServerHvpa(ctx context.Context) error {
 			APIVersion: "apps/v1",
 			Kind:       "Deployment",
 			Name:       KubeAPIServerServiceName,
+		}
+
+		hvpa.Spec.MaintenanceTimeWindow = nil
+		if hvpaConfig != nil {
+			hvpa.Spec.MaintenanceTimeWindow = o.imports.VirtualGarden.KubeAPIServer.HVPA.MaintenanceWindow
 		}
 
 		return nil
