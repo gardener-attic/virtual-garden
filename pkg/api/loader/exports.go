@@ -23,7 +23,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func ToFile(exports *api.Exports, path string) error {
+func ExportsToFile(exports *api.Exports, path string) error {
 	b, err := yaml.Marshal(exports)
 	if err != nil {
 		return err
@@ -37,4 +37,18 @@ func ToFile(exports *api.Exports, path string) error {
 	}
 
 	return ioutil.WriteFile(path, b, os.ModePerm)
+}
+
+func ExportsFromFile(path string) (*api.Exports, error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var exports *api.Exports
+	if err := yaml.Unmarshal(data, &exports); err != nil {
+		return nil, err
+	}
+
+	return exports, nil
 }

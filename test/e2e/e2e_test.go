@@ -18,12 +18,13 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
-	"github.com/gardener/virtual-garden/pkg/util"
 	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/gardener/virtual-garden/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -59,17 +60,23 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		ctx = context.Background()
 		err error
 
-		opts    *app.Options
-		imports *api.Imports
-		c       client.Client
+		opts        *app.Options
+		imports     *api.Imports
+		c           client.Client
+		exportsPath string
 	)
 
 	BeforeSuite(func() {
 		// Read options to figure out what is being tested.
 		repoRoot := os.Getenv("REPO_ROOT")
-		os.Setenv("IMPORTS_PATH", path.Join(repoRoot, "test/e2e/resources/imports.yaml"))
-		os.Setenv("EXPORTS_PATH", path.Join(repoRoot, "tmp/export.yaml"))
-		os.Setenv("COMPONENT_DESCRIPTOR_PATH", path.Join(repoRoot, "test/e2e/resources/resolved-component-descriptor.json"))
+		importsPath := path.Join(repoRoot, "test/e2e/resources/imports.yaml")
+		exportsPath = path.Join(repoRoot, "tmp/export.yaml")
+		componentDescriptorPath := path.Join(repoRoot, "test/e2e/resources/resolved-component-descriptor.json")
+
+		os.Setenv("IMPORTS_PATH", importsPath)
+		os.Setenv("EXPORTS_PATH", exportsPath)
+		os.Setenv("COMPONENT_DESCRIPTOR_PATH", componentDescriptorPath)
+
 		opts = app.NewOptions()
 		opts.InitializeFromEnvironment()
 
@@ -101,10 +108,25 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 
 			verifyReconciliation(ctx, c, imports)
 
+			verifyExports(ctx, c, imports, exportsPath)
+
 			verifyKubeApiServerCall(ctx, c, imports)
 		})
 	})
 })
+
+func verifyExports(ctx context.Context, c client.Client, imports *api.Imports, exportsPath string) {
+	By("Checking the exports")
+	exports, err := loader.ExportsFromFile(exportsPath)
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(exports.KubeApiserverCaPem).NotTo(BeZero())
+	Expect(exports.EtcdCaPem).NotTo(BeZero())
+	Expect(exports.EtcdClientTlsPem).NotTo(BeZero())
+	Expect(exports.EtcdClientTlsKeyPem).NotTo(BeZero())
+	Expect(exports.KubeconfigYaml).NotTo(BeZero())
+	Expect(exports.VirtualGardenEndpoint).NotTo(BeZero())
+}
 
 // verifyKubeApiServerCall checks that the kube-apiserver can accessed.
 // This is done by creating and deleting a namespace on the kube-apiserver.
@@ -123,12 +145,8 @@ func verifyKubeApiServerCall(ctx context.Context, c client.Client, imports *api.
 		defaultNamespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}}
 		objectKey := client.ObjectKey{Name: defaultNamespace.Name}
 		err = kubeAPIServerClient.Get(ctx, objectKey, defaultNamespace)
-		if err != nil {
-			return false
-		}
-
-		return true
-	}, 20, time.Second * 5)
+		return err == nil
+	}, 20, 5*time.Second)
 
 	Expect(repeatSucceeded).To(BeTrue())
 

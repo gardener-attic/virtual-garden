@@ -130,7 +130,7 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 		}
 
 		log.Infof("Writing exports file to EXPORTS_PATH(%s)", opts.ExportsPath)
-		err = loader.ToFile(exports, opts.ExportsPath)
+		err = loader.ExportsToFile(exports, opts.ExportsPath)
 		if err != nil {
 			return err
 		}
