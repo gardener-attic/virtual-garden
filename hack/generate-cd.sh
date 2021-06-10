@@ -46,7 +46,7 @@ name: virtual-garden-deployer
 relation: local
 access:
   type: ociRegistry
-  imageReference: eu.gcr.io/gardener-project/development/component-descriptors/github.com/gardener/virtual-garden:${EFFECTIVE_VERSION}
+  imageReference: eu.gcr.io/gardener-project/development/images/virtual-garden:${EFFECTIVE_VERSION}
 ...
 EOF
 
