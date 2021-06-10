@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-NAME      := virtual-garden
-REPO_ROOT := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-HACK_DIR  := $(REPO_ROOT)/hack
-VERSION   := $(shell cat "$(REPO_ROOT)/VERSION")
-LD_FLAGS  := "-w $(shell $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(NAME))"
-OPERATION := "RECONCILE"
+NAME              := virtual-garden
+REPO_ROOT         := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+HACK_DIR          := $(REPO_ROOT)/hack
+VERSION           := $(shell cat "$(REPO_ROOT)/VERSION")
+EFFECTIVE_VERSION := $(VERSION)-$(shell git rev-parse HEAD)
+LD_FLAGS          := "-w $(shell $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(NAME))"
+OPERATION         := "RECONCILE"
+
+REGISTRY                                 := eu.gcr.io/gardener-project/development
+VIRTUAL_GARDEN_DEPLOYER_IMAGE_REPOSITORY := $(REGISTRY)/images/virtual-garden
 
 #########################################
 # Rules for local development scenarios #
@@ -36,6 +40,24 @@ start:
 install:
 	@LD_FLAGS=$(LD_FLAGS) \
 	$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install.sh ./...
+
+.PHONY: docker-images
+docker-images:
+	@echo "Building docker images for version $(EFFECTIVE_VERSION)"
+	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(VIRTUAL_GARDEN_DEPLOYER_IMAGE_REPOSITORY):$(EFFECTIVE_VERSION) -f Dockerfile .
+
+.PHONY: docker-push
+docker-push:
+	@echo "Pushing docker images for version $(EFFECTIVE_VERSION) to registry $(REGISTRY)"
+	@if ! docker images $(VIRTUAL_GARDEN_DEPLOYER_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(EFFECTIVE_VERSION); then echo "$(VIRTUAL_GARDEN_DEPLOYER_IMAGE_REPOSITORY) version $(EFFECTIVE_VERSION) is not yet built. Please run 'make docker-images'"; false; fi
+	@docker push $(VIRTUAL_GARDEN_DEPLOYER_IMAGE_REPOSITORY):$(EFFECTIVE_VERSION)
+
+.PHONY: docker-all
+docker-all: docker-images docker-push
+
+.PHONY: cnudie
+cnudie:
+	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/generate-cd.sh
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
