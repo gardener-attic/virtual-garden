@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"github.com/gardener/virtual-garden/pkg/util"
 	"io/ioutil"
 	"os"
 	"path"
@@ -82,11 +83,11 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 	})
 
 	AfterSuite(func() {
-		By("Executing virtual garden deployer (deletion)")
-		Expect(os.Setenv("OPERATION", "DELETE")).To(Succeed())
-		Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
-
-		verifyDeletion(ctx, c, imports)
+		//By("Executing virtual garden deployer (deletion)")
+		//Expect(os.Setenv("OPERATION", "DELETE")).To(Succeed())
+		//Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
+		//
+		//verifyDeletion(ctx, c, imports)
 	})
 
 	Describe("#NewCommandVirtualGarden.Execute()", func() {
@@ -109,27 +110,52 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 // This is done by creating and deleting a namespace on the kube-apiserver.
 func verifyKubeApiServerCall(ctx context.Context, c client.Client, imports *api.Imports) {
 	By("Checking that the kube-apiserver can be accessed")
-	kubeAPIServerClient := newKubeAPIServerClient(ctx, c, imports)
+
+	var kubeAPIServerClient client.Client
+	var err error
+
+	repeatSucceeded := util.Repeat(func() bool {
+		kubeAPIServerClient, err = newKubeAPIServerClient(ctx, c, imports)
+		if err != nil {
+			return false
+		}
+
+		defaultNamespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}}
+		objectKey := client.ObjectKey{Name: defaultNamespace.Name}
+		err = kubeAPIServerClient.Get(ctx, objectKey, defaultNamespace)
+		if err != nil {
+			return false
+		}
+
+		return true
+	}, 20, time.Second * 5)
+
+	Expect(repeatSucceeded).To(BeTrue())
 
 	namespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "test"}}
 
-	err := kubeAPIServerClient.Create(ctx, namespace)
+	err = kubeAPIServerClient.Create(ctx, namespace)
 	Expect(err == nil || apierrors.IsAlreadyExists(err)).To(BeTrue())
 
 	err = kubeAPIServerClient.Delete(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func newKubeAPIServerClient(ctx context.Context, c client.Client, imports *api.Imports) client.Client {
+func newKubeAPIServerClient(ctx context.Context, c client.Client, imports *api.Imports) (client.Client, error) {
 	clientAdminSecret := &corev1.Secret{}
 	objectKey := client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameClientAdminCertificate, Namespace: imports.HostingCluster.Namespace}
-	Expect(c.Get(ctx, objectKey, clientAdminSecret)).To(Succeed())
+	err := c.Get(ctx, objectKey, clientAdminSecret)
+	if err != nil {
+		return nil, err
+	}
 
 	kubeConfig := clientAdminSecret.Data[secretsutil.DataKeyKubeconfig]
 	kubeAPIServerClient, err := app.NewClientFromKubeconfig(kubeConfig)
-	Expect(err).NotTo(HaveOccurred())
+	if err != nil {
+		return nil, err
+	}
 
-	return kubeAPIServerClient
+	return kubeAPIServerClient, nil
 }
 
 func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imports) {
