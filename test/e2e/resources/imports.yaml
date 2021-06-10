@@ -80,3 +80,18 @@ virtualGarden:
         memory:
           value: "3G"
           percentage: 71
+
+    eventTTL: "25h"
+
+#    oidcIssuerURL: ...
+#    additionalVolumeMounts: ...
+#    additionalVolumes: ...
+
+    horizontalPodAutoscaler:
+      downscaleStabilization:  "31m0s"
+      readinessDelay: "31s"
+      cpuInitializationPeriod: "5m1s"
+      syncPeriod: "31s"
+      tolerance: "0.11"
+
+#  priorityClassName: ...

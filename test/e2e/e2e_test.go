@@ -83,11 +83,11 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 	})
 
 	AfterSuite(func() {
-		//By("Executing virtual garden deployer (deletion)")
-		//Expect(os.Setenv("OPERATION", "DELETE")).To(Succeed())
-		//Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
-		//
-		//verifyDeletion(ctx, c, imports)
+		By("Executing virtual garden deployer (deletion)")
+		Expect(os.Setenv("OPERATION", "DELETE")).To(Succeed())
+		Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
+
+		verifyDeletion(ctx, c, imports)
 	})
 
 	Describe("#NewCommandVirtualGarden.Execute()", func() {
