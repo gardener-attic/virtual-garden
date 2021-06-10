@@ -71,6 +71,7 @@ imports:
                       additionalProperties:
                         type: string
             handleETCDPersistentVolumes:
+              description: "If true, the persistent volumes for the etcds are also deleted."
               type: boolean
             hvpaEnabled:
               type: boolean

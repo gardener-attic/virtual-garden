@@ -82,9 +82,6 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 	})
 
 	AfterSuite(func() {
-		handleEtcdPersistentVolumes(true)
-		defer handleEtcdPersistentVolumes(false)
-
 		By("Executing virtual garden deployer (deletion)")
 		Expect(os.Setenv("OPERATION", "DELETE")).To(Succeed())
 		Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
@@ -94,9 +91,6 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 
 	Describe("#NewCommandVirtualGarden.Execute()", func() {
 		It("should correctly create/reconcile and delete the virtual garden (w/o namespace handling)", func() {
-			handleEtcdPersistentVolumes(true)
-			defer handleEtcdPersistentVolumes(false)
-
 			if opts.OperationType != app.OperationTypeReconcile {
 				return
 			}
@@ -645,11 +639,6 @@ func verifyDeletionOfBackupBucket(ctx context.Context, c client.Client, imports 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(bucketExists).To(BeFalse())
 	}
-}
-
-// See https://github.com/onsi/ginkgo/issues/285#issuecomment-290575636
-func handleEtcdPersistentVolumes(handle bool) {
-
 }
 
 func CompareWithLocalCACertificate(caCert *secretsutil.Certificate, path string) {
