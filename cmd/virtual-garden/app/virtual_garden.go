@@ -111,10 +111,6 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 		return err
 	}
 
-	log.Infof("GOOD NIGHT")
-	time.Sleep(10*time.Minute)
-	log.Infof("GOOD MORNING")
-
 	log.Infof("Validating imports file")
 	if errList := validation.ValidateImports(imports); len(errList) > 0 {
 		return errList.ToAggregate()

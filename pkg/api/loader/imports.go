@@ -19,7 +19,7 @@ import (
 
 	"github.com/gardener/virtual-garden/pkg/api"
 
-	"gopkg.in/yaml.v2"
+	"github.com/gardener/component-spec/bindings-go/codec"
 )
 
 // FromFile will read the file from the given path and try to unmarshal it into an api.Imports structure.
@@ -30,7 +30,7 @@ func FromFile(path string) (*api.Imports, error) {
 	}
 
 	var imports *api.Imports
-	if err := yaml.Unmarshal(data, &imports); err != nil {
+	if err := codec.Decode(data, imports); err != nil {
 		return nil, err
 	}
 
