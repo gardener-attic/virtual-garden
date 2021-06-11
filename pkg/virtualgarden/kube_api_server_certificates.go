@@ -136,7 +136,6 @@ func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Co
 			"kubernetes.default.svc",
 			"kubernetes.default.svc.cluster",
 			"kubernetes.default.svc.cluster.local",
-			loadbalancer,
 			fmt.Sprintf("api.%s", dnsAccessDomain),
 			fmt.Sprintf("gardener.%s", dnsAccessDomain),
 		},

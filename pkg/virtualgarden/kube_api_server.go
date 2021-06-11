@@ -16,6 +16,7 @@ package virtualgarden
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -105,10 +106,18 @@ func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (strin
 	var err error
 	var loadBalancer string
 
-	util.Repeat(func() bool {
+	ok := util.Repeat(func() bool {
 		loadBalancer, err = o.computeKubeAPIServerLoadBalancerOnce(ctx)
 		return err != nil || loadBalancer != ""
-	}, 10, time.Second)
+	}, 60, 2*time.Second)
+
+	if !ok {
+		return "", fmt.Errorf("Timeout reading loadbalancer IP")
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("Error reading loadbalancer IP: %w", err)
+	}
 
 	o.exports.VirtualGardenEndpoint = loadBalancer
 
