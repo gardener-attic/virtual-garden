@@ -44,7 +44,7 @@ virtualGarden:
 #      ttl: 120
 #      secretName: gardener-dashboard-tls
 
-#   dnsAccessDomain: localhost
+    dnsAccessDomain: localhost
 
     gardenerControlplane:
       validatingWebhookEnabled: true

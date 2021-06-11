@@ -23,7 +23,7 @@ virtualGarden:
     handleETCDPersistentVolumes: true
   kubeAPIServer:
     replicas: 1
-#   dnsAccessDomain: localhost
+    dnsAccessDomain: localhost
     gardenerControlplane:
       validatingWebhookEnabled: true
       mutatingWebhookEnabled: true

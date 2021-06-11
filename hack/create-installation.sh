@@ -46,6 +46,7 @@ spec:
         handleETCDPersistentVolumes: true
       kubeAPIServer:
         replicas: 1
+        dnsAccessDomain: localhost
         gardenerControlplane:
           validatingWebhookEnabled: true
           mutatingWebhookEnabled: true
