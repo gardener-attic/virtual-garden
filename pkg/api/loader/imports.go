@@ -17,9 +17,9 @@ package loader
 import (
 	"io/ioutil"
 
-	"github.com/gardener/virtual-garden/pkg/api"
+	"sigs.k8s.io/yaml"
 
-	"github.com/gardener/component-spec/bindings-go/codec"
+	"github.com/gardener/virtual-garden/pkg/api"
 )
 
 // FromFile will read the file from the given path and try to unmarshal it into an api.Imports structure.
@@ -30,7 +30,7 @@ func FromFile(path string) (*api.Imports, error) {
 	}
 
 	var imports *api.Imports
-	if err := codec.Decode(data, imports); err != nil {
+	if err := yaml.Unmarshal(data, imports); err != nil {
 		return nil, err
 	}
 

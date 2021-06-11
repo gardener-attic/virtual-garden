@@ -19,9 +19,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gardener/component-spec/bindings-go/codec"
+	"sigs.k8s.io/yaml"
+
 	"github.com/gardener/virtual-garden/pkg/api"
-	"gopkg.in/yaml.v2"
 )
 
 func ExportsToFile(exports *api.Exports, path string) error {
@@ -47,7 +47,7 @@ func ExportsFromFile(path string) (*api.Exports, error) {
 	}
 
 	var exports *api.Exports
-	if err := codec.Decode(data, exports); err != nil {
+	if err := yaml.Unmarshal(data, exports); err != nil {
 		return nil, err
 	}
 

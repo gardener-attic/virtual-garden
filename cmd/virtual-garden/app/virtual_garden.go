@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/ghodss/yaml"
 
