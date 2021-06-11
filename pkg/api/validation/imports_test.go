@@ -18,13 +18,13 @@ import (
 	"github.com/gardener/virtual-garden/pkg/api"
 	. "github.com/gardener/virtual-garden/pkg/api/validation"
 
+	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/pointer"
-	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 )
 
 var _ = Describe("Imports", func() {

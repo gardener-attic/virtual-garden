@@ -15,6 +15,7 @@
 package validation
 
 import (
+	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/virtual-garden/pkg/api"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -41,11 +42,13 @@ var ValidInfrastructureProviderTypes = sets.NewString(
 )
 
 // ValidateCluster validates the cluster.
-func ValidateCluster(obj *string, fldPath *field.Path) field.ErrorList {
+func ValidateCluster(obj *lsv1alpha1.Target, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if len(*obj) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath, "kubeconfig cluster is required"))
+	if obj == nil {
+		allErrs = append(allErrs, field.Required(fldPath, "target is required"))
+	} else if len(obj.Spec.Configuration.RawMessage) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath, "kubeconfig is required"))
 	}
 
 	return allErrs

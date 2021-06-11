@@ -17,8 +17,10 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/ghodss/yaml"
 	"os"
+	"time"
+
+	"github.com/ghodss/yaml"
 
 	"github.com/gardener/virtual-garden/pkg/api"
 
@@ -27,6 +29,7 @@ import (
 	"github.com/gardener/virtual-garden/pkg/virtualgarden"
 
 	hvpav1alpha1 "github.com/gardener/hvpa-controller/api/v1alpha1"
+	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -38,7 +41,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/component-base/version/verflag"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 )
 
 // OperationType is a string alias.
@@ -92,12 +94,13 @@ func NewCommandVirtualGarden() *cobra.Command {
 
 // run runs the virtual garden deployer.
 func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
-	log.Infof("Reading imports file from IMPORTS_PATH(%s)", opts.ImportsPath)
+	log.Infof("Reading imports file from %s", opts.ImportsPath)
 	imports, err := loader.FromFile(opts.ImportsPath)
 	if err != nil {
 		return err
 	}
 
+	log.Infof("Reading component descriptor file from %s", opts.ComponentDescriptorPath)
 	cd, err := loader.ReadComponentDescriptor(opts.ComponentDescriptorPath)
 	if err != nil {
 		return err
@@ -108,13 +111,17 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 		return err
 	}
 
+	log.Infof("GOOD NIGHT")
+	time.Sleep(10*time.Minute)
+	log.Infof("GOOD MORNING")
+
 	log.Infof("Validating imports file")
 	if errList := validation.ValidateImports(imports); len(errList) > 0 {
 		return errList.ToAggregate()
 	}
 
 	log.Infof("Creating REST config and Kubernetes client based on given kubeconfig")
-	client, err := NewClientFromTarget(imports.Cluster))
+	client, err := NewClientFromTarget(imports.Cluster)
 	if err != nil {
 		return err
 	}

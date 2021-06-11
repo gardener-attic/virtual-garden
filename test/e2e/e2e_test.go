@@ -85,7 +85,7 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		Expect(err).To(BeNil())
 
 		// Create Kubernetes client for actual verification calls in the hosting cluster.
-		c, err = app.NewClientFromKubeconfig([]byte(imports.Cluster))
+		c, err = app.NewClientFromTarget(imports.Cluster)
 		Expect(err).To(BeNil())
 	})
 

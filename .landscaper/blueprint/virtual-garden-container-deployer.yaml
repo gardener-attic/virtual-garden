@@ -13,4 +13,5 @@ deployItems:
     command: []
     importValues:
       {{ toJson .imports | indent 2 }}
-    
+    componentDescriptor:
+      {{ toJson .componentDescriptorDef | indent 2 }}

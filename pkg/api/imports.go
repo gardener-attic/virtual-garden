@@ -15,8 +15,8 @@
 package api
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // Imports defines the structure for the required configuration values from other components.
