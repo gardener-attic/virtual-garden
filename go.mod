@@ -7,9 +7,10 @@ require (
 	github.com/gardener/component-spec/bindings-go v0.0.36
 	github.com/gardener/gardener v1.19.0
 	github.com/gardener/hvpa-controller v0.3.1
+	github.com/gardener/landscaper/apis v0.8.4
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/mock v1.5.0
-	github.com/onsi/ginkgo v1.14.1
+	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.5
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.1.1

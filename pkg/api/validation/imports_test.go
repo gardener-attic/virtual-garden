@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/pointer"
+	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 )
 
 var _ = Describe("Imports", func() {
@@ -34,7 +35,7 @@ var _ = Describe("Imports", func() {
 
 		BeforeEach(func() {
 			obj = &api.Imports{
-				Cluster: "abc",
+				Cluster: lsv1alpha1.Target{},
 				HostingCluster: api.HostingCluster{
 					Namespace:              "foo",
 					InfrastructureProvider: "gcp",
@@ -60,7 +61,7 @@ var _ = Describe("Imports", func() {
 
 		Context("hosting cluster", func() {
 			It("should fail for an invalid configuration", func() {
-				obj.Cluster = ""
+				obj.Cluster = lsv1alpha1.Target{}
 				obj.HostingCluster.Namespace = ""
 				obj.HostingCluster.InfrastructureProvider = ""
 

@@ -14,12 +14,15 @@
 
 package api
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	corev1 "k8s.io/api/core/v1"
+	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
+)
 
 // Imports defines the structure for the required configuration values from other components.
 type Imports struct {
 	// Cluster is the kubeconfig of the hosting cluster into which the virtual garden shall be installed.
-	Cluster string `json:"cluster" yaml:"cluster"`
+	Cluster lsv1alpha1.Target `json:"cluster" yaml:"cluster"`
 	// HostingCluster contains settings for the hosting cluster that runs the virtual garden.
 	HostingCluster HostingCluster `json:"hostingCluster" yaml:"hostingCluster"`
 	// VirtualGarden contains configuration for the virtual garden cluster.

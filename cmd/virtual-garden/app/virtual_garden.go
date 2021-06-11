@@ -17,6 +17,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/ghodss/yaml"
 	"os"
 
 	"github.com/gardener/virtual-garden/pkg/api"
@@ -37,6 +38,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/component-base/version/verflag"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 )
 
 // OperationType is a string alias.
@@ -112,7 +114,7 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 	}
 
 	log.Infof("Creating REST config and Kubernetes client based on given kubeconfig")
-	client, err := NewClientFromKubeconfig([]byte(imports.Cluster))
+	client, err := NewClientFromTarget(imports.Cluster))
 	if err != nil {
 		return err
 	}
@@ -140,6 +142,24 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 		return operation.Delete(ctx)
 	}
 	return fmt.Errorf("unknown operation type: %q", opts.OperationType)
+}
+
+// NewClientFromKubeconfig creates a new Kubernetes client for the kubeconfig in the given target.
+func NewClientFromTarget(target lsv1alpha1.Target) (client.Client, error) {
+	targetConfig := target.Spec.Configuration.RawMessage
+	targetConfigMap := make(map[string]string)
+
+	err := yaml.Unmarshal(targetConfig, &targetConfigMap)
+	if err != nil {
+		return nil, err
+	}
+
+	kubeconfig, ok := targetConfigMap["kubeconfig"]
+	if !ok {
+		return nil, fmt.Errorf("Imported target does not contain a kubeconfig")
+	}
+
+	return NewClientFromKubeconfig([]byte(kubeconfig))
 }
 
 // NewClientFromKubeconfig creates a new Kubernetes client for the given kubeconfig.
