@@ -7,10 +7,8 @@ deployItems:
   config:
     apiVersion: container.deployer.landscaper.gardener.cloud/v1alpha1
     kind: ProviderConfiguration
-    image:
-      {{ - $image := getResource .cd "name" "virtual-garden-container-deployer" }}
-      repository: {{ ociRefRepo ( $image.access.imageReference ) }}
-      tag: {{ ociRefVersion ( $image.access.imageReference ) }}
+    {{- $image := getResource .cd "name" "virtual-garden-container-deployer" }}
+    image: {{ $image.access.imageReference }}
     args: []
     command: []
     importValues:

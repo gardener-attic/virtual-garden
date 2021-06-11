@@ -25,28 +25,28 @@ imports:
       definitions:
         scaleParams:
           type: object
-            properties:
-              cpu:
-                type: object
-                properties:
-                  value:
-                    type: string
-                  percentage:
-                    type: integer
-              memory:
-                type: object
-                properties:
-                  value:
-                    type: string
-                  percentage:
-                    type: integer
-              replicas:
-                type: object
-                properties:
-                  value:
-                    type: string
-                  percentage:
-                    type: integer
+          properties:
+            cpu:
+              type: object
+              properties:
+                value:
+                  type: string
+                percentage:
+                  type: integer
+            memory:
+              type: object
+              properties:
+                value:
+                  type: string
+                percentage:
+                  type: integer
+            replicas:
+              type: object
+              properties:
+                value:
+                  type: string
+                percentage:
+                  type: integer
       type: object
       properties:
         etcd:
@@ -104,52 +104,52 @@ imports:
                   type: boolean
             auditWebhookConfig:
               type: object
-                properties:
-                  config:
-                    description: "The kubeconfig to access audit log server."
-                    type: string
+              properties:
+                config:
+                  description: "The kubeconfig to access audit log server."
+                  type: string
             auditWebhookBatchMaxSize:
               type: string
             hvpaEnabled:
               type: boolean
             hvpa:
               type: object
-                properties:
-                  maxReplicas:
-                    type: integer
-                  minReplicas:
-                    type: integer
-                  targetAverageUtilizationCpu:
-                    type: integer
-                  targetAverageUtilizationMemory:
-                    type: integer
-                  vpaScaleUpMode:
-                    type: string
-                  vpaScaleDownMode:
-                    type: string
-                  vpaScaleUpStabilization:
-                    type: object
-                      properties:
-                        stabilizationDuration:
-                          type: string
-                        minChange:
-                          "$ref": "#/definitions/scaleParams"
-                  vpaScaleDownStabilization:
-                    type: object
-                      properties:
-                        stabilizationDuration:
-                          type: string
-                        minChange:
-                          "$ref": "#/definitions/scaleParams"
-                  limitsRequestsGapScaleParams:
-                    "$ref": "#/definitions/scaleParams"
-                  maintenanceWindow:
-                    type: object
-                    properties:
-                      begin:
-                        type: string
-                      end:
-                        type: string
+              properties:
+                maxReplicas:
+                  type: integer
+                minReplicas:
+                  type: integer
+                targetAverageUtilizationCpu:
+                  type: integer
+                targetAverageUtilizationMemory:
+                  type: integer
+                vpaScaleUpMode:
+                  type: string
+                vpaScaleDownMode:
+                  type: string
+                vpaScaleUpStabilization:
+                  type: object
+                  properties:
+                    stabilizationDuration:
+                      type: string
+                    minChange:
+                      "$ref": "#/definitions/scaleParams"
+                vpaScaleDownStabilization:
+                  type: object
+                  properties:
+                    stabilizationDuration:
+                      type: string
+                    minChange:
+                      "$ref": "#/definitions/scaleParams"
+                limitsRequestsGapScaleParams:
+                  "$ref": "#/definitions/scaleParams"
+                maintenanceWindow:
+                  type: object
+                  properties:
+                    begin:
+                      type: string
+                    end:
+                      type: string
             eventTTL:
               type: string
             oidcIssuerURL:

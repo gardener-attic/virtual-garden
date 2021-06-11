@@ -62,6 +62,10 @@ cnudie:
 .PHONY: push
 push: docker-images docker-push cnudie
 
+.PHONY: create-installation
+create-installation:
+	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/create-installation.sh
+
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
 #####################################################################

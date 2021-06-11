@@ -42,7 +42,7 @@ RESOURCES_FILE_PATH="${RESOURCES_BASE_PATH}/resources.yaml"
 cat << EOF >> ${RESOURCES_FILE_PATH}
 ---
 type: ociImage
-name: virtual-garden-deployer
+name: virtual-garden-container-deployer
 relation: local
 access:
   type: ociRegistry
