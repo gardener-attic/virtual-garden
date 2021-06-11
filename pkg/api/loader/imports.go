@@ -29,7 +29,7 @@ func FromFile(path string) (*api.Imports, error) {
 		return nil, err
 	}
 
-	var imports *api.Imports
+	imports := &api.Imports{}
 	if err := yaml.Unmarshal(data, imports); err != nil {
 		return nil, err
 	}

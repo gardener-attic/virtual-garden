@@ -46,7 +46,7 @@ func ExportsFromFile(path string) (*api.Exports, error) {
 		return nil, err
 	}
 
-	var exports *api.Exports
+	exports := &api.Exports{}
 	if err := yaml.Unmarshal(data, exports); err != nil {
 		return nil, err
 	}

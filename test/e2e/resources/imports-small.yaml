@@ -1,0 +1,29 @@
+cluster:
+  apiVersion: "landscaper.gardener.cloud/v1alpha1"
+  kind: Target
+  metadata:
+    name: "cluster"
+    namespace: "installations"
+  spec:
+    type: "landscaper.gardener.cloud/kubernetes-cluster"
+    config:
+      kubeconfig: |
+        apiVersion: v1
+        kind: Config
+#       ... <please insert your kubeconfig here>
+
+hostingCluster:
+  namespace: garden
+  infrastructureProvider: gcp
+
+virtualGarden:
+  deleteNamespace: true
+  etcd:
+    storageClassName: my-virtual-garden-storage-class
+    handleETCDPersistentVolumes: true
+  kubeAPIServer:
+    replicas: 1
+#   dnsAccessDomain: localhost
+    gardenerControlplane:
+      validatingWebhookEnabled: true
+      mutatingWebhookEnabled: true

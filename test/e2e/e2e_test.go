@@ -71,7 +71,7 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		repoRoot := os.Getenv("REPO_ROOT")
 		importsPath := path.Join(repoRoot, "test/e2e/resources/imports.yaml")
 		exportsPath = path.Join(repoRoot, "tmp/export.yaml")
-		componentDescriptorPath := path.Join(repoRoot, "test/e2e/resources/resolved-component-descriptor.json")
+		componentDescriptorPath := path.Join(repoRoot, "test/e2e/resources/component-descriptor.json")
 
 		os.Setenv("IMPORTS_PATH", importsPath)
 		os.Setenv("EXPORTS_PATH", exportsPath)
