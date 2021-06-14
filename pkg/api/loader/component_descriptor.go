@@ -58,19 +58,3 @@ func ComponentDescriptorToFile(componentDescriptor *cdv2.ComponentDescriptorList
 
 	return ioutil.WriteFile(path, b, os.ModePerm)
 }
-
-func CreateComponentDescriptorFromResourcesFile(resourcesFilePath, componentDescriptorPath string) error {
-	data, err := ioutil.ReadFile(resourcesFilePath)
-	if err != nil {
-		return err
-	}
-
-	var resources interface{}
-	if err := yaml.Unmarshal(data, &resources); err != nil {
-		return err
-	}
-
-	fmt.Println("Resources read")
-
-	return nil
-}

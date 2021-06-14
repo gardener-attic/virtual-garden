@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"io/ioutil"
 	"os"
 	"path"
@@ -58,7 +59,6 @@ const handleETCDPersistentVolumes = true
 var _ = Describe("VirtualGarden E2E tests", func() {
 	var (
 		ctx = context.Background()
-		err error
 
 		opts        *app.Options
 		imports     *api.Imports
@@ -71,10 +71,18 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		repoRoot := os.Getenv("REPO_ROOT")
 
 		resourcesPath := path.Join(repoRoot, ".landscaper/resources.yaml")
-		componentDescriptorPath := path.Join(repoRoot, "tmp/component-descriptor.json")
-
-		err = loader.CreateComponentDescriptorFromResourcesFile(resourcesPath, componentDescriptorPath)
+		resources, err := loader.ResourcesFromFile(resourcesPath)
 		Expect(err).To(BeNil())
+
+		cd := cdv2.ComponentDescriptor{}
+		for _, r := range resources {
+			cd.Resources = append(cd.Resources, r.Resource)
+		}
+
+		componentDescriptorPath := path.Join(repoRoot, "tmp/component-descriptor.yaml")
+		loader.ComponentDescriptorToFile(&cdv2.ComponentDescriptorList{
+			Components: []cdv2.ComponentDescriptor{ cd },
+		}, componentDescriptorPath)
 
 		importsPath := path.Join(repoRoot, "test/e2e/resources/imports.yaml")
 		exportsPath = path.Join(repoRoot, "tmp/export.yaml")

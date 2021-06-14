@@ -9,25 +9,14 @@ import (
 	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
 )
 
-type ResourceReader struct {
-	// path of the component directory, which contains the component-descriptor.yaml file
-	componentPath string
-}
-
-func NewResourceReader(componentPath string) *ResourceReader {
-	return &ResourceReader{
-		componentPath: componentPath,
-	}
-}
-
-func (r *ResourceReader) Read(componentDescriptorFilePath string) ([]cdresources.ResourceOptions, error) {
-	file, err := os.Open(componentDescriptorFilePath)
+func ResourcesFromFile(resourcesFilePath string) ([]cdresources.ResourceOptions, error) {
+	file, err := os.Open(resourcesFilePath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	resources, err := generateResourcesFromReader(file)
+	resources, err := readResources(file)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +24,7 @@ func (r *ResourceReader) Read(componentDescriptorFilePath string) ([]cdresources
 	return resources, nil
 }
 
-func generateResourcesFromReader(reader *os.File) ([]cdresources.ResourceOptions, error) {
+func readResources(reader *os.File) ([]cdresources.ResourceOptions, error) {
 	resources := make([]cdresources.ResourceOptions, 0)
 	yamldecoder := yamlutil.NewYAMLOrJSONDecoder(reader, 1024)
 	for {
