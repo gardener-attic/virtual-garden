@@ -18,12 +18,13 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
-	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
 	"time"
+
+	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 
 	"github.com/gardener/virtual-garden/pkg/util"
 
@@ -70,22 +71,13 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		// Read options to figure out what is being tested.
 		repoRoot := os.Getenv("REPO_ROOT")
 
-		resourcesPath := path.Join(repoRoot, ".landscaper/resources.yaml")
-		resources, err := loader.ResourcesFromFile(resourcesPath)
-		Expect(err).To(BeNil())
-
-		cd := cdv2.ComponentDescriptor{}
-		for _, r := range resources {
-			cd.Resources = append(cd.Resources, r.Resource)
-		}
-
+		resourcesPath := path.Join(repoRoot, ".landscaper/resourcesxxxxx.yaml")
 		componentDescriptorPath := path.Join(repoRoot, "tmp/component-descriptor.yaml")
-		loader.ComponentDescriptorToFile(&cdv2.ComponentDescriptorList{
-			Components: []cdv2.ComponentDescriptor{ cd },
-		}, componentDescriptorPath)
-
 		importsPath := path.Join(repoRoot, "test/e2e/resources/imports.yaml")
 		exportsPath = path.Join(repoRoot, "tmp/export.yaml")
+
+		err := prepareComponentDescriptor(resourcesPath, componentDescriptorPath)
+		Expect(err).NotTo(HaveOccurred())
 
 		os.Setenv("IMPORTS_PATH", importsPath)
 		os.Setenv("EXPORTS_PATH", exportsPath)
@@ -95,12 +87,12 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		opts.InitializeFromEnvironment()
 
 		// Read imports to know what to verify the reconciliation.
-		imports, err = loader.FromFile(opts.ImportsPath)
-		Expect(err).To(BeNil())
+		imports, err = loader.ImportsFromFile(opts.ImportsPath)
+		Expect(err).NotTo(HaveOccurred())
 
 		// Create Kubernetes client for actual verification calls in the hosting cluster.
 		c, err = app.NewClientFromTarget(imports.Cluster)
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterSuite(func() {
@@ -128,6 +120,22 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		})
 	})
 })
+
+func prepareComponentDescriptor(resourcesPath, componentDescriptorPath string) error {
+	resources, err := loader.ResourcesFromFile(resourcesPath)
+	if err != nil {
+		return err
+	}
+
+	cd := cdv2.ComponentDescriptor{}
+	for _, r := range resources {
+		cd.Resources = append(cd.Resources, r.Resource)
+	}
+
+	return loader.ComponentDescriptorToFile(&cdv2.ComponentDescriptorList{
+		Components: []cdv2.ComponentDescriptor{cd},
+	}, componentDescriptorPath)
+}
 
 func verifyExports(ctx context.Context, c client.Client, imports *api.Imports, exportsPath string) {
 	By("Checking the exports")

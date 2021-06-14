@@ -22,8 +22,8 @@ import (
 	"github.com/gardener/virtual-garden/pkg/api"
 )
 
-// FromFile will read the file from the given path and try to unmarshal it into an api.Imports structure.
-func FromFile(path string) (*api.Imports, error) {
+// ImportsFromFile will read the file from the given path and try to unmarshal it into an api.Imports structure.
+func ImportsFromFile(path string) (*api.Imports, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err

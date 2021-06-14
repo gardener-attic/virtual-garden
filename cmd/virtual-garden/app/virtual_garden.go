@@ -94,13 +94,13 @@ func NewCommandVirtualGarden() *cobra.Command {
 // run runs the virtual garden deployer.
 func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 	log.Infof("Reading imports file from %s", opts.ImportsPath)
-	imports, err := loader.FromFile(opts.ImportsPath)
+	imports, err := loader.ImportsFromFile(opts.ImportsPath)
 	if err != nil {
 		return err
 	}
 
 	log.Infof("Reading component descriptor file from %s", opts.ComponentDescriptorPath)
-	cd, err := loader.ReadComponentDescriptor(opts.ComponentDescriptorPath)
+	cd, err := loader.ComponentDescriptorFromFile(opts.ComponentDescriptorPath)
 	if err != nil {
 		return err
 	}

@@ -25,7 +25,23 @@ import (
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 )
 
-func ReadComponentDescriptor(componentDescriptorPath string) (*cdv2.ComponentDescriptor, error) {
+func ComponentDescriptorToFile(componentDescriptor *cdv2.ComponentDescriptorList, path string) error {
+	b, err := yaml.Marshal(componentDescriptor)
+	if err != nil {
+		return err
+	}
+
+	folderPath := filepath.Dir(path)
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		if err := os.MkdirAll(folderPath, 0700); err != nil {
+			return err
+		}
+	}
+
+	return ioutil.WriteFile(path, b, os.ModePerm)
+}
+
+func ComponentDescriptorFromFile(componentDescriptorPath string) (*cdv2.ComponentDescriptor, error) {
 	data, err := ioutil.ReadFile(componentDescriptorPath)
 	if err != nil {
 		return nil, err
@@ -41,20 +57,4 @@ func ReadComponentDescriptor(componentDescriptorPath string) (*cdv2.ComponentDes
 	}
 
 	return &cdList.Components[0], nil
-}
-
-func ComponentDescriptorToFile(componentDescriptor *cdv2.ComponentDescriptorList, path string) error {
-	b, err := yaml.Marshal(componentDescriptor)
-	if err != nil {
-		return err
-	}
-
-	folderPath := filepath.Dir(path)
-	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(folderPath, 0700); err != nil {
-			return err
-		}
-	}
-
-	return ioutil.WriteFile(path, b, os.ModePerm)
 }
