@@ -73,7 +73,8 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		resourcesPath := path.Join(repoRoot, ".landscaper/resources.yaml")
 		componentDescriptorPath := path.Join(repoRoot, "tmp/component-descriptor.json")
 
-		loader.CreateComponentDescriptorFromResourcesFile(resourcesPath, componentDescriptorPath)
+		err = loader.CreateComponentDescriptorFromResourcesFile(resourcesPath, componentDescriptorPath)
+		Expect(err).To(BeNil())
 
 		importsPath := path.Join(repoRoot, "test/e2e/resources/imports.yaml")
 		exportsPath = path.Join(repoRoot, "tmp/export.yaml")
