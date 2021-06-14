@@ -69,9 +69,14 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 	BeforeSuite(func() {
 		// Read options to figure out what is being tested.
 		repoRoot := os.Getenv("REPO_ROOT")
+
+		resourcesPath := path.Join(repoRoot, ".landscaper/resources.yaml")
+		componentDescriptorPath := path.Join(repoRoot, "tmp/component-descriptor.json")
+
+		loader.CreateComponentDescriptorFromResourcesFile(resourcesPath, componentDescriptorPath)
+
 		importsPath := path.Join(repoRoot, "test/e2e/resources/imports.yaml")
 		exportsPath = path.Join(repoRoot, "tmp/export.yaml")
-		componentDescriptorPath := path.Join(repoRoot, "test/e2e/resources/component-descriptor.json")
 
 		os.Setenv("IMPORTS_PATH", importsPath)
 		os.Setenv("EXPORTS_PATH", exportsPath)

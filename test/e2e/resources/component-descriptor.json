@@ -21,16 +21,6 @@
         "componentReferences": [],
         "resources": [
           {
-            "name": "blueprint",
-            "version": "v0.1.0",
-            "type": "blueprint",
-            "relation": "local",
-            "access": {
-              "digest": "sha256:8eecc3a0acf81a9b70e254e109763fe4ccd08804962c53bd2eda9e88a110e1a7",
-              "type": "localOciBlob"
-            }
-          },
-          {
             "name": "etcd",
             "version": "v3.4.13",
             "type": "ociImage",
@@ -67,16 +57,6 @@
             "relation": "external",
             "access": {
               "imageReference": "k8s.gcr.io/kube-controller-manager:v1.18.14",
-              "type": "ociRegistry"
-            }
-          },
-          {
-            "name": "virtual-garden-container-deployer",
-            "version": "v1.0.1",
-            "type": "ociImage",
-            "relation": "external",
-            "access": {
-              "imageReference": "eu.gcr.io/gardener-project/virtual-garden-container-deployer:v1.0.1",
               "type": "ociRegistry"
             }
           }

@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	cloud.google.com/go/storage v1.6.0
+	github.com/gardener/component-cli v0.19.0
 	github.com/gardener/component-spec/bindings-go v0.0.36
 	github.com/gardener/gardener v1.19.0
 	github.com/gardener/hvpa-controller v0.3.1
@@ -16,8 +17,8 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5
-	google.golang.org/api v0.20.0
-	gopkg.in/yaml.v2 v2.3.0
+	google.golang.org/api v0.22.0
+	gopkg.in/yaml.v2 v2.3.0 // indirect
 	k8s.io/api v0.20.2
 	k8s.io/apiextensions-apiserver v0.20.2
 	k8s.io/apimachinery v0.20.2
@@ -27,6 +28,7 @@ require (
 	k8s.io/component-base v0.20.2
 	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
 	sigs.k8s.io/controller-runtime v0.8.3
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.20.2
