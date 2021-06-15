@@ -31,8 +31,8 @@ spec:
 
   imports:
     targets:
-      - name: cluster
-        target: "#cluster"
+    - name: cluster
+      target: "#cluster"
 
   importDataMappings:
     hostingCluster:
@@ -61,9 +61,11 @@ spec:
       dataRef: "etcdclienttlspem"
     - name: etcdClientTlsKeyPem
       dataRef: "etcdclienttlskeypem"
-    - name: kubeconfigYaml
-      dataRef: "kubeconfigyaml"
     - name: virtualGardenEndpoint
       dataRef: "virtualgardenendpoint"
+
+    targets:
+    - name: virtualGardenKubeconfig
+      target: "virtualgardenkubeconfig"
 EOF
 

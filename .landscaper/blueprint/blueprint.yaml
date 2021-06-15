@@ -212,62 +212,22 @@ exports:
   schema:
     type: string
 
-- name: kubeconfigYaml
-  schema:
-    type: string
+- name: virtualGardenKubeconfig
+  targetType: landscaper.gardener.cloud/kubernetes-cluster
 
 - name: virtualGardenEndpoint
   schema:
     type: string
 
 exportExecutions:
-
-  - name: kubeApiserverCaPem
-    template: |
-      exports:
-        kubeApiserverCaPem: |
-          {{- index .values "deployitems" "virtual-garden-container-deployer" "kubeApiserverCaPem" | nindent 4 }}
-    type: GoTemplate
-
-  - name: etcdCaPem
-    template: |
-      exports:
-        etcdCaPem: |
-          {{- index .values "deployitems" "virtual-garden-container-deployer" "etcdCaPem" | nindent 4 }}
-    type: GoTemplate
-
-  - name: etcdClientTlsPem
-    template: |
-      exports:
-        etcdClientTlsPem: |
-          {{- index .values "deployitems" "virtual-garden-container-deployer" "etcdClientTlsPem" | nindent 4 }}
-    type: GoTemplate
-
-  - name: etcdClientTlsKeyPem
-    template: |
-      exports:
-        etcdClientTlsKeyPem: |
-          {{- index .values "deployitems" "virtual-garden-container-deployer" "etcdClientTlsKeyPem" | nindent 4 }}
-    type: GoTemplate
-
-  - name: kubeconfigYaml
-    template: |
-      exports:
-        kubeconfigYaml: |
-          {{- index .values "deployitems" "virtual-garden-container-deployer" "kubeconfigYaml" | nindent 4 }}
-    type: GoTemplate
-
-  - name: virtualGardenEndpoint
-    template: |
-      exports:
-        virtualGardenEndpoint: |
-          {{- index .values "deployitems" "virtual-garden-container-deployer" "virtualGardenEndpoint" | nindent 4 }}
-    type: GoTemplate
+- name: virtual-garden-export-execution
+  file: /virtual-garden-export-execution.yaml
+  type: GoTemplate
 
 subinstallations: []
 
 deployExecutions:
-- file: /virtual-garden-container-deployer.yaml
-  name: virtual-garden-container-deployer
+- name: virtual-garden-deploy-execution
+  file: /virtual-garden-deploy-execution.yaml
   type: GoTemplate
 
