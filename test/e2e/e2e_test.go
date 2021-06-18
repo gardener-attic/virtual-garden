@@ -26,8 +26,6 @@ import (
 
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 
-	"github.com/gardener/virtual-garden/pkg/util"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/ghodss/yaml"
@@ -150,35 +148,29 @@ func verifyExports(ctx context.Context, c client.Client, imports *api.Imports, e
 	Expect(exports.VirtualGardenEndpoint).NotTo(BeZero())
 }
 
-// verifyKubeApiServerCall checks that the kube-apiserver can accessed.
-// This is done by creating and deleting a namespace on the kube-apiserver.
+// verifyKubeApiServerCall checks that the kube-apiserver can be accessed. This is done by reading the default namespace.
 func verifyKubeApiServerCall(ctx context.Context, c client.Client, imports *api.Imports) {
 	By("Checking that the kube-apiserver can be accessed")
 
-	var kubeAPIServerClient client.Client
-	var err error
+	var (
+		kubeAPIServerClient client.Client
+		err                 error
+	)
 
-	repeatSucceeded := util.Repeat(func() bool {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
+	Expect(wait.PollImmediateUntil(5*time.Second, func() (bool, error) {
 		kubeAPIServerClient, err = newKubeAPIServerClient(ctx, c, imports)
 		if err != nil {
-			return false
+			return false, nil
 		}
 
 		defaultNamespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}}
 		objectKey := client.ObjectKey{Name: defaultNamespace.Name}
 		err = kubeAPIServerClient.Get(ctx, objectKey, defaultNamespace)
-		return err == nil
-	}, 20, 5*time.Second)
-
-	Expect(repeatSucceeded).To(BeTrue())
-
-	namespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "test"}}
-
-	err = kubeAPIServerClient.Create(ctx, namespace)
-	Expect(err == nil || apierrors.IsAlreadyExists(err)).To(BeTrue())
-
-	err = kubeAPIServerClient.Delete(ctx, namespace)
-	Expect(err).NotTo(HaveOccurred())
+		return err == nil, nil
+	}, timeoutCtx.Done())).To(Succeed())
 }
 
 func newKubeAPIServerClient(ctx context.Context, c client.Client, imports *api.Imports) (client.Client, error) {

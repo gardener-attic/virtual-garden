@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/gardener/virtual-garden/pkg/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // DeployKubeAPIServer deploys a kubernetes api server.
@@ -103,17 +103,21 @@ func (o *operation) isWebhookEnabled() bool {
 }
 
 func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (string, error) {
-	var err error
 	var loadBalancer string
 
-	ok := util.Repeat(func() bool {
-		loadBalancer, err = o.computeKubeAPIServerLoadBalancerOnce(ctx)
-		return err != nil || loadBalancer != ""
-	}, 60, 2*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
 
-	if !ok {
-		return "", fmt.Errorf("Timeout reading loadbalancer IP")
-	}
+	err := wait.PollImmediateUntil(2*time.Second, func() (done bool, err error) {
+		service := emptyKubeAPIServerService(o.namespace)
+		if err := o.client.Get(ctx, client.ObjectKeyFromObject(service), service); err != nil {
+			return false, err
+		}
+
+		loadBalancer = o.infrastructureProvider.GetLoadBalancer(service)
+
+		return loadBalancer != "", nil
+	}, timeoutCtx.Done())
 
 	if err != nil {
 		return "", fmt.Errorf("Error reading loadbalancer IP: %w", err)
@@ -122,15 +126,4 @@ func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (strin
 	o.exports.VirtualGardenEndpoint = loadBalancer
 
 	return loadBalancer, err
-}
-
-func (o *operation) computeKubeAPIServerLoadBalancerOnce(ctx context.Context) (string, error) {
-	service := emptyKubeAPIServerService(o.namespace)
-
-	err := o.client.Get(ctx, client.ObjectKeyFromObject(service), service)
-	if err != nil {
-		return "", err
-	}
-
-	return o.infrastructureProvider.GetLoadBalancer(service), nil
 }
