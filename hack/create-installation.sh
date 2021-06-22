@@ -7,11 +7,10 @@
 set -e
 
 SOURCE_PATH="$(dirname $0)/.."
-INSTALLATION_PATH=${SOURCE_PATH}"/tmp/installation.yaml"
+TMP_DIR="$(mktemp -d)"
+INSTALLATION_PATH="${TMP_DIR}/installation.yaml"
 
-> ${INSTALLATION_PATH}
-
-cat << EOF >> ${INSTALLATION_PATH}
+cat << EOF > ${INSTALLATION_PATH}
 apiVersion: landscaper.gardener.cloud/v1alpha1
 kind: Installation
 metadata:
@@ -69,3 +68,4 @@ spec:
       target: "virtualgardenkubeconfig"
 EOF
 
+echo "Installation stored at ${INSTALLATION_PATH}"
