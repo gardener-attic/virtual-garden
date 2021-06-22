@@ -26,7 +26,7 @@ import (
 
 // DeployKubeAPIServer deploys a kubernetes api server.
 func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
-	o.log.Infof("Deploying the HVPA CRD")
+	o.log.Infof("Deploying the KubeAPIServer")
 
 	checksums := make(map[string]string)
 
