@@ -67,7 +67,7 @@ func (o *operation) deployKubeAPIServerPodDisruptionBudget(ctx context.Context) 
 		budget.Spec = policyv1.PodDisruptionBudgetSpec{
 			MinAvailable: &minAvailable,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: getKubeAPIServerServiceLabels(),
+				MatchLabels: kubeAPIServerLabels(),
 			},
 		}
 		return nil
@@ -82,7 +82,7 @@ func (o *operation) deployKubeAPIServerServiceAccount(ctx context.Context) error
 	serviceccount := o.emptyServiceAccount()
 
 	_, err := controllerutil.CreateOrUpdate(ctx, o.client, serviceccount, func() error {
-		serviceccount.ObjectMeta.Labels = getKubeAPIServerServiceLabels()
+		serviceccount.ObjectMeta.Labels = kubeAPIServerLabels()
 		return nil
 	})
 

@@ -110,6 +110,13 @@ imports:
                   type: string
             auditWebhookBatchMaxSize:
               type: string
+            seedAuthorizer
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                certificateAuthorityData:
+                  type: string
             hvpaEnabled:
               type: boolean
             hvpa:

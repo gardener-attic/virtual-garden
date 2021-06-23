@@ -127,3 +127,10 @@ func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (strin
 
 	return loadBalancer, err
 }
+
+func kubeAPIServerLabels() map[string]string {
+	return map[string]string{
+		LabelKeyApp:       Prefix,
+		LabelKeyComponent: "kube-apiserver",
+	}
+}

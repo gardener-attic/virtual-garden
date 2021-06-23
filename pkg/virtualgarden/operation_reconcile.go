@@ -40,8 +40,8 @@ func (o *operation) Reconcile(ctx context.Context) (*api.Exports, error) {
 		})
 
 		deployBackupBucket = graph.Add(flow.Task{
-			Name:         "Deploying the backup bucket for the main etcd",
-			Fn:           flow.TaskFn(o.DeployBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
+			Name: "Deploying the backup bucket for the main etcd",
+			Fn:   flow.TaskFn(o.DeployBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
 		})
 
 		createETCD = graph.Add(flow.Task{

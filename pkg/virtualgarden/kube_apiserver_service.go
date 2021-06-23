@@ -58,9 +58,9 @@ func (o *operation) DeployKubeAPIServerService(ctx context.Context) error {
 			delete(service.Annotations, "dns.gardener.cloud/ttl")
 		}
 
-		service.Labels = utils.MergeStringMaps(service.Labels, getKubeAPIServerServiceLabels())
+		service.Labels = utils.MergeStringMaps(service.Labels, kubeAPIServerLabels())
 		service.Spec.Type = corev1.ServiceTypeLoadBalancer
-		service.Spec.Selector = getKubeAPIServerServiceLabels()
+		service.Spec.Selector = kubeAPIServerLabels()
 		service.Spec.Ports = reconcileServicePorts(service.Spec.Ports, []corev1.ServicePort{
 			{
 				Name:       kubeAPIServerServicePortName,

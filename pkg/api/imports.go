@@ -96,6 +96,8 @@ type KubeAPIServer struct {
 	AuditWebhookConfig       AuditWebhookConfig `json:"auditWebhookConfig,omitempty" yaml:"auditWebhookConfig,omitempty"`
 	AuditWebhookBatchMaxSize string             `json:"auditWebhookBatchMaxSize,omitempty" yaml:"auditWebhookBatchMaxSize,omitempty"`
 
+	SeedAuthorizer SeedAuthorizer `json:"seedAuthorizer,omitempty" yaml:"seedAuthorizer,omitempty"`
+
 	HVPAEnabled bool        `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
 	HVPA        *HvpaConfig `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`
 
@@ -123,6 +125,11 @@ type GardenerControlplane struct {
 
 type AuditWebhookConfig struct {
 	Config string `json:"config,omitempty" yaml:"config,omitempty"`
+}
+
+type SeedAuthorizer struct {
+	Enabled                  bool   `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+	CertificateAuthorityData string `json:"certificateAuthorityData,omitempty" yaml:"certificateAuthorityData,omitempty"`
 }
 
 // SNI contains configuration for SNI settings for the virtual garden.

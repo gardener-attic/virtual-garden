@@ -30,16 +30,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/gardener/gardener/pkg/utils"
+	v1 "k8s.io/client-go/tools/clientcmd/api/v1"
 )
 
 const (
 	KubeApiServerSecretNameAdmissionKubeconfig = Prefix + "-kube-apiserver-admission-kubeconfig"
 	KubeApiServerSecretNameAuditWebhookConfig  = "kube-apiserver-audit-webhook-config"
+	KubeApiServerSecretNameAuthWebhookConfig   = Prefix + "-kube-apiserver-auth-webhook-config"
 	KubeApiServerSecretNameBasicAuth           = Prefix + "-kube-apiserver-basic-auth"
 	KubeApiServerSecretNameEncryptionConfig    = Prefix + "-kube-apiserver-encryption-config"
 	KubeApiServerSecretNameServiceAccountKey   = Prefix + "-service-account-key"
-
-	pwUsers = ",admin,admin,system:masters"
 )
 
 //go:embed resources/validating-webhook-kubeconfig.yaml
@@ -56,6 +56,10 @@ func (o *operation) deployKubeAPIServerSecrets(ctx context.Context, checksums ma
 	}
 
 	if err := o.deployKubeApiServerSecretAuditWebhookConfig(ctx, checksums); err != nil {
+		return "", err
+	}
+
+	if err := o.deployKubeApiServerSecretAuthWebhookConfig(ctx, checksums); err != nil {
 		return "", err
 	}
 
@@ -81,6 +85,7 @@ func (o *operation) deleteKubeAPIServerSecrets(ctx context.Context) error {
 	for _, name := range []string{
 		KubeApiServerSecretNameAdmissionKubeconfig,
 		KubeApiServerSecretNameAuditWebhookConfig,
+		KubeApiServerSecretNameAuthWebhookConfig,
 		KubeApiServerSecretNameBasicAuth,
 		KubeApiServerSecretNameEncryptionConfig,
 		KubeApiServerSecretNameServiceAccountKey,
@@ -134,8 +139,78 @@ func (o *operation) deployKubeApiServerSecretAuditWebhookConfig(ctx context.Cont
 	return nil
 }
 
+func (o *operation) deployKubeApiServerSecretAuthWebhookConfig(ctx context.Context, checksums map[string]string) error {
+	if !o.isSeedAuthorizerEnabled() {
+		return nil
+	}
+
+	const (
+		clusterName = "gardener-admission-controller"
+		userName    = "virtual-garden-kube-apiserver"
+	)
+
+	cluster := v1.NamedCluster{
+		Name: clusterName,
+		Cluster: v1.Cluster{
+			Server: "https://gardener-admission-controller.garden/webhooks/auth/seed",
+		},
+	}
+
+	if len(o.imports.VirtualGarden.KubeAPIServer.SeedAuthorizer.CertificateAuthorityData) > 0 {
+		cluster.Cluster.CertificateAuthorityData = []byte(o.imports.VirtualGarden.KubeAPIServer.SeedAuthorizer.CertificateAuthorityData)
+	} else {
+		cluster.Cluster.InsecureSkipTLSVerify = true
+	}
+
+	user := v1.NamedAuthInfo{
+		Name: userName,
+	}
+
+	context := v1.NamedContext{
+		Name: "auth-webhook",
+		Context: v1.Context{
+			Cluster:  clusterName,
+			AuthInfo: userName,
+		},
+	}
+
+	config := v1.Config{
+		APIVersion:     "v1",
+		Kind:           "Config",
+		CurrentContext: "auth-webhook",
+		Clusters:       []v1.NamedCluster{cluster},
+		AuthInfos:      []v1.NamedAuthInfo{user},
+		Contexts:       []v1.NamedContext{context},
+	}
+
+	configYaml, err := yaml.Marshal(&config)
+	if err != nil {
+		return err
+	}
+
+	secret := o.emptySecret(KubeApiServerSecretNameAuthWebhookConfig)
+	_, err = controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
+		secret.ObjectMeta.Labels = kubeAPIServerLabels()
+
+		if secret.Data == nil {
+			secret.Data = make(map[string][]byte)
+		}
+		secret.Data["config.yaml"] = configYaml
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	checksums[ChecksumKeyKubeAPIServerAuthWebhookConfig] = utils.ComputeChecksum(secret.Data)
+	return nil
+}
+
 func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, checksums map[string]string) (string, error) {
-	const basicAuthKey = "basic_auth.csv"
+	const (
+		basicAuthKey = "basic_auth.csv"
+		pwUsers      = ",admin,admin,system:masters"
+	)
 
 	var basicAuthValue []byte
 

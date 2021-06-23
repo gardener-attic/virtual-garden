@@ -83,13 +83,13 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 
 	// create/update
 	_, err := controllerutil.CreateOrUpdate(ctx, o.client, deployment, func() error {
-		deployment.ObjectMeta.Labels = getKubeAPIServerServiceLabels()
+		deployment.ObjectMeta.Labels = kubeAPIServerLabels()
 
 		deployment.Spec = appsv1.DeploymentSpec{
 			RevisionHistoryLimit: pointer.Int32Ptr(0),
 			Replicas:             replicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: getKubeAPIServerServiceLabels(),
+				MatchLabels: kubeAPIServerLabels(),
 			},
 
 			Template: corev1.PodTemplateSpec{
@@ -225,6 +225,7 @@ func (o *operation) computeApiServerAnnotations(checksums map[string]string) map
 		ChecksumKeyKubeAPIServerCA,
 		ChecksumKeyKubeAPIServerServer,
 		ChecksumKeyKubeAPIServerAuditWebhookConfig,
+		ChecksumKeyKubeAPIServerAuthWebhookConfig,
 		ChecksumKeyKubeAPIServerBasicAuth,
 		ChecksumKeyKubeAPIServerAdmissionConfig,
 	})
@@ -264,7 +265,16 @@ func (o *operation) getAPIServerCommand() []string {
 	}
 	command = append(command, "--allow-privileged=true")
 	command = append(command, "--anonymous-auth=false")
-	command = append(command, "--authorization-mode=Node,RBAC")
+
+	if o.isSeedAuthorizerEnabled() {
+		command = append(command, "--authorization-mode=Webhook,RBAC")
+		command = append(command, "--authorization-webhook-config-file=/etc/kube-apiserver/auth-webhook/config.yaml")
+		command = append(command, "--authorization-webhook-cache-authorized-ttl=0")
+		command = append(command, "--authorization-webhook-cache-unauthorized-ttl=0")
+	} else {
+		command = append(command, "--authorization-mode=RBAC")
+	}
+
 	command = append(command, "--basic-auth-file=/srv/kubernetes/auth/basic_auth.csv")
 	command = append(command, "--client-ca-file=/srv/kubernetes/ca/ca.crt")
 	command = append(command, "--enable-aggregator-routing=true")
@@ -321,6 +331,10 @@ func (o *operation) getAuditWebhookBatchMaxSize() string {
 	return o.imports.VirtualGarden.KubeAPIServer.AuditWebhookBatchMaxSize
 }
 
+func (o *operation) isSeedAuthorizerEnabled() bool {
+	return o.imports.VirtualGarden.KubeAPIServer != nil && o.imports.VirtualGarden.KubeAPIServer.SeedAuthorizer.Enabled
+}
+
 func (o *operation) hasEncryptionConfig() bool {
 	return true
 }
@@ -373,6 +387,13 @@ func (o *operation) getAPIServerVolumeMounts() []corev1.VolumeMount {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      volumeNameKubeAPIServerEncryptionConfig,
 			MountPath: "/etc/kube-apiserver/encryption",
+		})
+	}
+
+	if o.isSeedAuthorizerEnabled() {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      volumeNameKubeAPIServerAuthWebhookConfig,
+			MountPath: "/etc/kube-apiserver/auth-webhook",
 		})
 	}
 
@@ -467,6 +488,10 @@ func (o *operation) getAPIServerVolumes() []corev1.Volume {
 
 	if o.hasEncryptionConfig() {
 		volumes = append(volumes, volumeWithSecretSource(volumeNameKubeAPIServerEncryptionConfig, KubeApiServerSecretNameEncryptionConfig))
+	}
+
+	if o.isSeedAuthorizerEnabled() {
+		volumes = append(volumes, volumeWithSecretSource(volumeNameKubeAPIServerAuthWebhookConfig, KubeApiServerSecretNameAuthWebhookConfig))
 	}
 
 	volumes = append(volumes, volumeWithConfigMapSource(volumeNameKubeAPIServerAuditPolicyConfig, KubeApiServerConfigMapAuditPolicy))
