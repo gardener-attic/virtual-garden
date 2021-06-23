@@ -15,6 +15,8 @@
 package validation_test
 
 import (
+	"encoding/json"
+
 	"github.com/gardener/virtual-garden/pkg/api"
 	. "github.com/gardener/virtual-garden/pkg/api/validation"
 
@@ -35,7 +37,13 @@ var _ = Describe("Imports", func() {
 
 		BeforeEach(func() {
 			obj = &api.Imports{
-				Cluster: lsv1alpha1.Target{},
+				Cluster: lsv1alpha1.Target{
+					Spec: lsv1alpha1.TargetSpec{
+						Configuration: lsv1alpha1.AnyJSON{
+							RawMessage: json.RawMessage(`{"config":{"kubeconfig":"x"}}`),
+						},
+					},
+				},
 				HostingCluster: api.HostingCluster{
 					Namespace:              "foo",
 					InfrastructureProvider: "gcp",
