@@ -8,6 +8,7 @@ spec:
     kind: Hvpa
     plural: hvpas
   scope: ""
+  preserveUnknownFields: false
   subresources:
     scale:
       labelSelectorPath: .status.targetSelector
@@ -214,6 +215,7 @@ spec:
                     metadata:
                       description: Metadata of the pods created from this template.
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true # To be replaced by proper OpenAPI spec
                     spec:
                       description: Spec defines the behavior of a HPA.
                       properties:
@@ -796,6 +798,7 @@ spec:
                     metadata:
                       description: Metadata of the pods created from this template.
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true # To be replaced by proper OpenAPI spec
                     spec:
                       description: Spec defines the behavior of a VPA.
                       properties:

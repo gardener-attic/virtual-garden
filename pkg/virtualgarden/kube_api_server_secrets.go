@@ -327,11 +327,6 @@ func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
 	return yaml.Marshal(&encryptionConfig)
 }
 
-// NEEDS TO BE REWORKED
-// Issues:
-// - the data map of the secret has another key than usual for a private key
-// - the secret contains only the private key, but not the certificate
-// Therefore the loading fails if the secret does already exist.
 func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Context, checksums map[string]string) error {
 	const key = "service_account.key"
 

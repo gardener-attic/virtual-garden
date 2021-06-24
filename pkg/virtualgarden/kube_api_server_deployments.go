@@ -267,7 +267,7 @@ func (o *operation) getAPIServerCommand() []string {
 	command = append(command, "--anonymous-auth=false")
 
 	if o.isSeedAuthorizerEnabled() {
-		command = append(command, "--authorization-mode=Webhook,RBAC")
+		command = append(command, "--authorization-mode=RBAC,Webhook")
 		command = append(command, "--authorization-webhook-config-file=/etc/kube-apiserver/auth-webhook/config.yaml")
 		command = append(command, "--authorization-webhook-cache-authorized-ttl=0")
 		command = append(command, "--authorization-webhook-cache-unauthorized-ttl=0")
