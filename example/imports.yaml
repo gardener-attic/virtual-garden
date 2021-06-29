@@ -14,7 +14,7 @@ virtualGarden:
     storageClassName: my-virtual-garden-storage-class
     backup:
       infrastructureProvider: gcp # aws|gcp|alicloud
-      region: europe-west555
+      region: europe-west5
       bucketName: my-virtual-garden-backup
       credentials:
         data:

@@ -17,7 +17,7 @@ fi
 
 printf "> Building Virtual Garden with version ${EFFECTIVE_VERSION} - ${COMMIT_SHA}\n"
 
-printf "> Create Virtual Garden ca archive\n"
+printf "> Create Virtual Garden Component Archive\n"
 
 CA_PATH="$(mktemp -d)"
 cp ${BASE_DEFINITION_PATH} "${CA_PATH}/component-descriptor.yaml"

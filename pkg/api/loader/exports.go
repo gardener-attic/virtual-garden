@@ -24,6 +24,7 @@ import (
 	"github.com/gardener/virtual-garden/pkg/api"
 )
 
+// ExportsToFile writes export data to a file.
 func ExportsToFile(exports *api.Exports, path string) error {
 	b, err := yaml.Marshal(exports)
 	if err != nil {
@@ -40,6 +41,7 @@ func ExportsToFile(exports *api.Exports, path string) error {
 	return ioutil.WriteFile(path, b, os.ModePerm)
 }
 
+// ExportsFromFile reads export data from a file.
 func ExportsFromFile(path string) (*api.Exports, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {

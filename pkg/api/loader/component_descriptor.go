@@ -25,6 +25,7 @@ import (
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 )
 
+// ComponentDescriptorToFile writes a component descriptor to a file.
 func ComponentDescriptorToFile(componentDescriptor *cdv2.ComponentDescriptorList, path string) error {
 	b, err := yaml.Marshal(componentDescriptor)
 	if err != nil {
@@ -41,6 +42,7 @@ func ComponentDescriptorToFile(componentDescriptor *cdv2.ComponentDescriptorList
 	return ioutil.WriteFile(path, b, os.ModePerm)
 }
 
+// ComponentDescriptorFromFile reads a component descriptor from a file.
 func ComponentDescriptorFromFile(componentDescriptorPath string) (*cdv2.ComponentDescriptor, error) {
 	data, err := ioutil.ReadFile(componentDescriptorPath)
 	if err != nil {

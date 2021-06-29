@@ -6,7 +6,11 @@ set -o pipefail
 
 cd "$(dirname $0)/.."
 
-# git config --global user.email "gardener@sap.com"
-# git config --global user.name "Gardener CI/CD"
+git config --global user.email "gardener@sap.com"
+git config --global user.name "Gardener CI/CD"
+
+mkdir -p /go/src/github.com/gardener/virtual-garden
+cp -r . /go/src/github.com/gardener/virtual-garden
+cd /go/src/github.com/gardener/virtual-garden
 
 make verify-extended

@@ -14,6 +14,7 @@
 
 package api
 
+// Eports defines the structure for the exported data which might be consumed by other components.
 type Exports struct {
 	KubeApiserverCaPem    string `json:"kubeApiserverCaPem,omitempty" yaml:"kubeApiserverCaPem,omitempty"`
 	EtcdCaPem             string `json:"etcdCaPem,omitempty" yaml:"etcdCaPem,omitempty"`

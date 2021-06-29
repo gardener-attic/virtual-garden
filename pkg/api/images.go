@@ -21,6 +21,7 @@ import (
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 )
 
+// ImageRefs defines the structure for the used images.
 type ImageRefs struct {
 	ETCDImage                  string
 	ETCDBackupRestoreImage     string
@@ -28,6 +29,7 @@ type ImageRefs struct {
 	KubeAPIServerImage         string
 }
 
+// NewImageRefsFromComponentDescriptor extracts the relevant images from the component descriptor.
 func NewImageRefsFromComponentDescriptor(cd *cdv2.ComponentDescriptor) (*ImageRefs, error) {
 	const (
 		resourceNameETCD                  = "etcd"

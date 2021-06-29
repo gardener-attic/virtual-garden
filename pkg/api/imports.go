@@ -19,6 +19,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const (
+	// InfrastructureProviderAlicloud is a constant for the Alicloud infrastructure provider.
+	InfrastructureProviderAlicloud InfrastructureProviderType = "alicloud"
+	// InfrastructureProviderAWS is a constant for the AWS infrastructure provider.
+	InfrastructureProviderAWS InfrastructureProviderType = "aws"
+	// InfrastructureProviderGCP is a constant for the GCP infrastructure provider.
+	InfrastructureProviderGCP InfrastructureProviderType = "gcp"
+	// InfrastructureProviderFake is a constant for fake infrastructure provider.
+	InfrastructureProviderFake InfrastructureProviderType = "fake"
+)
+
 // Imports defines the structure for the required configuration values from other components.
 type Imports struct {
 	// Cluster is the kubeconfig of the hosting cluster into which the virtual garden shall be installed.
@@ -110,6 +121,7 @@ type KubeAPIServer struct {
 	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty" yaml:"horizontalPodAutoscaler,omitempty"`
 }
 
+// HorizontalPodAutoscaler contains configuration for the horizontal pod auto scaler.
 type HorizontalPodAutoscaler struct {
 	DownscaleStabilization  string `json:"downscaleStabilization,omitempty" yaml:"downscaleStabilization,omitempty"`
 	ReadinessDelay          string `json:"readinessDelay,omitempty" yaml:"readinessDelay,omitempty"`
@@ -118,15 +130,18 @@ type HorizontalPodAutoscaler struct {
 	Tolerance               string `json:"tolerance,omitempty" yaml:"tolerance,omitempty"`
 }
 
+// GardenerControlplane contains the activation info for webhooks
 type GardenerControlplane struct {
 	ValidatingWebhookEnabled bool `json:"validatingWebhookEnabled,omitempty" yaml:"validatingWebhookEnabled,omitempty"`
 	MutatingWebhookEnabled   bool `json:"mutatingWebhookEnabled,omitempty" yaml:"mutatingWebhookEnabled,omitempty"`
 }
 
+// AuditWebhookConfig contains configuration for the audit webhook.
 type AuditWebhookConfig struct {
 	Config string `json:"config,omitempty" yaml:"config,omitempty"`
 }
 
+// SeedAuthorizer contains credentials for the seed authorizer.
 type SeedAuthorizer struct {
 	Enabled                  bool   `json:"enabled,omitempty" yaml:"enabled,omitempty"`
 	CertificateAuthorityData string `json:"certificateAuthorityData,omitempty" yaml:"certificateAuthorityData,omitempty"`
@@ -156,14 +171,3 @@ type Credentials struct {
 
 // InfrastructureProviderType is a string alias.
 type InfrastructureProviderType string
-
-const (
-	// InfrastructureProviderAlicloud is a constant for the Alicloud infrastructure provider.
-	InfrastructureProviderAlicloud InfrastructureProviderType = "alicloud"
-	// InfrastructureProviderAWS is a constant for the AWS infrastructure provider.
-	InfrastructureProviderAWS InfrastructureProviderType = "aws"
-	// InfrastructureProviderGCP is a constant for the GCP infrastructure provider.
-	InfrastructureProviderGCP InfrastructureProviderType = "gcp"
-	// InfrastructureProviderFake is a constant for fake infrastructure provider.
-	InfrastructureProviderFake InfrastructureProviderType = "fake"
-)
