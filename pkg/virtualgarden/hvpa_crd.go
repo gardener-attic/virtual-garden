@@ -15,16 +15,74 @@
 package virtualgarden
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
+	"fmt"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
+
+//go:embed resources/hvpa.yaml
+var hvpaCrd []byte
 
 // deployHVPACRD deploys the HVPA CRD.
 func (o *operation) deployHVPACRD(ctx context.Context) error {
-	return nil
+	o.log.Infof("Deploying hvpa crd")
+
+	newCrd, err := loadHVPACRD()
+	if err != nil {
+		return err
+	}
+
+	crd := emptyHVPACRD()
+	_, err = controllerutil.CreateOrUpdate(ctx, o.client, crd, func() error {
+		crd.Spec = newCrd.Spec
+		return nil
+	})
+
+	return err
 }
 
 // deleteHPVACRD deletes the HPVA CRD.
 func (o *operation) deleteHPVACRD(ctx context.Context) error {
-	return nil
+	o.log.Infof("Deleting hvpa crd")
+	return client.IgnoreNotFound(o.client.Delete(ctx, emptyHVPACRD()))
+}
+
+// getHVPACRD return the HVPA CRD.
+func (o *operation) getHVPACRD(ctx context.Context) (*v1beta1.CustomResourceDefinition, error) {
+	hvpaCrd := emptyHVPACRD()
+	err := o.client.Get(ctx, client.ObjectKeyFromObject(hvpaCrd), hvpaCrd)
+	if err != nil {
+		return nil, err
+	}
+
+	return hvpaCrd, nil
+}
+
+// loadHVPACRD loads the HVPA CRD from file resources/hvpa.yaml.
+func loadHVPACRD() (*v1beta1.CustomResourceDefinition, error) {
+	crd := &v1beta1.CustomResourceDefinition{}
+	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(hvpaCrd), 32)
+	err := decoder.Decode(crd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode HVPA CRD: %w", err)
+	}
+
+	return crd, nil
+}
+
+func emptyHVPACRD() *v1beta1.CustomResourceDefinition {
+	return &v1beta1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "hvpas.autoscaling.k8s.io",
+		},
+	}
 }
