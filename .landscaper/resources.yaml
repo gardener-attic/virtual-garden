@@ -1,0 +1,42 @@
+---
+type: blueprint
+name: blueprint
+relation: local
+input:
+  type: dir
+  path: ./blueprint
+  mediaType: application/vnd.gardener.landscaper.blueprint.v1+tar+gzip
+  compress: true
+...
+---
+type: ociImage
+name: etcd
+relation: local
+access:
+  type: ociRegistry
+  imageReference: eu.gcr.io/gardener-project/gardener/etcd:v3.4.13
+...
+---
+type: ociImage
+name: etcd-backup-restore
+relation: local
+access:
+  type: ociRegistry
+  imageReference: eu.gcr.io/gardener-project/gardener/etcdbrctl:v0.11.1
+...
+---
+type: ociImage
+name: kube-apiserver
+relation: local
+access:
+  type: ociRegistry
+  imageReference: k8s.gcr.io/kube-apiserver:v1.18.14
+...
+---
+type: ociImage
+name: kube-controller-manager
+relation: local
+access:
+  type: ociRegistry
+  imageReference: k8s.gcr.io/kube-controller-manager:v1.18.14
+...

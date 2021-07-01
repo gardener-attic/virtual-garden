@@ -86,10 +86,12 @@ func (o *operation) deployETCDStatefulSet(
 	if storageProviderName != "" {
 		backupConfigParameters = []string{
 			"--schedule=0 */24 * * *",
+			"--defragmentation-schedule=0 1 * * *",
 			"--storage-provider=" + storageProviderName,
 			"--store-prefix=" + sts.Name,
 			"--delta-snapshot-period=5m",
 			"--delta-snapshot-memory-limit=104857600", // 100 MB
+			"--embedded-etcd-quota-bytes=8589934592",  // 8 GB
 		}
 		backupEnvironment = append([]corev1.EnvVar{
 			{
@@ -127,10 +129,38 @@ func (o *operation) deployETCDStatefulSet(
 				Labels:      etcdLabels(role),
 			},
 			Spec: corev1.PodSpec{
+				Affinity: &corev1.Affinity{
+					PodAntiAffinity: &corev1.PodAntiAffinity{
+						RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+							{
+								LabelSelector: &metav1.LabelSelector{
+									MatchExpressions: []metav1.LabelSelectorRequirement{
+										{
+											Key:      "app",
+											Operator: metav1.LabelSelectorOpIn,
+											Values: []string{
+												Prefix,
+											},
+										},
+										{
+											Key:      "component",
+											Operator: metav1.LabelSelectorOpIn,
+											Values: []string{
+												"etcd",
+											},
+										},
+									},
+								},
+								TopologyKey: corev1.LabelHostname,
+							},
+						},
+					},
+				},
+				PriorityClassName: o.imports.VirtualGarden.PriorityClassName,
 				Containers: []corev1.Container{
 					{
 						Name:            etcdContainerName,
-						Image:           "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",
+						Image:           o.imageRefs.ETCDImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Command:         []string{etcdConfigMapVolumeMountPath + "/" + ETCDConfigMapDataKeyBootstrapScript},
 						ReadinessProbe: &corev1.Probe{
@@ -211,7 +241,7 @@ func (o *operation) deployETCDStatefulSet(
 					},
 					{
 						Name:            backupRestoreSidecarContainerName,
-						Image:           "eu.gcr.io/sap-se-gcr-k8s-public/eu_gcr_io/gardener-project/gardener/etcdbrctl:v0.9.1",
+						Image:           o.imageRefs.ETCDBackupRestoreImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Command: append([]string{
 							"etcdbrctl",
@@ -316,7 +346,7 @@ func (o *operation) deleteETCDStatefulSet(ctx context.Context, role string) erro
 		return err
 	}
 
-	if o.handleETCDPersistentVolumes {
+	if o.imports.VirtualGarden.ETCD != nil && o.imports.VirtualGarden.ETCD.HandleETCDPersistentVolumes {
 		return client.IgnoreNotFound(o.client.Delete(ctx, emptyETCDPersistentVolumeClaim(o.namespace, role)))
 	}
 

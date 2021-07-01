@@ -32,8 +32,7 @@ var _ = Describe("Helper", func() {
 
 		Entry("kubeAPIServer is nil", nil, BeFalse()),
 		Entry("exposure is nil", &api.KubeAPIServer{}, BeFalse()),
-		Entry("SNI is nil", &api.KubeAPIServer{Exposure: &api.KubeAPIServerExposure{}}, BeFalse()),
-		Entry("SNI is not nil", &api.KubeAPIServer{Exposure: &api.KubeAPIServerExposure{SNI: &api.SNI{}}}, BeTrue()),
+		Entry("SNI is not nil", &api.KubeAPIServer{SNI: &api.SNI{}}, BeTrue()),
 	)
 
 	DescribeTable("#ETCDBackupEnabled",
@@ -53,6 +52,5 @@ var _ = Describe("Helper", func() {
 
 		Entry("etcd is nil", nil, BeFalse()),
 		Entry("hvpa is nil", &api.ETCD{}, BeFalse()),
-		Entry("hvpa is not nil", &api.ETCD{HVPA: &api.ETCDHVPA{}}, BeTrue()),
 	)
 })

@@ -20,7 +20,7 @@ import (
 
 // KubeAPIServerSNIEnabled returns true if SNI is enabled, otherwise false.
 func KubeAPIServerSNIEnabled(kubeAPIServer *api.KubeAPIServer) bool {
-	return kubeAPIServer != nil && kubeAPIServer.Exposure != nil && kubeAPIServer.Exposure.SNI != nil
+	return kubeAPIServer != nil && kubeAPIServer.SNI != nil
 }
 
 // ETCDBackupEnabled returns true if the etcd backup settings are configured.
@@ -30,5 +30,5 @@ func ETCDBackupEnabled(etcd *api.ETCD) bool {
 
 // ETCDHVPAEnabled returns true if the etcd HVPA settings are configured.
 func ETCDHVPAEnabled(etcd *api.ETCD) bool {
-	return etcd != nil && etcd.HVPA != nil
+	return etcd != nil && etcd.HVPAEnabled
 }

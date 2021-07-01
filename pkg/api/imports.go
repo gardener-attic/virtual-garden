@@ -14,21 +14,34 @@
 
 package api
 
+import (
+	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+)
+
+const (
+	// InfrastructureProviderAlicloud is a constant for the Alicloud infrastructure provider.
+	InfrastructureProviderAlicloud InfrastructureProviderType = "alicloud"
+	// InfrastructureProviderAWS is a constant for the AWS infrastructure provider.
+	InfrastructureProviderAWS InfrastructureProviderType = "aws"
+	// InfrastructureProviderGCP is a constant for the GCP infrastructure provider.
+	InfrastructureProviderGCP InfrastructureProviderType = "gcp"
+	// InfrastructureProviderFake is a constant for fake infrastructure provider.
+	InfrastructureProviderFake InfrastructureProviderType = "fake"
+)
+
 // Imports defines the structure for the required configuration values from other components.
 type Imports struct {
+	// Cluster is the kubeconfig of the hosting cluster into which the virtual garden shall be installed.
+	Cluster lsv1alpha1.Target `json:"cluster" yaml:"cluster"`
 	// HostingCluster contains settings for the hosting cluster that runs the virtual garden.
 	HostingCluster HostingCluster `json:"hostingCluster" yaml:"hostingCluster"`
 	// VirtualGarden contains configuration for the virtual garden cluster.
 	VirtualGarden VirtualGarden `json:"virtualGarden" yaml:"virtualGarden"`
-	// Credentials maps names to credential pairs. Other structures shall reference those credentials using the names.
-	// +optional
-	Credentials map[string]Credentials `json:"credentials,omitempty" yaml:"credentials,omitempty"`
 }
 
 // HostingCluster contains settings for the hosting cluster that runs the virtual garden.
 type HostingCluster struct {
-	// Kubeconfig is the kubeconfig of the hosting cluster into which the virtual garden shall be installed.
-	Kubeconfig string `json:"kubeconfig" yaml:"kubeconfig"`
 	// Namespace is a namespace in the hosting cluster into which the virtual garden shall be installed.
 	Namespace string `json:"namespace" yaml:"namespace"`
 	// InfrastructureProvider is the provider type of the underlying infrastructure of the hosting cluster.
@@ -43,6 +56,11 @@ type VirtualGarden struct {
 	// KubeAPIServer contains configuration for the virtual garden kube-apiserver.
 	// +optional
 	KubeAPIServer *KubeAPIServer `json:"kubeAPIServer,omitempty" yaml:"kubeAPIServer,omitempty"`
+
+	// DeleteNamespace controls if the namespace should be deleted
+	DeleteNamespace bool `json:"deleteNamespace,omitempty" yaml:"deleteNamespace,omitempty"`
+
+	PriorityClassName string `json:"priorityClassName,omitempty" yaml:"priorityClassName,omitempty"`
 }
 
 // ETCD contains configuration for the etcd that is used by the virtual garden kube-apiserver.
@@ -53,9 +71,13 @@ type ETCD struct {
 	// Backup contains configuration for the backup of the main etcd for the virtual garden.
 	// +optional
 	Backup *ETCDBackup `json:"backup,omitempty" yaml:"backup,omitempty"`
-	// HVPA contains configuration for the HVPA for etcd.
-	// +optional
-	HVPA *ETCDHVPA `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`
+
+	HVPAEnabled bool `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
+
+	// HandleETCDPersistentVolumes defines whether the PV(C)s that are getting automatically created by the etcd
+	// statefulset shall be handled or not (false by default). If true then they will be deleted when the virtual
+	// garden is deleted. Otherwise, they will remain in the system for manual cleanup (to prevent data loss).
+	HandleETCDPersistentVolumes bool `json:"handleETCDPersistentVolumes,omitempty" yaml:"handleETCDPersistentVolumes,omitempty"`
 }
 
 // ETCDBackup contains configuration for the backup of the main etcd for the virtual garden.
@@ -66,58 +88,86 @@ type ETCDBackup struct {
 	Region string `json:"region" yaml:"region"`
 	// BucketName is the name of the blob storage bucket.
 	BucketName string `json:"bucketName" yaml:"bucketName"`
-	// CredentialsRef is the name of a key in the credentials that shall be used for the creation of the blob storage
+	// Credentials contain the credentials that shall be used for the creation of the blob storage
 	// bucket.
-	CredentialsRef string `json:"credentialsRef" yaml:"credentialsRef"`
+	Credentials *Credentials `json:"credentials" yaml:"credentials"`
 }
-
-// ETCDHVPA contains configuration for the HVPA for etcd.
-type ETCDHVPA struct{}
 
 // KubeAPIServer contains configuration for the virtual garden kube-apiserver.
 type KubeAPIServer struct {
-	// Exposure contains configuration for the exposure settings.
-	// +optional
-	Exposure *KubeAPIServerExposure `json:"exposure,omitempty" yaml:"exposure,omitempty"`
-}
+	Replicas int `json:"replicas,omitempty" yaml:"replicas,omitempty"`
 
-// KubeAPIServerExposure contains configuration for the exposure settings for the virtual garden kube-apiserver.
-type KubeAPIServerExposure struct {
 	// SNI contains configuration for SNI settings for the virtual garden.
 	// +optional
 	SNI *SNI `json:"sni,omitempty" yaml:"sni,omitempty"`
+
+	DnsAccessDomain      string               `json:"dnsAccessDomain,omitempty" yaml:"dnsAccessDomain,omitempty"`
+	GardenerControlplane GardenerControlplane `json:"gardenerControlplane,omitempty" yaml:"gardenerControlplane,omitempty"`
+
+	AuditWebhookConfig       AuditWebhookConfig `json:"auditWebhookConfig,omitempty" yaml:"auditWebhookConfig,omitempty"`
+	AuditWebhookBatchMaxSize string             `json:"auditWebhookBatchMaxSize,omitempty" yaml:"auditWebhookBatchMaxSize,omitempty"`
+
+	SeedAuthorizer SeedAuthorizer `json:"seedAuthorizer,omitempty" yaml:"seedAuthorizer,omitempty"`
+
+	HVPAEnabled bool        `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
+	HVPA        *HvpaConfig `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`
+
+	EventTTL      *string `json:"eventTTL,omitempty" yaml:"eventTTL,omitempty"`
+	OidcIssuerURL *string `json:"oidcIssuerURL,omitempty" yaml:"oidcIssuerURL,omitempty"`
+
+	AdditionalVolumeMounts []corev1.VolumeMount `json:"additionalVolumeMounts,omitempty" yaml:"additionalVolumeMounts,omitempty"`
+	AdditionalVolumes      []corev1.Volume      `json:"additionalVolumes,omitempty" yaml:"additionalVolumes,omitempty"`
+
+	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty" yaml:"horizontalPodAutoscaler,omitempty"`
+}
+
+// HorizontalPodAutoscaler contains configuration for the horizontal pod auto scaler.
+type HorizontalPodAutoscaler struct {
+	DownscaleStabilization  string `json:"downscaleStabilization,omitempty" yaml:"downscaleStabilization,omitempty"`
+	ReadinessDelay          string `json:"readinessDelay,omitempty" yaml:"readinessDelay,omitempty"`
+	CpuInitializationPeriod string `json:"cpuInitializationPeriod,omitempty" yaml:"cpuInitializationPeriod,omitempty"`
+	SyncPeriod              string `json:"syncPeriod,omitempty" yaml:"syncPeriod,omitempty"`
+	Tolerance               string `json:"tolerance,omitempty" yaml:"tolerance,omitempty"`
+}
+
+// GardenerControlplane contains the activation info for webhooks
+type GardenerControlplane struct {
+	ValidatingWebhookEnabled bool `json:"validatingWebhookEnabled,omitempty" yaml:"validatingWebhookEnabled,omitempty"`
+	MutatingWebhookEnabled   bool `json:"mutatingWebhookEnabled,omitempty" yaml:"mutatingWebhookEnabled,omitempty"`
+}
+
+// AuditWebhookConfig contains configuration for the audit webhook.
+type AuditWebhookConfig struct {
+	Config string `json:"config,omitempty" yaml:"config,omitempty"`
+}
+
+// SeedAuthorizer contains credentials for the seed authorizer.
+type SeedAuthorizer struct {
+	Enabled                  bool   `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+	CertificateAuthorityData string `json:"certificateAuthorityData,omitempty" yaml:"certificateAuthorityData,omitempty"`
 }
 
 // SNI contains configuration for SNI settings for the virtual garden.
 type SNI struct {
-	// Hostname is the list of hostnames for the virtual garden kube-apiserver. It is used to create DNS entries
+	// Hostname is the hostname for the virtual garden kube-apiserver. It is used to create DNS entries
 	// pointing to it.
-	// +optional
-	Hostnames []string `json:"hostnames,omitempty" yaml:"hostnames,omitempty"`
+	Hostname string `json:"hostname,omitempty" yaml:"hostname,omitempty"`
 	// DNSClass is the DNS class that shall be used to create the DNS entries for the given hostnames.
 	// +optional
 	DNSClass *string `json:"dnsClass,omitempty" yaml:"dnsClass,omitempty"`
 	// TTL is the time-to-live for the DNS entries created for the given hostnames.
 	// +optional
 	TTL *int32 `json:"ttl,omitempty" yaml:"ttl,omitempty"`
+	// SecretName
+	// +optional
+	SecretName string `json:"secretName,omitempty" yaml:"secretName,omitempty"`
 }
 
 // Credentials contains key-value pairs for credentials for a certain endpoint type.
 type Credentials struct {
-	// Type is the credentials type.
-	Type InfrastructureProviderType `json:"type" yaml:"type"`
 	// Data contains key-value pairs with the credentials information. The keys are specific for the credentials type.
 	Data map[string]string `json:"data" yaml:"data"`
 }
 
 // InfrastructureProviderType is a string alias.
 type InfrastructureProviderType string
-
-const (
-	// InfrastructureProviderAlicloud is a constant for the Alicloud infrastructure provider.
-	InfrastructureProviderAlicloud InfrastructureProviderType = "alicloud"
-	// InfrastructureProviderAWS is a constant for the AWS infrastructure provider.
-	InfrastructureProviderAWS InfrastructureProviderType = "aws"
-	// InfrastructureProviderGCP is a constant for the GCP infrastructure provider.
-	InfrastructureProviderGCP InfrastructureProviderType = "gcp"
-)

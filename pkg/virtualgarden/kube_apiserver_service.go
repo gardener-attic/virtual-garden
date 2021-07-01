@@ -17,7 +17,6 @@ package virtualgarden
 import (
 	"context"
 	"strconv"
-	"strings"
 
 	"github.com/gardener/virtual-garden/pkg/api/helper"
 
@@ -37,11 +36,6 @@ const (
 	kubeAPIServerServicePort     = 443
 )
 
-var kubeAPIServerServiceLabels = map[string]string{
-	"app":       Prefix,
-	"component": "kube-apiserver",
-}
-
 // DeployKubeAPIServerService deploys the service object for the virtual garden kube-apiserver.
 func (o *operation) DeployKubeAPIServerService(ctx context.Context) error {
 	service := emptyKubeAPIServerService(o.namespace)
@@ -49,13 +43,13 @@ func (o *operation) DeployKubeAPIServerService(ctx context.Context) error {
 	_, err := controllerutil.CreateOrUpdate(ctx, o.client, service, func() error {
 		if helper.KubeAPIServerSNIEnabled(o.imports.VirtualGarden.KubeAPIServer) {
 			annotations := map[string]string{
-				"dns.gardener.cloud/dnsnames": strings.Join(o.imports.VirtualGarden.KubeAPIServer.Exposure.SNI.Hostnames, ","),
+				"dns.gardener.cloud/dnsnames": o.imports.VirtualGarden.KubeAPIServer.SNI.Hostname,
 			}
-			if o.imports.VirtualGarden.KubeAPIServer.Exposure.SNI.DNSClass != nil {
-				annotations["dns.gardener.cloud/class"] = *o.imports.VirtualGarden.KubeAPIServer.Exposure.SNI.DNSClass
+			if o.imports.VirtualGarden.KubeAPIServer.SNI.DNSClass != nil {
+				annotations["dns.gardener.cloud/class"] = *o.imports.VirtualGarden.KubeAPIServer.SNI.DNSClass
 			}
-			if o.imports.VirtualGarden.KubeAPIServer.Exposure.SNI.TTL != nil {
-				annotations["dns.gardener.cloud/ttl"] = strconv.Itoa(int(*o.imports.VirtualGarden.KubeAPIServer.Exposure.SNI.TTL))
+			if o.imports.VirtualGarden.KubeAPIServer.SNI.TTL != nil {
+				annotations["dns.gardener.cloud/ttl"] = strconv.Itoa(int(*o.imports.VirtualGarden.KubeAPIServer.SNI.TTL))
 			}
 			service.Annotations = utils.MergeStringMaps(service.Annotations, annotations)
 		} else {
@@ -64,9 +58,9 @@ func (o *operation) DeployKubeAPIServerService(ctx context.Context) error {
 			delete(service.Annotations, "dns.gardener.cloud/ttl")
 		}
 
-		service.Labels = utils.MergeStringMaps(service.Labels, kubeAPIServerServiceLabels)
+		service.Labels = utils.MergeStringMaps(service.Labels, kubeAPIServerLabels())
 		service.Spec.Type = corev1.ServiceTypeLoadBalancer
-		service.Spec.Selector = kubeAPIServerServiceLabels
+		service.Spec.Selector = kubeAPIServerLabels()
 		service.Spec.Ports = reconcileServicePorts(service.Spec.Ports, []corev1.ServicePort{
 			{
 				Name:       kubeAPIServerServicePortName,

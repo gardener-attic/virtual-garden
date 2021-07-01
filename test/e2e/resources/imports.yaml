@@ -1,0 +1,106 @@
+cluster:
+  apiVersion: "landscaper.gardener.cloud/v1alpha1"
+  kind: Target
+  metadata:
+    name: "cluster"
+    namespace: "installations"
+  spec:
+    type: "landscaper.gardener.cloud/kubernetes-cluster"
+    config:
+      kubeconfig: |
+        apiVersion: v1
+        kind: Config
+#       ... <please insert your kubeconfig here>
+
+hostingCluster:
+  namespace: garden
+  infrastructureProvider: gcp # aws|gcp|alicloud
+
+virtualGarden:
+  deleteNamespace: true
+
+  etcd:
+    storageClassName: my-virtual-garden-storage-class
+#    backup:
+#      infrastructureProvider: fake # aws|gcp|alicloud
+#      region: europe-west555
+#      bucketName: my-virtual-garden-backup
+#      credentials:
+#        data:
+#          serviceaccount.json: |
+#            {
+#              "project_id": "test-project",
+#              "type": "test-type"
+#            }
+    handleETCDPersistentVolumes: true
+    hvpaEnabled: true
+
+  kubeAPIServer:
+    replicas: 1
+
+#    sni:
+#      hostname: api.dev.gardener.cloud.sap
+#      dnsClass: gardendns
+#      ttl: 120
+#      secretName: gardener-dashboard-tls
+
+    dnsAccessDomain: ""
+
+    gardenerControlplane:
+      validatingWebhookEnabled: true
+      mutatingWebhookEnabled: true
+
+#    auditWebhookConfig:
+#      config: "my-audit-webhook-config"
+
+    auditWebhookBatchMaxSize: "30"
+
+    hvpaEnabled: true
+
+    hvpa:
+      maxReplicas: 21
+      minReplicas: 1
+      targetAverageUtilizationCpu: 81
+      targetAverageUtilizationMemory: 81
+      vpaScaleUpMode: "Auto"
+      vpaScaleDownMode: "Off"
+      vpaScaleUpStabilization:
+        stabilizationDuration: "11m"
+        minChange:
+          cpu:
+            value: 1001m
+            percentage: 81
+          memory:
+            value: 1501M
+            percentage: 81
+      vpaScaleDownStabilization:
+        stabilizationDuration: "45m"
+        minChange:
+          cpu:
+            value: 1001m
+            percentage: 81
+          memory:
+            value: 1501M
+            percentage: 81
+      limitsRequestsGapScaleParams:
+        cpu:
+          value: "2"
+          percentage: 71
+        memory:
+          value: "3G"
+          percentage: 71
+
+    eventTTL: "25h"
+
+#    oidcIssuerURL: ...
+#    additionalVolumeMounts: ...
+#    additionalVolumes: ...
+
+    horizontalPodAutoscaler:
+      downscaleStabilization:  "31m0s"
+      readinessDelay: "31s"
+      cpuInitializationPeriod: "5m1s"
+      syncPeriod: "31s"
+      tolerance: "0.11"
+
+#  priorityClassName: ...

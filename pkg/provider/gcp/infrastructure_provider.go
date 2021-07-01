@@ -14,6 +14,14 @@
 
 package gcp
 
+import (
+	"fmt"
+
+	"github.com/gardener/virtual-garden/pkg/api"
+
+	corev1 "k8s.io/api/core/v1"
+)
+
 type infrastructureProvider struct{}
 
 // NewInfrastructureProvider creates a new GCP infrastructure provider implementation.
@@ -27,4 +35,21 @@ func (b *infrastructureProvider) ComputeStorageClassConfiguration() (provisioner
 		"type": "pd-ssd",
 	}
 	return
+}
+
+func (b *infrastructureProvider) GetLoadBalancer(service *corev1.Service) string {
+	ingress := service.Status.LoadBalancer.Ingress
+	if len(ingress) == 0 {
+		return ""
+	}
+
+	return ingress[0].IP
+}
+
+func (b *infrastructureProvider) GetKubeAPIServerURL(kubeAPIServer *api.KubeAPIServer, loadBalancer string) string {
+	if kubeAPIServer != nil && len(kubeAPIServer.DnsAccessDomain) > 0 {
+		return fmt.Sprintf("https://api.%s:443", kubeAPIServer.DnsAccessDomain)
+	}
+
+	return fmt.Sprintf("https://%s:443", loadBalancer)
 }

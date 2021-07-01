@@ -17,7 +17,6 @@ package virtualgarden
 import (
 	"github.com/gardener/virtual-garden/pkg/api"
 	mockclient "github.com/gardener/virtual-garden/pkg/mock/controller-runtime/client"
-
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,17 +27,22 @@ var _ = Describe("Operation", func() {
 	Describe("#NewOperation", func() {
 		It("should return the correct operation object", func() {
 			var (
-				c                           = mockclient.NewMockClient(gomock.NewController(GinkgoT()))
-				log                         = logrus.New()
-				namespace                   = "foo"
-				handleNamespace             = true
-				handleETCDPersistentVolumes = true
-				imports                     = &api.Imports{
+				c         = mockclient.NewMockClient(gomock.NewController(GinkgoT()))
+				log       = logrus.New()
+				namespace = "foo"
+				imports   = &api.Imports{
 					HostingCluster: api.HostingCluster{InfrastructureProvider: api.InfrastructureProviderGCP},
+					VirtualGarden:  api.VirtualGarden{},
+				}
+				imageRefs = &api.ImageRefs{
+					ETCDImage:                  "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",
+					ETCDBackupRestoreImage:     "eu.gcr.io/sap-se-gcr-k8s-public/eu_gcr_io/gardener-project/gardener/etcdbrctl:v0.9.1",
+					KubeControllerManagerImage: "",
+					KubeAPIServerImage:         "",
 				}
 			)
 
-			operationInterface, err := NewOperation(c, log, namespace, handleNamespace, handleETCDPersistentVolumes, imports)
+			operationInterface, err := NewOperation(c, log, namespace, imports, imageRefs)
 			Expect(err).NotTo(HaveOccurred())
 
 			op, ok := operationInterface.(*operation)
@@ -46,8 +50,7 @@ var _ = Describe("Operation", func() {
 			Expect(op.client).To(Equal(c))
 			Expect(op.log).To(Equal(log))
 			Expect(op.namespace).To(Equal(namespace))
-			Expect(op.handleNamespace).To(Equal(handleNamespace))
-			Expect(op.handleETCDPersistentVolumes).To(Equal(handleETCDPersistentVolumes))
+			Expect(op.imports.VirtualGarden.DeleteNamespace).To(Equal(false))
 			Expect(op.imports).To(Equal(imports))
 		})
 	})

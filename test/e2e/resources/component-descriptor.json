@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "schemaVersion": "v2"
+  },
+  "components": [
+    {
+      "meta": {
+        "schemaVersion": "v2"
+      },
+      "component": {
+        "name": "github.com/gardener/virtual-garden",
+        "version": "v0.1.0",
+        "repositoryContexts": [
+          {
+            "type": "ociRegistry",
+            "baseUrl": "eu.gcr.io/sap-se-gcr-k8s-private/cnudie/gardener/development"
+          }
+        ],
+        "provider": "internal",
+        "sources": [],
+        "componentReferences": [],
+        "resources": [
+          {
+            "name": "etcd",
+            "version": "v3.4.13",
+            "type": "ociImage",
+            "relation": "external",
+            "access": {
+              "imageReference": "eu.gcr.io/gardener-project/gardener/etcd:v3.4.13",
+              "type": "ociRegistry"
+            }
+          },
+          {
+            "name": "etcd-backup-restore",
+            "version": "v0.11.1",
+            "type": "ociImage",
+            "relation": "external",
+            "access": {
+              "imageReference": "eu.gcr.io/gardener-project/gardener/etcdbrctl:v0.11.1",
+              "type": "ociRegistry"
+            }
+          },
+          {
+            "name": "kube-apiserver",
+            "version": "v1.18.14",
+            "type": "ociImage",
+            "relation": "external",
+            "access": {
+              "imageReference": "k8s.gcr.io/kube-apiserver:v1.18.14",
+              "type": "ociRegistry"
+            }
+          },
+          {
+            "name": "kube-controller-manager",
+            "version": "v1.18.14",
+            "type": "ociImage",
+            "relation": "external",
+            "access": {
+              "imageReference": "k8s.gcr.io/kube-controller-manager:v1.18.14",
+              "type": "ociRegistry"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

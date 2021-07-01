@@ -17,6 +17,8 @@ package virtualgarden
 import (
 	"context"
 
+	"github.com/gardener/virtual-garden/pkg/api/helper"
+
 	"github.com/gardener/gardener/pkg/utils/flow"
 )
 
@@ -25,23 +27,39 @@ func (o *operation) Delete(ctx context.Context) error {
 	var (
 		graph = flow.NewGraph("Virtual Garden Deletion")
 
+		deleteKubeAPIServer = graph.Add(flow.Task{
+			Name: "Deleting kube-apiserver",
+			Fn:   o.DeleteKubeAPIServer,
+		})
+
 		deleteKubeAPIServerService = graph.Add(flow.Task{
-			Name: "Deleting the service for exposing the virtual garden kube-apiserver",
-			Fn:   o.DeleteKubeAPIServerService,
+			Name:         "Deleting the service for exposing the virtual garden kube-apiserver",
+			Fn:           o.DeleteKubeAPIServerService,
+			Dependencies: flow.NewTaskIDs(deleteKubeAPIServer),
 		})
+
 		deleteETCD = graph.Add(flow.Task{
-			Name: "Deleting the main and events etcds",
-			Fn:   o.DeleteETCD,
+			Name:         "Deleting the main and events etcds",
+			Fn:           o.DeleteETCD,
+			Dependencies: flow.NewTaskIDs(deleteKubeAPIServer),
 		})
-		deleteBackupBucket = graph.Add(flow.Task{
+
+		_ = graph.Add(flow.Task{
 			Name:         "Deleting the backup bucket for the main etcd",
-			Fn:           o.DeleteBackupBucket,
+			Fn:           flow.TaskFn(o.DeleteBackupBucket).DoIf(helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD)),
 			Dependencies: flow.NewTaskIDs(deleteETCD),
 		})
+
 		_ = graph.Add(flow.Task{
 			Name:         "Deleting namespace for virtual-garden deployment in hosting cluster",
-			Fn:           flow.TaskFn(o.DeleteNamespace).SkipIf(!o.handleNamespace),
-			Dependencies: flow.NewTaskIDs(deleteKubeAPIServerService, deleteETCD, deleteBackupBucket),
+			Fn:           flow.TaskFn(o.DeleteNamespace).SkipIf(!o.imports.VirtualGarden.DeleteNamespace),
+			Dependencies: flow.NewTaskIDs(deleteKubeAPIServerService, deleteETCD),
+		})
+
+		_ = graph.Add(flow.Task{
+			Name:         "Deleting HVPA CRD from hosting cluster",
+			Fn:           flow.TaskFn(o.deleteHPVACRD),
+			Dependencies: flow.NewTaskIDs(deleteETCD),
 		})
 	)
 

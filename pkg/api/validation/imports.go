@@ -15,8 +15,7 @@
 package validation
 
 import (
-	"fmt"
-
+	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/virtual-garden/pkg/api"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -27,25 +26,38 @@ import (
 func ValidateImports(obj *api.Imports) field.ErrorList {
 	allErrs := field.ErrorList{}
 
+	allErrs = append(allErrs, ValidateCluster(&obj.Cluster, field.NewPath("cluster"))...)
 	allErrs = append(allErrs, ValidateHostingCluster(&obj.HostingCluster, field.NewPath("hostingCluster"))...)
-	allErrs = append(allErrs, ValidateVirtualGarden(&obj.VirtualGarden, obj.Credentials, field.NewPath("virtualGarden"))...)
-	for name, credentials := range obj.Credentials {
-		allErrs = append(allErrs, ValidateCredentials(credentials, field.NewPath("credentials", name))...)
-	}
+	allErrs = append(allErrs, ValidateVirtualGarden(&obj.VirtualGarden, field.NewPath("virtualGarden"))...)
 
 	return allErrs
 }
 
 // ValidInfrastructureProviderTypes is a set of valid infrastructure provider types.
-var ValidInfrastructureProviderTypes = sets.NewString(string(api.InfrastructureProviderAWS), string(api.InfrastructureProviderGCP))
+var ValidInfrastructureProviderTypes = sets.NewString(
+	string(api.InfrastructureProviderAWS),
+	string(api.InfrastructureProviderGCP),
+	string(api.InfrastructureProviderAlicloud),
+	string(api.InfrastructureProviderFake),
+)
+
+// ValidateCluster validates the cluster.
+func ValidateCluster(obj *lsv1alpha1.Target, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if obj == nil {
+		allErrs = append(allErrs, field.Required(fldPath, "target is required"))
+	} else if len(obj.Spec.Configuration.RawMessage) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath, "kubeconfig is required"))
+	}
+
+	return allErrs
+}
 
 // ValidateHostingCluster validates a HostingCluster object.
 func ValidateHostingCluster(obj *api.HostingCluster, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if len(obj.Kubeconfig) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("kubeconfig"), "kubeconfig of hosting cluster is required"))
-	}
 	if len(obj.Namespace) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath.Child("namespace"), "namespace for deployment in hosting cluster is required"))
 	}
@@ -57,7 +69,7 @@ func ValidateHostingCluster(obj *api.HostingCluster, fldPath *field.Path) field.
 }
 
 // ValidateVirtualGarden validates a VirtualGarden object.
-func ValidateVirtualGarden(obj *api.VirtualGarden, credentials map[string]api.Credentials, fldPath *field.Path) field.ErrorList {
+func ValidateVirtualGarden(obj *api.VirtualGarden, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if obj.ETCD != nil {
@@ -65,35 +77,21 @@ func ValidateVirtualGarden(obj *api.VirtualGarden, credentials map[string]api.Cr
 			allErrs = append(allErrs, field.Required(fldPath.Child("etcd", "storageClassName"), "storage class name cannot be empty if key is provided"))
 		}
 		if obj.ETCD.Backup != nil {
-			allErrs = append(allErrs, ValidateETCDBackup(obj.ETCD.Backup, credentials, fldPath.Child("etcd", "backup"))...)
+			allErrs = append(allErrs, ValidateETCDBackup(obj.ETCD.Backup, fldPath.Child("etcd", "backup"))...)
 		}
 	}
 
 	if obj.KubeAPIServer != nil {
-		if obj.KubeAPIServer.Exposure != nil && obj.KubeAPIServer.Exposure.SNI != nil {
-			allErrs = append(allErrs, ValidateSNI(obj.KubeAPIServer.Exposure.SNI, fldPath.Child("exposure", "sni"))...)
+		if obj.KubeAPIServer.SNI != nil {
+			allErrs = append(allErrs, ValidateSNI(obj.KubeAPIServer.SNI, fldPath.Child("exposure", "sni"))...)
 		}
-	}
-
-	return allErrs
-}
-
-// ValidateCredentials validates a Credentials object.
-func ValidateCredentials(obj api.Credentials, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-
-	if len(obj.Type) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("type"), "type must be given"))
-	}
-	if len(obj.Data) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("data"), "at least one key-value pair must be given"))
 	}
 
 	return allErrs
 }
 
 // ValidateETCDBackup validates an ETCDBackup object.
-func ValidateETCDBackup(obj *api.ETCDBackup, credentials map[string]api.Credentials, fldPath *field.Path) field.ErrorList {
+func ValidateETCDBackup(obj *api.ETCDBackup, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if !ValidInfrastructureProviderTypes.Has(string(obj.InfrastructureProvider)) {
@@ -105,12 +103,8 @@ func ValidateETCDBackup(obj *api.ETCDBackup, credentials map[string]api.Credenti
 	if len(obj.BucketName) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath.Child("bucketName"), "bucketName must be given"))
 	}
-	if len(obj.CredentialsRef) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("credentialsRef"), "credentialsRef must be given"))
-	} else if credentials, ok := credentials[obj.CredentialsRef]; !ok {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("credentialsRef"), obj.CredentialsRef, fmt.Sprintf("%q was not found in .credentials", obj.CredentialsRef)))
-	} else if credentials.Type != obj.InfrastructureProvider {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("credentialsRef"), obj.CredentialsRef, fmt.Sprintf("referenced credentials are not of type %q but %q", obj.InfrastructureProvider, credentials.Type)))
+	if obj.Credentials == nil || len(obj.Credentials.Data) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("credentials"), "etcd backup credentials are emtpy"))
 	}
 
 	return allErrs
@@ -120,7 +114,7 @@ func ValidateETCDBackup(obj *api.ETCDBackup, credentials map[string]api.Credenti
 func ValidateSNI(obj *api.SNI, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	if len(obj.Hostnames) == 0 {
+	if len(obj.Hostname) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath.Child("hostnames"), "at least one hostname is required"))
 	}
 	if obj.TTL != nil && (*obj.TTL < 60 || *obj.TTL > 600) {

@@ -19,11 +19,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gardener/gardener/pkg/utils/flow"
 	"github.com/gardener/virtual-garden/pkg/api"
 	"github.com/gardener/virtual-garden/pkg/api/helper"
 	"github.com/gardener/virtual-garden/pkg/provider"
-
-	"github.com/gardener/gardener/pkg/utils/flow"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -31,7 +30,7 @@ import (
 // Interface is an interface for the operation.
 type Interface interface {
 	// Reconcile performs a reconcile operation.
-	Reconcile(context.Context) error
+	Reconcile(context.Context) (*api.Exports, error)
 	// Delete performs a delete operation.
 	Delete(context.Context) error
 }
@@ -43,24 +42,27 @@ const Prefix = "virtual-garden"
 type operation struct {
 	// client is the Kubernetes client for the hosting cluster.
 	client client.Client
+
 	// log is a logger.
 	log logrus.FieldLogger
 
 	// infrastructureProvider is a specific implementation for infrastructure providers.
 	infrastructureProvider provider.InfrastructureProvider
+
 	// backupProvider is a specific implementation for backup providers.
 	backupProvider provider.BackupProvider
 
-	// handleNamespace controls whether the namespace shall be created/deleted.
-	handleNamespace bool
-	// handleETCDPersistentVolumes controls whether the persistent volume (claim)s for the etcd statefulsets shall be
-	// deleted automatically when the virtual garden is destroyed
-	handleETCDPersistentVolumes bool
-
 	// namespace is the namespace in the hosting cluster into which the virtual garden shall be deployed.
 	namespace string
+
 	// imports contains the imports configuration.
 	imports *api.Imports
+
+	exports api.Exports
+
+	// imageRefs contains the image references from the component descriptor that are needed for the Deployments and
+	// StatefulSet.
+	imageRefs api.ImageRefs
 }
 
 // NewOperation returns a new operation structure that implements Interface.
@@ -68,18 +70,16 @@ func NewOperation(
 	c client.Client,
 	log *logrus.Logger,
 	namespace string,
-	handleNamespace, handleETCDPersistentVolumes bool,
 	imports *api.Imports,
+	imageRefs *api.ImageRefs,
 ) (Interface, error) {
 	op := &operation{
 		client: c,
 		log:    log,
 
-		handleNamespace:             handleNamespace,
-		handleETCDPersistentVolumes: handleETCDPersistentVolumes,
-
 		namespace: namespace,
 		imports:   imports,
+		imageRefs: *imageRefs,
 	}
 
 	infrastructureProvider, err := provider.NewInfrastructureProvider(imports.HostingCluster.InfrastructureProvider)
@@ -89,7 +89,8 @@ func NewOperation(
 	op.infrastructureProvider = infrastructureProvider
 
 	if helper.ETCDBackupEnabled(imports.VirtualGarden.ETCD) {
-		backupProvider, err := provider.NewBackupProvider(imports.VirtualGarden.ETCD.Backup.InfrastructureProvider, imports.Credentials, imports.VirtualGarden.ETCD.Backup.CredentialsRef)
+		backupProvider, err := provider.NewBackupProvider(imports.VirtualGarden.ETCD.Backup.InfrastructureProvider,
+			imports.VirtualGarden.ETCD.Backup.Credentials)
 		if err != nil {
 			return nil, err
 		}
