@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
@@ -18,6 +19,7 @@ import (
 type Environment struct {
 	Env    *envtest.Environment
 	Client client.Client
+	Logger *logrus.Logger
 }
 
 // New creates a new test environment with the landscaper known crds.
@@ -41,8 +43,17 @@ func New(projectRoot string) (*Environment, error) {
 		}
 	}
 
+	log := &logrus.Logger{
+		Out:   os.Stderr,
+		Level: logrus.InfoLevel,
+		Formatter: &logrus.TextFormatter{
+			DisableColors: true,
+		},
+	}
+
 	return &Environment{
-		Env: &envtest.Environment{},
+		Env:    &envtest.Environment{},
+		Logger: log,
 	}, nil
 }
 
