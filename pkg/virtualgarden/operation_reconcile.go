@@ -30,8 +30,8 @@ func (o *operation) Reconcile(ctx context.Context) (*api.Exports, error) {
 		graph = flow.NewGraph("Virtual Garden Reconciliation")
 
 		createHVPACRD = graph.Add(flow.Task{
-			Name: "Creating HVPA CRD in hosting cluster",
-			Fn:   o.deployHVPACRD,
+			Name: "Check if HVPA CRD in hosting cluster exists if it should be used",
+			Fn:   o.checkHVPACRD,
 		})
 
 		createNamespace = graph.Add(flow.Task{

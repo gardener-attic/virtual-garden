@@ -55,12 +55,6 @@ func (o *operation) Delete(ctx context.Context) error {
 			Fn:           flow.TaskFn(o.DeleteNamespace).SkipIf(!o.imports.VirtualGarden.DeleteNamespace),
 			Dependencies: flow.NewTaskIDs(deleteKubeAPIServerService, deleteETCD),
 		})
-
-		_ = graph.Add(flow.Task{
-			Name:         "Deleting HVPA CRD from hosting cluster",
-			Fn:           flow.TaskFn(o.deleteHPVACRD),
-			Dependencies: flow.NewTaskIDs(deleteETCD),
-		})
 	)
 
 	return graph.Compile().Run(flow.Opts{

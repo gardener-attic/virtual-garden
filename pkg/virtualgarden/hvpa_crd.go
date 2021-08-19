@@ -15,50 +15,32 @@
 package virtualgarden
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
-	"fmt"
+
+	"github.com/gardener/virtual-garden/pkg/api/helper"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//go:embed resources/hvpa.yaml
-var hvpaCrd []byte
+// checkHVPACRD checks if the HVPA CRD is deployed if HVPA is enabled in the etcd or api server
+func (o *operation) checkHVPACRD(ctx context.Context) error {
+	o.log.Infof("Check if hvpa crd exists if hvpa is enabled")
 
-// deployHVPACRD deploys the HVPA CRD.
-func (o *operation) deployHVPACRD(ctx context.Context) error {
-	o.log.Infof("Deploying hvpa crd")
-
-	newCrd, err := loadHVPACRD()
-	if err != nil {
+	if helper.ETCDHVPAEnabled(o.imports.VirtualGarden.ETCD) || o.imports.VirtualGarden.KubeAPIServer.HVPAEnabled {
+		_, err := o.getHVPACRD(ctx)
 		return err
 	}
 
-	crd := emptyHVPACRD()
-	_, err = controllerutil.CreateOrUpdate(ctx, o.client, crd, func() error {
-		crd.Spec = newCrd.Spec
-		return nil
-	})
-
-	return err
-}
-
-// deleteHPVACRD deletes the HPVA CRD.
-func (o *operation) deleteHPVACRD(ctx context.Context) error {
-	o.log.Infof("Deleting hvpa crd")
-	return client.IgnoreNotFound(o.client.Delete(ctx, emptyHVPACRD()))
+	return nil
 }
 
 // getHVPACRD return the HVPA CRD.
 func (o *operation) getHVPACRD(ctx context.Context) (*v1beta1.CustomResourceDefinition, error) {
-	hvpaCrd := emptyHVPACRD()
+	hvpaCrd := EmptyHVPACRD()
 	err := o.client.Get(ctx, client.ObjectKeyFromObject(hvpaCrd), hvpaCrd)
 	if err != nil {
 		return nil, err
@@ -67,19 +49,7 @@ func (o *operation) getHVPACRD(ctx context.Context) (*v1beta1.CustomResourceDefi
 	return hvpaCrd, nil
 }
 
-// loadHVPACRD loads the HVPA CRD from file resources/hvpa.yaml.
-func loadHVPACRD() (*v1beta1.CustomResourceDefinition, error) {
-	crd := &v1beta1.CustomResourceDefinition{}
-	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(hvpaCrd), 32)
-	err := decoder.Decode(crd)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode HVPA CRD: %w", err)
-	}
-
-	return crd, nil
-}
-
-func emptyHVPACRD() *v1beta1.CustomResourceDefinition {
+func EmptyHVPACRD() *v1beta1.CustomResourceDefinition {
 	return &v1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "hvpas.autoscaling.k8s.io",
