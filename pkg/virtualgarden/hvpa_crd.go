@@ -17,14 +17,42 @@ package virtualgarden
 import (
 	"context"
 	_ "embed"
+
+	"github.com/gardener/virtual-garden/pkg/api/helper"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// deployHVPACRD deploys the HVPA CRD.
-func (o *operation) deployHVPACRD(ctx context.Context) error {
+// checkHVPACRD checks if the HVPA CRD is deployed if HVPA is enabled in the etcd or api server
+func (o *operation) checkHVPACRD(ctx context.Context) error {
+	o.log.Infof("Check if hvpa crd exists if hvpa is enabled")
+
+	if helper.ETCDHVPAEnabled(o.imports.VirtualGarden.ETCD) || o.imports.VirtualGarden.KubeAPIServer.HVPAEnabled {
+		_, err := o.getHVPACRD(ctx)
+		return err
+	}
+
 	return nil
 }
 
-// deleteHPVACRD deletes the HPVA CRD.
-func (o *operation) deleteHPVACRD(ctx context.Context) error {
-	return nil
+// getHVPACRD return the HVPA CRD.
+func (o *operation) getHVPACRD(ctx context.Context) (*v1beta1.CustomResourceDefinition, error) {
+	hvpaCrd := EmptyHVPACRD()
+	err := o.client.Get(ctx, client.ObjectKeyFromObject(hvpaCrd), hvpaCrd)
+	if err != nil {
+		return nil, err
+	}
+
+	return hvpaCrd, nil
+}
+
+func EmptyHVPACRD() *v1beta1.CustomResourceDefinition {
+	return &v1beta1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "hvpas.autoscaling.k8s.io",
+		},
+	}
 }

@@ -85,12 +85,18 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		// Create Kubernetes client for actual verification calls in the hosting cluster.
 		c, err = app.NewClientFromTarget(imports.Cluster)
 		Expect(err).NotTo(HaveOccurred())
+
+		err = deployHVPACRD(ctx, c)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterSuite(func() {
 		By("Executing virtual garden deployer (deletion)")
 		Expect(os.Setenv("OPERATION", "DELETE")).To(Succeed())
 		Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
+
+		err := deleteHPVACRD(ctx, c)
+		Expect(err).NotTo(HaveOccurred())
 
 		verifyDeletion(ctx, c, imports)
 	})
