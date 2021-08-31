@@ -1,7 +1,11 @@
-cluster: |
-  apiVersion: v1
-  kind: Config
-# ... <please insert your kubeconfig here>
+cluster:
+  apiVersion: landscaper.gardener.cloud/v1alpha1
+  kind: Target
+  spec:
+    type: landscaper.gardener.cloud/kubernetes-cluster
+    config:
+      kubeconfig: |
+#       ... <please insert your kubeconfig here>
 
 hostingCluster:
   namespace: garden-4
