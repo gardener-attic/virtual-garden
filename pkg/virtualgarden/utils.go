@@ -16,6 +16,7 @@ package virtualgarden
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ghodss/yaml"
 	v1 "k8s.io/client-go/tools/clientcmd/api/v1"
@@ -51,6 +52,24 @@ func reconcileServicePorts(existingPorts []corev1.ServicePort, desiredPorts []co
 	}
 
 	return out
+}
+
+func deployCertificate(ctx context.Context, c client.Client, namespace string, certConfig *secretsutil.CertificateSecretConfig,
+	kubeconfigGen *kubeconfigGenerator) (*secretsutil.Certificate, string, []byte, error) {
+	objectKey := client.ObjectKey{Name: certConfig.Name, Namespace: namespace}
+
+	cert, err := loadOrGenerateCertificateSecret(ctx, c, objectKey, certConfig)
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("Loading or generating the certificate in secret (%s/%s) failed: %w",
+			objectKey.Namespace, objectKey.Name, err)
+	}
+
+	checksum, kubeconfig, err := createOrUpdateCertificateSecret(ctx, c, objectKey, cert, kubeconfigGen)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	return cert, checksum, kubeconfig, nil
 }
 
 func loadOrGenerateCertificateSecret(ctx context.Context, c client.Client, objectKey client.ObjectKey, certificateConfig *secretsutil.CertificateSecretConfig) (*secretsutil.Certificate, error) {

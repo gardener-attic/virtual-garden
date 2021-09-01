@@ -54,7 +54,7 @@ func (o *operation) deployKubeAPIServerCertificates(ctx context.Context, loadbal
 		return err
 	}
 
-	_, err = o.deployKubeApiServerApiServerServerCertificate(ctx, apiServerCACertificate, loadbalancer, checksums)
+	_, err = o.deployKubeApiServerApiServerTLSServingCertificate(ctx, apiServerCACertificate, loadbalancer, checksums)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Contex
 		CommonName: Prefix + ":ca:kube-apiserver",
 	}
 
-	cert, checksum, _, err := o.deployCertificate(ctx, certConfig, nil)
+	cert, checksum, _, err := deployCertificate(ctx, o.client, o.namespace, certConfig, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -115,9 +115,8 @@ func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Contex
 	return cert, err
 }
 
-func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Context, caCertificate *secretsutil.Certificate,
+func (o *operation) deployKubeApiServerApiServerTLSServingCertificate(ctx context.Context, caCertificate *secretsutil.Certificate,
 	loadbalancer string, checksums map[string]string) (*secretsutil.Certificate, error) {
-	dnsAccessDomain := o.imports.VirtualGarden.KubeAPIServer.DnsAccessDomain
 
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameApiServerServerCertificate,
@@ -136,17 +135,27 @@ func (o *operation) deployKubeApiServerApiServerServerCertificate(ctx context.Co
 			"kubernetes.default.svc",
 			"kubernetes.default.svc.cluster",
 			"kubernetes.default.svc.cluster.local",
-			fmt.Sprintf("api.%s", dnsAccessDomain),
-			fmt.Sprintf("gardener.%s", dnsAccessDomain),
 		},
 		IPAddresses: []net.IP{
 			net.ParseIP("127.0.0.1"),
 			net.ParseIP("100.64.0.1"),
-			net.ParseIP(loadbalancer),
 		},
 	}
 
-	cert, checksum, _, err := o.deployCertificate(ctx, certConfig, nil)
+	dnsAccessDomain := o.imports.VirtualGarden.KubeAPIServer.DnsAccessDomain
+	if len(dnsAccessDomain) > 0 {
+		certConfig.DNSNames = append(certConfig.DNSNames, fmt.Sprintf("api.%s", dnsAccessDomain), fmt.Sprintf("gardener.%s", dnsAccessDomain))
+	}
+
+	loadbalancerIP := net.ParseIP(loadbalancer)
+	if loadbalancerIP != nil && len(loadbalancerIP.String()) != 0 {
+		certConfig.IPAddresses = append(certConfig.IPAddresses, loadbalancerIP)
+	} else {
+		// because it is not an ip address, we assume it is a DNS domain
+		certConfig.DNSNames = append(certConfig.DNSNames, loadbalancer)
+	}
+
+	cert, checksum, _, err := deployCertificate(ctx, o.client, o.namespace, certConfig, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +177,7 @@ func (o *operation) deployKubeApiServerKubeControllerManagerClientCertificate(ct
 		server: "https://virtual-garden-kube-apiserver:443",
 	}
 
-	cert, checksum, _, err := o.deployCertificate(ctx, certConfig, kubeconfigGen)
+	cert, checksum, _, err := deployCertificate(ctx, o.client, o.namespace, certConfig, kubeconfigGen)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +203,7 @@ func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Contex
 		server: o.infrastructureProvider.GetKubeAPIServerURL(o.imports.VirtualGarden.KubeAPIServer, loadBalancer),
 	}
 
-	cert, _, kubeconfig, err := o.deployCertificate(ctx, certConfig, kubeconfigGen)
+	cert, _, kubeconfig, err := deployCertificate(ctx, o.client, o.namespace, certConfig, kubeconfigGen)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +224,7 @@ func (o *operation) deployKubeApiServerMetricsScraperCertificate(
 		CommonName: Prefix + ":client:metrics-scraper",
 	}
 
-	cert, _, _, err := o.deployCertificate(ctx, certConfig, nil)
+	cert, _, _, err := deployCertificate(ctx, o.client, o.namespace, certConfig, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +239,7 @@ func (o *operation) deployKubeApiServerAggregatorCACertificate(ctx context.Conte
 		CommonName: Prefix + ":ca:kube-aggregator",
 	}
 
-	cert, checksum, _, err := o.deployCertificate(ctx, certConfig, nil)
+	cert, checksum, _, err := deployCertificate(ctx, o.client, o.namespace, certConfig, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +257,7 @@ func (o *operation) deployKubeApiServerAggregatorClientCertificate(ctx context.C
 		CommonName: Prefix + ":aggregator-client:kube-aggregator",
 	}
 
-	cert, checksum, _, err := o.deployCertificate(ctx, certConfig, nil)
+	cert, checksum, _, err := deployCertificate(ctx, o.client, o.namespace, certConfig, nil)
 	if err != nil {
 		return nil, err
 	}
