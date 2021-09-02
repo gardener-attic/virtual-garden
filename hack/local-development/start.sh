@@ -14,11 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 GO111MODULE=on \
-IMPORTS_PATH="$(dirname $0)/../../dev/imports.yaml" \
+IMPORTS_PATH="$(dirname $0)/../../example/imports.yaml" \
+EXPORTS_PATH="$(dirname $0)/../../example/exports.yaml" \
+COMPONENT_DESCRIPTOR_PATH="$(dirname $0)/../../example/resolved-component-descriptor.json" \
 OPERATION="${1:-RECONCILE}" \
   go run \
     -mod=vendor \
     -ldflags "$LD_FLAGS" \
-    "$(dirname $0)"/../../cmd/virtual-garden/main.go \
-    --handle-namespace=true
+    "$(dirname $0)"/../../cmd/virtual-garden/main.go
