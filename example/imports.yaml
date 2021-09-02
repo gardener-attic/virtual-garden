@@ -36,6 +36,10 @@ virtualGarden:
 
     auditWebhookBatchMaxSize: "1"
 
+    seedAuthorizer:
+      enabled: true
+      certificateAuthorityData: "my-ca-data"
+
     hvpaEnabled: false
     hvpa:
       maxReplicas: 2

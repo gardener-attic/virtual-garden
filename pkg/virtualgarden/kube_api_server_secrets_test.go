@@ -53,7 +53,7 @@ var _ = Describe("Api Server create secrets test", func() {
 		err := testenv.Client.Create(ctx, &namespace)
 		Expect(err).To(BeNil())
 
-		imports := getImports()
+		imports := getImportsForApiServerSecretsTest()
 
 		infrastructureProvider, err := provider.NewInfrastructureProvider(api.InfrastructureProviderGCP)
 		Expect(err).To(BeNil())
@@ -103,7 +103,7 @@ var _ = Describe("Api Server create secrets test", func() {
 	})
 })
 
-func getImports() api.Imports {
+func getImportsForApiServerSecretsTest() api.Imports {
 	return api.Imports{
 		Cluster:        lsv1alpha1.Target{},
 		HostingCluster: api.HostingCluster{},
@@ -121,7 +121,7 @@ func getImports() api.Imports {
 				AuditWebhookBatchMaxSize: "",
 				SeedAuthorizer: api.SeedAuthorizer{
 					Enabled:                  true,
-					CertificateAuthorityData: "ttt",
+					CertificateAuthorityData: "test-ca-data",
 				},
 				HVPAEnabled:             false,
 				HVPA:                    nil,

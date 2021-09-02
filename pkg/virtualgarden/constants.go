@@ -34,7 +34,7 @@ const (
 	ChecksumKeyServiceAccountKey               = "checksum/secret-service-account-key"
 )
 
-// other keys
+// Keys of secret items
 const (
 	ValidatingWebhookKey  = "validating-webhook"
 	MutatingWebhookKey    = "mutating-webhook"
