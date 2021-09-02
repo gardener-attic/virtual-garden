@@ -22,11 +22,16 @@ const (
 
 // Keys of annotations for checksums
 const (
-	ChecksumKeyKubeAggregatorCA            = "checksum/secret-kube-aggregator-ca"
-	ChecksumKeyKubeAggregatorClient        = "checksum/secret-kube-aggregator-client"
-	ChecksumKeyKubeAPIServerCA             = "checksum/secret-kube-apiserver-ca"
-	ChecksumKeyKubeAPIServerServer         = "checksum/secret-kube-apiserver-server"
-	ChecksumKeyKubeControllerManagerClient = "checksum/secret-kube-controller-manager-client"
+	ChecksumKeyKubeAPIServerEncryptionConfig   = "checksum/secret-kube-apiserver-encryption-config"
+	ChecksumKeyKubeAggregatorCA                = "checksum/secret-kube-aggregator-ca"
+	ChecksumKeyKubeAggregatorClient            = "checksum/secret-kube-aggregator-client"
+	ChecksumKeyKubeAPIServerCA                 = "checksum/secret-kube-apiserver-ca"
+	ChecksumKeyKubeAPIServerServer             = "checksum/secret-kube-apiserver-server"
+	ChecksumKeyKubeAPIServerAuditWebhookConfig = "checksum/secret-kube-apiserver-audit-webhook-config"
+	ChecksumKeyKubeAPIServerAuthWebhookConfig  = "checksum/secret-kube-apiserver-auth-webhook-config"
+	ChecksumKeyKubeAPIServerBasicAuth          = "checksum/secret-kube-apiserver-basic-auth"
+	ChecksumKeyKubeControllerManagerClient     = "checksum/secret-kube-controller-manager-client"
+	ChecksumKeyServiceAccountKey               = "checksum/secret-service-account-key"
 )
 
 const SecretKeyKubeconfig = "kubeconfig"

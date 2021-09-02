@@ -39,16 +39,30 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
+	_, err = o.deployKubeAPIServerSecrets(ctx, checksums)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // DeleteKubeAPIServer deletes the kube-apiserver and all related resources.
 func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
+	if err := o.deleteKubeAPIServerSecrets(ctx); err != nil {
+		return err
+	}
+
 	if err := o.deleteKubeAPIServerCertificates(ctx); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (o *operation) isWebhookEnabled() bool {
+	controlplane := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane
+	return controlplane.ValidatingWebhookEnabled || controlplane.MutatingWebhookEnabled
 }
 
 func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (string, error) {
