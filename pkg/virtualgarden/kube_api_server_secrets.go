@@ -109,8 +109,8 @@ func (o *operation) deployKubeApiServerSecretAdmissionKubeconfig(ctx context.Con
 		if secret.Data == nil {
 			secret.Data = make(map[string][]byte)
 		}
-		secret.Data["validating-webhook"] = validatingWebhookKubeconfig
-		secret.Data["mutating-webhook"] = mutatingWebhookKubeconfig
+		secret.Data[ValidatingWebhookKey] = validatingWebhookKubeconfig
+		secret.Data[MutatingWebhookKey] = mutatingWebhookKubeconfig
 		return nil
 	})
 	return err
@@ -128,7 +128,7 @@ func (o *operation) deployKubeApiServerSecretAuditWebhookConfig(ctx context.Cont
 		if secret.Data == nil {
 			secret.Data = make(map[string][]byte)
 		}
-		secret.Data["audit-webhook-config.yaml"] = []byte(config)
+		secret.Data[AuditWebhookConfigKey] = []byte(config)
 		return nil
 	})
 	if err != nil {
@@ -195,7 +195,7 @@ func (o *operation) deployKubeApiServerSecretAuthWebhookConfig(ctx context.Conte
 		if secret.Data == nil {
 			secret.Data = make(map[string][]byte)
 		}
-		secret.Data["config.yaml"] = configYaml
+		secret.Data[ConfigYamlKey] = configYaml
 		return nil
 	})
 	if err != nil {
@@ -208,8 +208,7 @@ func (o *operation) deployKubeApiServerSecretAuthWebhookConfig(ctx context.Conte
 
 func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, checksums map[string]string) (string, error) {
 	const (
-		basicAuthKey = "basic_auth.csv"
-		pwUsers      = ",admin,admin,system:masters"
+		pwUsers = ",admin,admin,system:masters"
 	)
 
 	var basicAuthValue []byte
@@ -230,7 +229,7 @@ func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, chec
 		basicAuthValue = []byte(pw + pwUsers)
 	} else {
 		// secret exists: use existing value
-		basicAuthValue = secret.Data[basicAuthKey]
+		basicAuthValue = secret.Data[BasicAuthKey]
 	}
 
 	returnPw := strings.TrimSuffix(string(basicAuthValue), pwUsers)
@@ -239,7 +238,7 @@ func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, chec
 		if secret.Data == nil {
 			secret.Data = make(map[string][]byte)
 		}
-		secret.Data[basicAuthKey] = basicAuthValue
+		secret.Data[BasicAuthKey] = basicAuthValue
 		return nil
 	})
 	if err != nil {
@@ -251,7 +250,6 @@ func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, chec
 }
 
 func (o *operation) deployKubeApiServerSecretEncryptionConfig(ctx context.Context, checksums map[string]string) error {
-	const encryptionConfigKey = "encryption-config.yaml"
 
 	var encryptionConfigValue []byte
 
@@ -269,14 +267,14 @@ func (o *operation) deployKubeApiServerSecretEncryptionConfig(ctx context.Contex
 		}
 	} else {
 		// secret exists: use existing value
-		encryptionConfigValue = secret.Data[encryptionConfigKey]
+		encryptionConfigValue = secret.Data[EncryptionConfigKey]
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
 		if secret.Data == nil {
 			secret.Data = make(map[string][]byte)
 		}
-		secret.Data[encryptionConfigKey] = encryptionConfigValue
+		secret.Data[EncryptionConfigKey] = encryptionConfigValue
 		return nil
 	})
 	if err != nil {
@@ -328,8 +326,6 @@ func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
 }
 
 func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Context, checksums map[string]string) error {
-	const key = "service_account.key"
-
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameServiceAccountKey,
 		CertType:   secretsutil.CACert,
@@ -357,14 +353,14 @@ func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Conte
 		value = cert.PrivateKeyPEM
 	} else {
 		// secret exists: use existing value
-		value = secret.Data[key]
+		value = secret.Data[ServiceAccountKey]
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
 		if secret.Data == nil {
 			secret.Data = make(map[string][]byte)
 		}
-		secret.Data[key] = value
+		secret.Data[ServiceAccountKey] = value
 		return nil
 	})
 	if err != nil {

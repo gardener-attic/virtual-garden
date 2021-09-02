@@ -29,10 +29,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Api Server create certificates test", func() {
-	It("Should create api server certificates", func() {
-		namespaceName := "apiservercertificates"
-		loadBalancer := "1.2.3.4"
+var _ = Describe("Api Server create secrets test", func() {
+	It("Should create api server secrets", func() {
+		namespaceName := "apiserversecrets"
 
 		// checkSecret reads the secret with the specified name and checks that its data section contains the given keys.
 		checkSecret := func(ctx context.Context, secretName string, keys ...string) {
@@ -54,7 +53,7 @@ var _ = Describe("Api Server create certificates test", func() {
 		err := testenv.Client.Create(ctx, &namespace)
 		Expect(err).To(BeNil())
 
-		imports := getImportsApiServerCertificatesTest()
+		imports := getImports()
 
 		infrastructureProvider, err := provider.NewInfrastructureProvider(api.InfrastructureProviderGCP)
 		Expect(err).To(BeNil())
@@ -72,57 +71,65 @@ var _ = Describe("Api Server create certificates test", func() {
 
 		// deploy certificates
 		checksums1 := make(map[string]string)
-		err = operation.deployKubeAPIServerCertificates(ctx, loadBalancer, checksums1)
+		basicAuth1, err := operation.deployKubeAPIServerSecrets(ctx, checksums1)
 		Expect(err).To(BeNil())
+		Expect(basicAuth1).NotTo(HaveLen(0))
 
-		checkSecret(ctx, KubeApiServerSecretNameApiServerCACertificate, "ca.key", "ca.crt")
-		checkSecret(ctx, KubeApiServerSecretNameApiServerServerCertificate, "ca.crt", "tls.key", "tls.crt")
-		checkSecret(ctx, KubeApiServerSecretNameKubeControllerManagerCertificate, "ca.crt", "tls.key", "tls.crt", "kubeconfig")
-		checkSecret(ctx, KubeApiServerSecretNameAggregatorCACertificate, "ca.key", "ca.crt")
-		checkSecret(ctx, KubeApiServerSecretNameAggregatorClientCertificate, "tls.key", "tls.crt")
-		checkSecret(ctx, KubeApiServerSecretNameClientAdminCertificate, "ca.crt", "tls.key", "tls.crt", "kubeconfig")
-		checkSecret(ctx, KubeApiServerSecretNameMetricsScraperCertificate, "tls.key", "tls.crt")
+		checkSecret(ctx, KubeApiServerSecretNameAdmissionKubeconfig, ValidatingWebhookKey, MutatingWebhookKey)
+		checkSecret(ctx, KubeApiServerSecretNameAuditWebhookConfig, AuditWebhookConfigKey)
+		checkSecret(ctx, KubeApiServerSecretNameAuthWebhookConfig, ConfigYamlKey)
+		checkSecret(ctx, KubeApiServerSecretNameBasicAuth, BasicAuthKey)
+		checkSecret(ctx, KubeApiServerSecretNameEncryptionConfig, EncryptionConfigKey)
+		checkSecret(ctx, KubeApiServerSecretNameServiceAccountKey, ServiceAccountKey)
 
-		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerCA))
-		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerServer))
-		Expect(checksums1).To(HaveKey(ChecksumKeyKubeControllerManagerClient))
-		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAggregatorCA))
-		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAggregatorClient))
+		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerAuditWebhookConfig))
+		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerAuthWebhookConfig))
+		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerBasicAuth))
+		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerEncryptionConfig))
+		Expect(checksums1).To(HaveKey(ChecksumKeyServiceAccountKey))
 
-		// redeploy and check that certificates remain unchanged
+		// redeploy and check that secrets remain unchanged
 		checksums2 := make(map[string]string)
-		Expect(operation.deployKubeAPIServerCertificates(ctx, loadBalancer, checksums2)).To(Succeed())
+		basicAuth2, err := operation.deployKubeAPIServerSecrets(ctx, checksums2)
+		Expect(err).To(BeNil())
 		Expect(checksums1).To(Equal(checksums2))
+		Expect(basicAuth1).To(Equal(basicAuth2))
 
 		// delete secrets and check that they are gone
-		Expect(operation.deleteKubeAPIServerCertificates(ctx)).To(Succeed())
+		Expect(operation.deleteKubeAPIServerSecrets(ctx)).To(Succeed())
 		secretList := &v1.SecretList{}
 		Expect(testenv.Client.List(ctx, secretList)).To(Succeed())
 		Expect(secretList.Items).To(BeEmpty())
 	})
 })
 
-func getImportsApiServerCertificatesTest() api.Imports {
+func getImports() api.Imports {
 	return api.Imports{
 		Cluster:        lsv1alpha1.Target{},
 		HostingCluster: api.HostingCluster{},
 		VirtualGarden: api.VirtualGarden{
 			ETCD: nil,
 			KubeAPIServer: &api.KubeAPIServer{
-				Replicas:                 0,
-				SNI:                      nil,
-				DnsAccessDomain:          "com.our.test",
-				GardenerControlplane:     api.GardenerControlplane{},
-				AuditWebhookConfig:       api.AuditWebhookConfig{},
+				Replicas:        0,
+				SNI:             nil,
+				DnsAccessDomain: "com.our.test",
+				GardenerControlplane: api.GardenerControlplane{
+					ValidatingWebhookEnabled: true,
+					MutatingWebhookEnabled:   true,
+				},
+				AuditWebhookConfig:       api.AuditWebhookConfig{Config: "testconfig"},
 				AuditWebhookBatchMaxSize: "",
-				SeedAuthorizer:           api.SeedAuthorizer{},
-				HVPAEnabled:              false,
-				HVPA:                     nil,
-				EventTTL:                 nil,
-				OidcIssuerURL:            nil,
-				AdditionalVolumeMounts:   nil,
-				AdditionalVolumes:        nil,
-				HorizontalPodAutoscaler:  nil,
+				SeedAuthorizer: api.SeedAuthorizer{
+					Enabled:                  true,
+					CertificateAuthorityData: "ttt",
+				},
+				HVPAEnabled:             false,
+				HVPA:                    nil,
+				EventTTL:                nil,
+				OidcIssuerURL:           nil,
+				AdditionalVolumeMounts:  nil,
+				AdditionalVolumes:       nil,
+				HorizontalPodAutoscaler: nil,
 			},
 			DeleteNamespace:   false,
 			PriorityClassName: "",

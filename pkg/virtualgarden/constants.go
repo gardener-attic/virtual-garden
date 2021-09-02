@@ -34,4 +34,15 @@ const (
 	ChecksumKeyServiceAccountKey               = "checksum/secret-service-account-key"
 )
 
+// other keys
+const (
+	ValidatingWebhookKey  = "validating-webhook"
+	MutatingWebhookKey    = "mutating-webhook"
+	AuditWebhookConfigKey = "audit-webhook-config.yaml"
+	ConfigYamlKey         = "config.yaml"
+	BasicAuthKey          = "basic_auth.csv"
+	EncryptionConfigKey   = "encryption-config.yaml"
+	ServiceAccountKey     = "service_account.key"
+)
+
 const SecretKeyKubeconfig = "kubeconfig"
