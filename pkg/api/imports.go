@@ -104,6 +104,10 @@ type KubeAPIServer struct {
 	DnsAccessDomain      string               `json:"dnsAccessDomain,omitempty" yaml:"dnsAccessDomain,omitempty"`
 	GardenerControlplane GardenerControlplane `json:"gardenerControlplane,omitempty" yaml:"gardenerControlplane,omitempty"`
 
+	// Service account key. If not provided, a new one will be generated.
+	// +optional
+	ServiceAccountKeyPem *string `json:"serviceAccountKeyPem,omitempty" yaml:"serviceAccountKeyPem,omitempty"`
+
 	AuditWebhookConfig       AuditWebhookConfig `json:"auditWebhookConfig,omitempty" yaml:"auditWebhookConfig,omitempty"`
 	AuditWebhookBatchMaxSize string             `json:"auditWebhookBatchMaxSize,omitempty" yaml:"auditWebhookBatchMaxSize,omitempty"`
 

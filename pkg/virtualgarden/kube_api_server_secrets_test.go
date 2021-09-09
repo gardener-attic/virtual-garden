@@ -20,13 +20,12 @@ import (
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/virtual-garden/pkg/api"
 	"github.com/gardener/virtual-garden/pkg/provider"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Api Server create secrets test", func() {
@@ -117,6 +116,7 @@ func getImportsForApiServerSecretsTest() api.Imports {
 					ValidatingWebhookEnabled: true,
 					MutatingWebhookEnabled:   true,
 				},
+				ServiceAccountKeyPem:     pointer.String("test-service-account-key"),
 				AuditWebhookConfig:       api.AuditWebhookConfig{Config: "testconfig"},
 				AuditWebhookBatchMaxSize: "",
 				SeedAuthorizer: api.SeedAuthorizer{

@@ -31,6 +31,12 @@ virtualGarden:
       validatingWebhookEnabled: true
       mutatingWebhookEnabled: true
 
+#   Insert your service account key (optional):
+#   serviceAccountKeyPem: |
+#     -----BEGIN RSA PRIVATE KEY-----
+#     ...
+#     -----END RSA PRIVATE KEY-----
+
     auditWebhookConfig:
       config: "my-audit-webhook-config"
 

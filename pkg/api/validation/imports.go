@@ -15,6 +15,7 @@
 package validation
 
 import (
+	gardenerutils "github.com/gardener/gardener/pkg/utils"
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/virtual-garden/pkg/api"
 
@@ -85,6 +86,10 @@ func ValidateVirtualGarden(obj *api.VirtualGarden, fldPath *field.Path) field.Er
 		if obj.KubeAPIServer.SNI != nil {
 			allErrs = append(allErrs, ValidateSNI(obj.KubeAPIServer.SNI, fldPath.Child("exposure", "sni"))...)
 		}
+
+		if obj.KubeAPIServer.ServiceAccountKeyPem != nil && len(*obj.KubeAPIServer.ServiceAccountKeyPem) > 0 {
+			allErrs = append(allErrs, ValidateRSAPrivateKey(obj.KubeAPIServer.ServiceAccountKeyPem, fldPath.Child("serviceAccountKeyPem"))...)
+		}
 	}
 
 	return allErrs
@@ -119,6 +124,18 @@ func ValidateSNI(obj *api.SNI, fldPath *field.Path) field.ErrorList {
 	}
 	if obj.TTL != nil && (*obj.TTL < 60 || *obj.TTL > 600) {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("ttl"), *obj.TTL, "ttl must be between 60 and 600"))
+	}
+
+	return allErrs
+}
+
+// ValidateRSAPrivateKey validates an RSA private key in PEM format
+func ValidateRSAPrivateKey(obj *string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	_, err := gardenerutils.DecodePrivateKey([]byte(*obj))
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, "(value not logged)", err.Error()))
 	}
 
 	return allErrs

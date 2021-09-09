@@ -326,46 +326,46 @@ func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
 }
 
 func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Context, checksums map[string]string) error {
-	certConfig := &secretsutil.CertificateSecretConfig{
-		Name:       KubeApiServerSecretNameServiceAccountKey,
-		CertType:   secretsutil.CACert,
-		CommonName: Prefix + ":ca:kube-apiserver",
-		DNSNames: []string{
-			"virtual-garden:ca:kube-apiserver",
-		},
-	}
+	var serviceAccountKey []byte
 
-	var value []byte
+	if o.imports.VirtualGarden.KubeAPIServer.ServiceAccountKeyPem == nil ||
+		len(*o.imports.VirtualGarden.KubeAPIServer.ServiceAccountKeyPem) == 0 {
 
-	secret := o.emptySecret(KubeApiServerSecretNameServiceAccountKey)
-	err := o.client.Get(ctx, client.ObjectKeyFromObject(secret), secret)
-	if err != nil {
-		if client.IgnoreNotFound(err) != nil {
-			return err
+		o.log.Info("Generating a new service account key")
+
+		certConfig := &secretsutil.CertificateSecretConfig{
+			Name:       KubeApiServerSecretNameServiceAccountKey,
+			CertType:   secretsutil.CACert,
+			CommonName: Prefix + ":ca:kube-apiserver",
+			DNSNames: []string{
+				"virtual-garden:ca:kube-apiserver",
+			},
 		}
 
-		// secret does not exist: generate certificate
 		cert, err := certConfig.GenerateCertificate()
 		if err != nil {
 			return err
 		}
 
-		value = cert.PrivateKeyPEM
+		serviceAccountKey = cert.PrivateKeyPEM
 	} else {
-		// secret exists: use existing value
-		value = secret.Data[ServiceAccountKey]
+		o.log.Info("Using the provided service account key")
+		serviceAccountKey = []byte(*o.imports.VirtualGarden.KubeAPIServer.ServiceAccountKeyPem)
 	}
 
-	_, err = controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
+	secret := o.emptySecret(KubeApiServerSecretNameServiceAccountKey)
+	_, err := controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
 		if secret.Data == nil {
 			secret.Data = make(map[string][]byte)
 		}
-		secret.Data[ServiceAccountKey] = value
+		secret.Data[ServiceAccountKey] = serviceAccountKey
 		return nil
 	})
 	if err != nil {
 		return err
 	}
+
+	o.exports.ServiceAccountKeyPem = string(serviceAccountKey)
 
 	checksums[ChecksumKeyServiceAccountKey] = utils.ComputeChecksum(secret.Data)
 	return nil
