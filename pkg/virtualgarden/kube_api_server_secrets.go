@@ -328,11 +328,10 @@ func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
 func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Context, checksums map[string]string) error {
 	var serviceAccountKey []byte
 
+	secret := o.emptySecret(KubeApiServerSecretNameServiceAccountKey)
+
 	if o.imports.VirtualGarden.KubeAPIServer.ServiceAccountKeyPem == nil ||
 		len(*o.imports.VirtualGarden.KubeAPIServer.ServiceAccountKeyPem) == 0 {
-
-		o.log.Info("Generating a new service account key")
-
 		certConfig := &secretsutil.CertificateSecretConfig{
 			Name:       KubeApiServerSecretNameServiceAccountKey,
 			CertType:   secretsutil.CACert,
@@ -342,18 +341,28 @@ func (o *operation) deployKubeApiServerSecretServiceAccountKey(ctx context.Conte
 			},
 		}
 
-		cert, err := certConfig.GenerateCertificate()
+		err := o.client.Get(ctx, client.ObjectKeyFromObject(secret), secret)
 		if err != nil {
-			return err
-		}
+			if client.IgnoreNotFound(err) != nil {
+				return err
+			}
 
-		serviceAccountKey = cert.PrivateKeyPEM
+			o.log.Info("Generating a new service account key")
+			cert, err := certConfig.GenerateCertificate()
+			if err != nil {
+				return err
+			}
+
+			serviceAccountKey = cert.PrivateKeyPEM
+		} else {
+			// secret exists: use existing value
+			serviceAccountKey = secret.Data[ServiceAccountKey]
+		}
 	} else {
 		o.log.Info("Using the provided service account key")
 		serviceAccountKey = []byte(*o.imports.VirtualGarden.KubeAPIServer.ServiceAccountKeyPem)
 	}
 
-	secret := o.emptySecret(KubeApiServerSecretNameServiceAccountKey)
 	_, err := controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
 		if secret.Data == nil {
 			secret.Data = make(map[string][]byte)
