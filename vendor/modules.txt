@@ -776,6 +776,9 @@ k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
 # k8s.io/apiserver v0.21.2
+## explicit
+k8s.io/apiserver/pkg/apis/config
+k8s.io/apiserver/pkg/apis/config/v1
 k8s.io/apiserver/pkg/authentication/user
 # k8s.io/autoscaler v0.0.0-20190805135949-100e91ba756e
 ## explicit

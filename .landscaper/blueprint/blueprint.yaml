@@ -102,6 +102,8 @@ imports:
                   type: boolean
                 mutatingWebhookEnabled:
                   type: boolean
+            serviceAccountKeyPem:
+              type string
             auditWebhookConfig:
               type: object
               properties:
@@ -204,6 +206,10 @@ imports:
 
 exports:
 - name: kubeApiserverCaPem
+  schema:
+    type: string
+
+- name: serviceAccountKeyPem
   schema:
     type: string
 
