@@ -1,9 +1,15 @@
 # Virtual Garden Landscaper Component for [Gardener](https://gardener.cloud)
 
-https://github.com/gardener/landscaper/blob/master/docs/proposals/components/virtual-garden.md
-https://github.com/gardener/landscaper/blob/master/docs/deployer/container.md#contract
-
 🚧 This repository is heavily under construction and should be considered experimental.
+
+This repository contains the implementation to deploy the virtual garden, consisting basically of two etcd's, a
+kube apiserver, and kube controller manager.
+
+There are two alternatives for the deployment:
+
+- [executing a make target](./docs/deploy-virtual-garden-with-make-target.md),
+
+- [deploying with Landscaper](./docs/deploy-virtual-garden-with-landscaper.md).
 
 ## Local Development
 

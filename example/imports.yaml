@@ -5,7 +5,7 @@ cluster:
     type: landscaper.gardener.cloud/kubernetes-cluster
     config:
       kubeconfig: |
-#       ... <please insert your kubeconfig here>
+      #       ... <please insert your kubeconfig here>
 
 hostingCluster:
   namespace: garden-4
@@ -31,11 +31,11 @@ virtualGarden:
       validatingWebhookEnabled: true
       mutatingWebhookEnabled: true
 
-#   Insert your service account key (optional):
-#   serviceAccountKeyPem: |
-#     -----BEGIN RSA PRIVATE KEY-----
-#     ...
-#     -----END RSA PRIVATE KEY-----
+    #   Insert your service account key (optional):
+    #   serviceAccountKeyPem: |
+    #     -----BEGIN RSA PRIVATE KEY-----
+    #     ...
+    #     -----END RSA PRIVATE KEY-----
 
     auditWebhookConfig:
       config: "my-audit-webhook-config"
@@ -95,15 +95,15 @@ virtualGarden:
     eventTTL: "test-eventTTL"
     oidcIssuerURL: "test-oidcIssuerURL"
     additionalVolumeMounts:
-    - name: "test-volume-mount"
-      readOnly: true
-      mountPath: "test1/test2"
-      subPath: "sub1/sub2"
-      mountPropagation: true
-      subPathExpr: "test-subPathExpr"
+      - name: "test-volume-mount"
+        readOnly: true
+        mountPath: "test1/test2"
+        subPath: "sub1/sub2"
+        mountPropagation: true
+        subPathExpr: "test-subPathExpr"
     additionalVolumes:
-    - name: "test-volume"
-      volumeSource: {}
+      - name: "test-volume"
+        volumeSource: {}
     horizontalPodAutoscaler:
       downscaleStabilization: "a"
       readinessDelay: "b"

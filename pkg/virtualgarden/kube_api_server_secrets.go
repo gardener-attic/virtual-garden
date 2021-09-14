@@ -250,7 +250,6 @@ func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, chec
 }
 
 func (o *operation) deployKubeApiServerSecretEncryptionConfig(ctx context.Context, checksums map[string]string) error {
-
 	var encryptionConfigValue []byte
 
 	secret := o.emptySecret(KubeApiServerSecretNameEncryptionConfig)

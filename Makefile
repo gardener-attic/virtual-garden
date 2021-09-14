@@ -18,7 +18,6 @@ HACK_DIR          := $(REPO_ROOT)/hack
 VERSION           := $(shell cat "$(REPO_ROOT)/VERSION")
 EFFECTIVE_VERSION := $(VERSION)-$(shell git rev-parse HEAD)
 LD_FLAGS          := "-w $(shell $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(NAME))"
-OPERATION         := "RECONCILE"
 
 REGISTRY                                 := eu.gcr.io/gardener-project/development
 VIRTUAL_GARDEN_DEPLOYER_IMAGE_REPOSITORY := $(REGISTRY)/images/virtual-garden
@@ -30,7 +29,12 @@ VIRTUAL_GARDEN_DEPLOYER_IMAGE_REPOSITORY := $(REGISTRY)/images/virtual-garden
 .PHONY: start
 start:
 	@LD_FLAGS=$(LD_FLAGS) \
-	./hack/local-development/start.sh $(OPERATION)
+	./hack/local-development/start.sh "RECONCILE"
+
+.PHONY: delete
+delete:
+	@LD_FLAGS=$(LD_FLAGS) \
+	./hack/local-development/start.sh "DELETE"
 
 #################################################################
 # Rules related to binary build, Docker image build and release #
