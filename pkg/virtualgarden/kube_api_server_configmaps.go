@@ -80,7 +80,7 @@ func (o *operation) deployKubeApiServerConfigMapAuditPolicy(ctx context.Context,
 			configMap.Data = make(map[string]string)
 		}
 
-		configMap.Data["audit-policy.yaml"] = auditPolicyYaml
+		configMap.Data[AuditPolicyYamlKey] = auditPolicyYaml
 		return nil
 	})
 	if err != nil {
@@ -140,7 +140,7 @@ func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context, c
 			configMap.Data = make(map[string]string)
 		}
 
-		configMap.Data["configuration.yaml"] = string(admissionConfigYAML)
+		configMap.Data[ConfigYamlKey] = string(admissionConfigYAML)
 		return nil
 	})
 	if err != nil {
