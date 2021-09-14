@@ -44,11 +44,20 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
+	err = o.deployKubeAPIServerConfigMaps(ctx, checksums)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // DeleteKubeAPIServer deletes the kube-apiserver and all related resources.
 func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
+	if err := o.deleteKubeAPIServerConfigMaps(ctx); err != nil {
+		return err
+	}
+
 	if err := o.deleteKubeAPIServerSecrets(ctx); err != nil {
 		return err
 	}
