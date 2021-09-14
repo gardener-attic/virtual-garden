@@ -173,3 +173,27 @@ func (k *kubeconfigGenerator) createKubeconfig(certificate *secretsutil.Certific
 		},
 	}
 }
+
+func volumeWithSecretSource(volumeName, secretName string) corev1.Volume {
+	return corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: secretName,
+			},
+		},
+	}
+}
+
+func volumeWithConfigMapSource(volumeName, configMapName string) corev1.Volume {
+	return corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: configMapName,
+				},
+			},
+		},
+	}
+}
