@@ -103,7 +103,7 @@ imports:
                 mutatingWebhookEnabled:
                   type: boolean
             serviceAccountKeyPem:
-              type string
+              type: string
             auditWebhookConfig:
               type: object
               properties:

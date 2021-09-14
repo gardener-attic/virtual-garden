@@ -50,3 +50,5 @@ const (
 )
 
 const SecretKeyKubeconfig = "kubeconfig"
+
+const kubeAPIServerContainerName = "kube-apiserver"
