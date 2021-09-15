@@ -140,7 +140,7 @@ func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context, c
 			configMap.Data = make(map[string]string)
 		}
 
-		configMap.Data[ConfigYamlKey] = string(admissionConfigYAML)
+		configMap.Data[ConfigurationYamlKey] = string(admissionConfigYAML)
 		return nil
 	})
 	if err != nil {
