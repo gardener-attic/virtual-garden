@@ -240,6 +240,7 @@ func (o *operation) deployKubeApiServerHvpa(ctx context.Context) error {
 				},
 			},
 		}
+
 		hvpa.Spec.Vpa = hvpav1alpha1.VpaSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
@@ -337,7 +338,7 @@ func (o *operation) deployKubeApiServerHvpa(ctx context.Context) error {
 
 		hvpa.Spec.MaintenanceTimeWindow = nil
 		if hvpaConfig != nil {
-			hvpa.Spec.MaintenanceTimeWindow = o.imports.VirtualGarden.KubeAPIServer.HVPA.MaintenanceWindow
+			hvpa.Spec.MaintenanceTimeWindow = hvpaConfig.MaintenanceWindow
 		}
 
 		return nil
