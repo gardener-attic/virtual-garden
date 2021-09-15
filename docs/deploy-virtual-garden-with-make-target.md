@@ -12,11 +12,14 @@ Insert the kubeconfig at `.cluster.spec.config.kubeconfig`.
 
 ### Deploy
 
-You can deploy the virtual with the command
+You can deploy the virtual garden with the command
 
 ```shell script
 make start
 ```
+
+The virtual garden is deployed to the namespace specified at `.hostingCluster.namespace` in the 
+[imports.yaml](../example/imports.yaml) file.
 
 The deploy program writes exports parameters to the [exports.yaml](../example/exports.yaml) file.
 It contains in particular a kubeconfig to access the virtual garden in field `.kubeconfigYaml`.
