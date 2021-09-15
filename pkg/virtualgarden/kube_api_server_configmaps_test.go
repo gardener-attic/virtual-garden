@@ -73,7 +73,7 @@ var _ = Describe("Api Server create configmaps test", func() {
 		err = operation.deployKubeAPIServerConfigMaps(ctx, checksums1)
 		Expect(err).To(BeNil())
 
-		checkConfigmap(ctx, KubeApiServerConfigMapAdmission, ConfigYamlKey)
+		checkConfigmap(ctx, KubeApiServerConfigMapAdmission, ConfigurationYamlKey)
 		checkConfigmap(ctx, KubeApiServerConfigMapAuditPolicy, AuditPolicyYamlKey)
 
 		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerAdmissionConfig))
