@@ -92,7 +92,7 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		c, err = app.NewClientFromTarget(imports.Cluster)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = deployHVPACRD(ctx, c)
+		err = virtualgarden.DeployHVPACRD(ctx, c)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -101,7 +101,7 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		Expect(os.Setenv("OPERATION", "DELETE")).To(Succeed())
 		Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
 
-		err := deleteHPVACRD(ctx, c)
+		err := virtualgarden.DeleteHPVACRD(ctx, c)
 		Expect(err).NotTo(HaveOccurred())
 
 		verifyDeletion(ctx, c, imports)

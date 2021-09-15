@@ -86,7 +86,55 @@ func (h *HvpaConfig) GetVpaScaleUpMinChange(def v1alpha1.ScaleParams) v1alpha1.S
 	if h == nil || h.VpaScaleUpStabilization == nil || h.VpaScaleUpStabilization.MinChange == nil {
 		return def
 	}
-	return *h.VpaScaleUpStabilization.MinChange
+
+	return mergeScaleParams(h.VpaScaleUpStabilization.MinChange, def)
+}
+
+func (h *HvpaConfig) GetVpaScaleDownMinChange(def v1alpha1.ScaleParams) v1alpha1.ScaleParams {
+	if h == nil || h.VpaScaleDownStabilization == nil || h.VpaScaleDownStabilization.MinChange == nil {
+		return def
+	}
+
+	return mergeScaleParams(h.VpaScaleDownStabilization.MinChange, def)
+}
+
+func (h *HvpaConfig) GetLimitsRequestsGapScaleParams(def v1alpha1.ScaleParams) v1alpha1.ScaleParams {
+	if h == nil || h.LimitsRequestsGapScaleParams == nil {
+		return def
+	}
+
+	return mergeScaleParams(h.LimitsRequestsGapScaleParams, def)
+}
+
+func mergeScaleParams(externalValues *v1alpha1.ScaleParams, defaultValues v1alpha1.ScaleParams) v1alpha1.ScaleParams {
+	scaleParams := defaultValues
+
+	if externalValues.CPU.Value != nil {
+		scaleParams.CPU.Value = externalValues.CPU.Value
+	}
+
+	if externalValues.CPU.Percentage != nil {
+		scaleParams.CPU.Percentage = externalValues.CPU.Percentage
+	}
+
+	if externalValues.Memory.Value != nil {
+		scaleParams.Memory.Value = externalValues.Memory.Value
+	}
+
+	if externalValues.Memory.Percentage != nil {
+		scaleParams.Memory.Percentage = externalValues.Memory.Percentage
+	}
+
+	if externalValues.Replicas.Value != nil {
+		scaleParams.Replicas.Value = externalValues.Replicas.Value
+	}
+
+	if externalValues.Replicas.Percentage != nil {
+		scaleParams.Replicas.Percentage = externalValues.Replicas.Percentage
+	}
+
+	// return *h.VpaScaleUpStabilization.MinChange
+	return scaleParams
 }
 
 func (h *HvpaConfig) GetVpaScaleDownMode(def string) *string {
@@ -101,18 +149,4 @@ func (h *HvpaConfig) GetVpaScaleDownStabilisationDuration(def string) *string {
 		return pointer.StringPtr(def)
 	}
 	return h.VpaScaleDownStabilization.StabilizationDuration
-}
-
-func (h *HvpaConfig) GetVpaScaleDownMinChange(def v1alpha1.ScaleParams) v1alpha1.ScaleParams {
-	if h == nil || h.VpaScaleDownStabilization == nil || h.VpaScaleDownStabilization.MinChange == nil {
-		return def
-	}
-	return *h.VpaScaleDownStabilization.MinChange
-}
-
-func (h *HvpaConfig) GetLimitsRequestsGapScaleParams(def v1alpha1.ScaleParams) v1alpha1.ScaleParams {
-	if h == nil || h.LimitsRequestsGapScaleParams == nil {
-		return def
-	}
-	return *h.LimitsRequestsGapScaleParams
 }
