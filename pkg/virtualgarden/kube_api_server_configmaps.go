@@ -92,6 +92,13 @@ func (o *operation) deployKubeApiServerConfigMapAuditPolicy(ctx context.Context,
 }
 
 func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context, checksums map[string]string) error {
+	const (
+		validatingAdmissionWebhookConfigName     = "ValidatingAdmissionWebhook"
+		validatingAdmissionWebhookKubeconfigPath = "/var/run/secrets/admission-kubeconfig/validating-webhook"
+		mutatingAdmissionWebhookConfigName       = "MutatingAdmissionWebhook"
+		mutatingAdmissionWebhookKubeconfigPath   = "/var/run/secrets/admission-kubeconfig/mutating-webhook"
+	)
+
 	controlplane := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane
 	if !o.isWebhookEnabled() {
 		return nil
@@ -114,7 +121,7 @@ func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context, c
 		}
 
 		if controlplane.ValidatingWebhookEnabled {
-			config, err := o.newAdmissionPluginConfiguration("ValidatingAdmissionWebhook", "/var/run/secrets/admission-kubeconfig/validating-webhook")
+			config, err := o.newAdmissionPluginConfiguration(validatingAdmissionWebhookConfigName, validatingAdmissionWebhookKubeconfigPath)
 			if err != nil {
 				return err
 			}
@@ -123,7 +130,7 @@ func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context, c
 		}
 
 		if controlplane.MutatingWebhookEnabled {
-			config, err := o.newAdmissionPluginConfiguration("MutatingAdmissionWebhook", "/var/run/secrets/admission-kubeconfig/mutating-webhook")
+			config, err := o.newAdmissionPluginConfiguration(mutatingAdmissionWebhookConfigName, mutatingAdmissionWebhookKubeconfigPath)
 			if err != nil {
 				return err
 			}
