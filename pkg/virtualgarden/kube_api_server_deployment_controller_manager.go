@@ -68,6 +68,12 @@ func (o *operation) deployKubeAPIServerDeploymentControllerManager(ctx context.C
 		return nil
 	})
 
+	if err != nil {
+		return err
+	}
+
+	err = waitForDeploymentReady(ctx, o.client, deployment)
+
 	return err
 }
 

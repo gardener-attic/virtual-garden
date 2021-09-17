@@ -17,6 +17,10 @@ package virtualgarden
 import (
 	"context"
 	"fmt"
+	"time"
+
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/ghodss/yaml"
 	v1 "k8s.io/client-go/tools/clientcmd/api/v1"
@@ -196,4 +200,72 @@ func volumeWithConfigMapSource(volumeName, configMapName string) corev1.Volume {
 			},
 		},
 	}
+}
+
+func waitForDeploymentReady(ctx context.Context, c client.Client, deployment *appsv1.Deployment) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	err := wait.PollImmediateUntil(10*time.Second, func() (done bool, err error) {
+		if err := c.Get(ctx, client.ObjectKeyFromObject(deployment), deployment); err != nil {
+			if client.IgnoreNotFound(err) != nil {
+				return false, err
+			}
+			return false, nil
+		}
+
+		replicas := int32(1)
+		if deployment.Spec.Replicas != nil {
+			replicas = *deployment.Spec.Replicas
+		}
+
+		if deployment.Generation == deployment.Status.ObservedGeneration &&
+			replicas == deployment.Status.ReadyReplicas &&
+			replicas == deployment.Status.UpdatedReplicas &&
+			replicas == deployment.Status.AvailableReplicas {
+			return true, nil
+		}
+
+		return false, nil
+	}, timeoutCtx.Done())
+
+	if err != nil {
+		return fmt.Errorf("Error deploying deployment %s: %w", deployment.Name, err)
+	}
+
+	return nil
+}
+
+func WaitForStatefulSetReady(ctx context.Context, c client.Client, statefulSet *appsv1.StatefulSet) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	err := wait.PollImmediateUntil(2*time.Second, func() (done bool, err error) {
+		if err := c.Get(ctx, client.ObjectKeyFromObject(statefulSet), statefulSet); err != nil {
+			if client.IgnoreNotFound(err) != nil {
+				return false, err
+			}
+			return false, nil
+		}
+
+		replicas := int32(1)
+		if statefulSet.Spec.Replicas != nil {
+			replicas = *statefulSet.Spec.Replicas
+		}
+
+		if statefulSet.Generation == statefulSet.Status.ObservedGeneration &&
+			replicas == statefulSet.Status.ReadyReplicas &&
+			replicas == statefulSet.Status.UpdatedReplicas &&
+			replicas == statefulSet.Status.CurrentReplicas {
+			return true, nil
+		}
+
+		return false, nil
+	}, timeoutCtx.Done())
+
+	if err != nil {
+		return fmt.Errorf("Error deploying deployment %s: %w", statefulSet.Name, err)
+	}
+
+	return nil
 }

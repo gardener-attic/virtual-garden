@@ -213,6 +213,12 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 		return nil
 	})
 
+	if err != nil {
+		return err
+	}
+
+	err = waitForDeploymentReady(ctx, o.client, deployment)
+
 	return err
 }
 
