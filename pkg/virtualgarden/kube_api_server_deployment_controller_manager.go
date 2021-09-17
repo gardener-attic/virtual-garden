@@ -29,7 +29,7 @@ import (
 )
 
 func (o *operation) deployKubeAPIServerDeploymentControllerManager(ctx context.Context, checksums map[string]string, basicAuthPw string) error {
-	o.log.Infof("Deploying deployment virtual-garden-kube-controller-manager")
+	o.log.Infof("Deploying deployment %s", KubeAPIServerDeploymentNameControllerManager)
 
 	deployment := o.emptyDeployment(KubeAPIServerDeploymentNameControllerManager)
 
@@ -67,12 +67,6 @@ func (o *operation) deployKubeAPIServerDeploymentControllerManager(ctx context.C
 		}
 		return nil
 	})
-
-	if err != nil {
-		return err
-	}
-
-	err = waitForDeploymentReady(ctx, o.client, deployment)
 
 	return err
 }

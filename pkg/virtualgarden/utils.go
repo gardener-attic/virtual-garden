@@ -219,24 +219,22 @@ func waitForDeploymentReady(ctx context.Context, c client.Client, deployment *ap
 			replicas = *deployment.Spec.Replicas
 		}
 
-		if deployment.Generation == deployment.Status.ObservedGeneration &&
+		ready := deployment.Generation == deployment.Status.ObservedGeneration &&
 			replicas == deployment.Status.ReadyReplicas &&
 			replicas == deployment.Status.UpdatedReplicas &&
-			replicas == deployment.Status.AvailableReplicas {
-			return true, nil
-		}
+			replicas == deployment.Status.AvailableReplicas
 
-		return false, nil
+		return ready, nil
 	}, timeoutCtx.Done())
 
 	if err != nil {
-		return fmt.Errorf("Error deploying deployment %s: %w", deployment.Name, err)
+		return fmt.Errorf("error while waiting for deployment %s to become ready: %w", deployment.Name, err)
 	}
 
 	return nil
 }
 
-func WaitForStatefulSetReady(ctx context.Context, c client.Client, statefulSet *appsv1.StatefulSet) error {
+func waitForStatefulSetReady(ctx context.Context, c client.Client, statefulSet *appsv1.StatefulSet) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
@@ -253,18 +251,16 @@ func WaitForStatefulSetReady(ctx context.Context, c client.Client, statefulSet *
 			replicas = *statefulSet.Spec.Replicas
 		}
 
-		if statefulSet.Generation == statefulSet.Status.ObservedGeneration &&
+		ready := statefulSet.Generation == statefulSet.Status.ObservedGeneration &&
 			replicas == statefulSet.Status.ReadyReplicas &&
 			replicas == statefulSet.Status.UpdatedReplicas &&
-			replicas == statefulSet.Status.CurrentReplicas {
-			return true, nil
-		}
+			replicas == statefulSet.Status.CurrentReplicas
 
-		return false, nil
+		return ready, nil
 	}, timeoutCtx.Done())
 
 	if err != nil {
-		return fmt.Errorf("Error deploying deployment %s: %w", statefulSet.Name, err)
+		return fmt.Errorf("error while waiting for statefulset %s to become ready: %w", statefulSet.Name, err)
 	}
 
 	return nil

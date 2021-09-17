@@ -339,12 +339,6 @@ func (o *operation) deployETCDStatefulSet(
 		return nil
 	})
 
-	if err != nil {
-		return err
-	}
-
-	// err = waitForStatefulSetReady(ctx, o.client, sts)
-
 	return err
 }
 

@@ -42,7 +42,15 @@ func (o *operation) deployDeployments(ctx context.Context, checksums map[string]
 		return err
 	}
 
+	if err := waitForDeploymentReady(ctx, o.client, o.emptyDeployment(KubeAPIServerDeploymentNameAPIServer)); err != nil {
+		return err
+	}
+
 	if err := o.deployKubeAPIServerDeploymentControllerManager(ctx, checksums, basicAuthPw); err != nil {
+		return err
+	}
+
+	if err := waitForDeploymentReady(ctx, o.client, o.emptyDeployment(KubeAPIServerDeploymentNameControllerManager)); err != nil {
 		return err
 	}
 
@@ -65,7 +73,7 @@ func (o *operation) deleteDeployments(ctx context.Context) error {
 }
 
 func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums map[string]string, basicAuthPw string) error {
-	o.log.Infof("Deploying PodDisruptionBudget for the kube-apiserver")
+	o.log.Infof("Deploying deployment %s", KubeAPIServerDeploymentNameAPIServer)
 
 	deployment := o.emptyDeployment(KubeAPIServerDeploymentNameAPIServer)
 
@@ -212,12 +220,6 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 		}
 		return nil
 	})
-
-	if err != nil {
-		return err
-	}
-
-	err = waitForDeploymentReady(ctx, o.client, deployment)
 
 	return err
 }
