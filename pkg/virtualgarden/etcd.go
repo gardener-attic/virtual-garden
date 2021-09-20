@@ -109,7 +109,7 @@ func (o *operation) deployETCDResources(ctx context.Context) error {
 
 			if helper.ETCDBackupEnabled(o.imports.VirtualGarden.ETCD) {
 				o.log.Infof("Deploying etcd backup secret for role %q", role)
-				storageProviderName, secretData, environment = o.backupProvider.ComputeETCDBackupConfiguration(ETCDVolumeMountPathBackupSecret)
+				storageProviderName, secretData, environment = o.backupProvider.ComputeETCDBackupConfiguration(ETCDVolumeMountPathBackupSecret, ETCDSecretNameBackup)
 
 				backupSecretChecksum, err := o.deployETCDBackupSecret(ctx, secretData)
 				if err != nil {

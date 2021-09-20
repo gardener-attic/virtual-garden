@@ -64,24 +64,24 @@ var _ = Describe("EtcdBackup", func() {
 
 	Describe("#DeployBackupBucket", func() {
 		It("should create a bucket", func() {
-			backupProvider.EXPECT().CreateBucket(ctx, bucketName, region)
+			backupProvider.EXPECT().CreateBucket(ctx)
 			Expect(op.DeployBackupBucket(ctx)).To(Succeed())
 		})
 
 		It("should return the error occurred during creation", func() {
-			backupProvider.EXPECT().CreateBucket(ctx, bucketName, region).Return(fakeErr)
+			backupProvider.EXPECT().CreateBucket(ctx).Return(fakeErr)
 			Expect(op.DeployBackupBucket(ctx)).To(MatchError(fakeErr))
 		})
 	})
 
 	Describe("#DeleteBackupBucket", func() {
 		It("should delete a bucket", func() {
-			backupProvider.EXPECT().DeleteBucket(ctx, bucketName)
+			backupProvider.EXPECT().DeleteBucket(ctx)
 			Expect(op.DeleteBackupBucket(ctx)).To(Succeed())
 		})
 
 		It("should return the error occurred during deletion", func() {
-			backupProvider.EXPECT().DeleteBucket(ctx, bucketName).Return(fakeErr)
+			backupProvider.EXPECT().DeleteBucket(ctx).Return(fakeErr)
 			Expect(op.DeleteBackupBucket(ctx)).To(MatchError(fakeErr))
 		})
 	})

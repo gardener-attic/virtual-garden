@@ -34,9 +34,9 @@ import (
 var _ = Describe("Api Server deployment test", func() {
 	It("Should create deployment virtual-garden-kube-apiserver", func() {
 		var (
-			namespaceName = "apiserverdeployment"
-			basicAuthPw   = "testBasicAuthPw"
-			checksums     = map[string]string{
+			namespaceName          = "apiserverdeployment"
+			staticTokenHealthCheck = "testStaticTokenHealthCheck"
+			checksums              = map[string]string{
 				ChecksumKeyKubeAPIServerAuditPolicyConfig: "testChecksum1",
 				ChecksumKeyKubeAPIServerEncryptionConfig:  "testChecksum2",
 			}
@@ -69,7 +69,7 @@ var _ = Describe("Api Server deployment test", func() {
 		}
 
 		// deploy Deployment
-		err = operation.deployKubeAPIServerDeployment(ctx, checksums, basicAuthPw)
+		err = operation.deployKubeAPIServerDeployment(ctx, checksums, staticTokenHealthCheck)
 		Expect(err).NotTo(HaveOccurred())
 
 		// check Deployment

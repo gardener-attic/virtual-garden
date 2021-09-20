@@ -16,6 +16,42 @@ virtualGarden:
   etcd:
     storageClassName: my-virtual-garden-storage-class
     handleETCDPersistentVolumes: true
+
+### backup settings for OSS (alicloud)
+#    backup:
+#      infrastructureProvider: alicloud
+#      region: oss-eu-central-1.aliyuncs.com
+#      bucketName: testvirtualgarden
+#      credentials:
+#        data:
+#          accessKeyID:     "your access key id"
+#          accessKeySecret: "your access key secret"
+
+### backup settings for GCS
+#    backup:
+#      infrastructureProvider: gcp
+#      region: europe-west4
+#      bucketName: testvirtualgarden
+#      credentials:
+#        data:
+#          serviceaccount.json: |
+#            {
+#              "type": "service_account",
+#              "project_id": "...",
+#              "private_key_id": "...",
+#              ...
+#            }
+
+### backup settings for S3
+#    backup:
+#      infrastructureProvider: aws
+#      region: eu-central-1
+#      bucketName: testvirtualgarden
+#      credentials:
+#        data:
+#          accessKeyID:     "your access key id"
+#          secretAccessKey: "your secret access key"
+
   kubeAPIServer:
     replicas: 1
     dnsAccessDomain: ""
