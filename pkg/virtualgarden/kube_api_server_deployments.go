@@ -35,28 +35,6 @@ const (
 	KubeAPIServerDeploymentNameControllerManager = Prefix + "-kube-controller-manager"
 )
 
-func (o *operation) deployDeployments(ctx context.Context, checksums map[string]string, basicAuthPw string) error {
-	o.log.Infof("Deploying deployments for the kube-apiserver")
-
-	if err := o.deployKubeAPIServerDeployment(ctx, checksums, basicAuthPw); err != nil {
-		return err
-	}
-
-	if err := waitForDeploymentReady(ctx, o.client, o.emptyDeployment(KubeAPIServerDeploymentNameAPIServer)); err != nil {
-		return err
-	}
-
-	if err := o.deployKubeAPIServerDeploymentControllerManager(ctx, checksums, basicAuthPw); err != nil {
-		return err
-	}
-
-	if err := waitForDeploymentReady(ctx, o.client, o.emptyDeployment(KubeAPIServerDeploymentNameControllerManager)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (o *operation) deleteDeployments(ctx context.Context) error {
 	o.log.Infof("Deleting deployments for the kube-apiserver")
 
@@ -300,15 +278,17 @@ func (o *operation) getAPIServerCommand() []string {
 	command = append(command, "--kubelet-preferred-address-types=InternalIP,Hostname,ExternalIP")
 	command = append(command, "--livez-grace-period=1m")
 	command = append(command, "--insecure-port=0")
-	command = append(command, "--max-requests-inflight=800")
-	command = append(command, "--max-mutating-requests-inflight=400")
+	command = append(command, fmt.Sprintf("--max-requests-inflight=%d",
+		o.imports.VirtualGarden.KubeAPIServer.GetMaxRequestsInflight(800)))
+	command = append(command, fmt.Sprintf("--max-mutating-requests-inflight=%d",
+		o.imports.VirtualGarden.KubeAPIServer.GetMaxMutatingRequestsInflight(400)))
 	if o.getAPIServerOIDCIssuerURL() != nil {
 		command = append(command, fmt.Sprintf("--oidc-issuer-url=%s", *o.getAPIServerOIDCIssuerURL()))
 		command = append(command, "--oidc-client-id=kube-kubectl")
 		command = append(command, "--oidc-username-claim=email")
 		command = append(command, "--oidc-groups-claim=groups")
 	}
-	command = append(command, "--profiling=false")
+	command = append(command, fmt.Sprintf("--profiling=%t", o.imports.VirtualGarden.KubeAPIServer.Profiling))
 	command = append(command, "--proxy-client-cert-file=/srv/kubernetes/aggregator/tls.crt")
 	command = append(command, "--proxy-client-key-file=/srv/kubernetes/aggregator/tls.key")
 	command = append(command, "--requestheader-client-ca-file=/srv/kubernetes/aggregator-ca/ca.crt")

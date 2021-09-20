@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -202,11 +204,13 @@ func volumeWithConfigMapSource(volumeName, configMapName string) corev1.Volume {
 	}
 }
 
-func waitForDeploymentReady(ctx context.Context, c client.Client, deployment *appsv1.Deployment) error {
+func waitForDeploymentReady(ctx context.Context, c client.Client, deployment *appsv1.Deployment, log logrus.FieldLogger) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
 	err := wait.PollImmediateUntil(10*time.Second, func() (done bool, err error) {
+		log.Infof("waiting for deployment %s to become ready", deployment.Name)
+
 		if err := c.Get(ctx, client.ObjectKeyFromObject(deployment), deployment); err != nil {
 			if client.IgnoreNotFound(err) != nil {
 				return false, err
@@ -234,11 +238,12 @@ func waitForDeploymentReady(ctx context.Context, c client.Client, deployment *ap
 	return nil
 }
 
-func waitForStatefulSetReady(ctx context.Context, c client.Client, statefulSet *appsv1.StatefulSet) error {
+func waitForStatefulSetReady(ctx context.Context, c client.Client, statefulSet *appsv1.StatefulSet, log logrus.FieldLogger) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
 	err := wait.PollImmediateUntil(2*time.Second, func() (done bool, err error) {
+		log.Infof("waiting for statefulset %s to become ready", statefulSet.Name)
 		if err := c.Get(ctx, client.ObjectKeyFromObject(statefulSet), statefulSet); err != nil {
 			if client.IgnoreNotFound(err) != nil {
 				return false, err

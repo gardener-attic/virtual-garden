@@ -123,6 +123,25 @@ type KubeAPIServer struct {
 	AdditionalVolumes      []corev1.Volume      `json:"additionalVolumes,omitempty" yaml:"additionalVolumes,omitempty"`
 
 	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty" yaml:"horizontalPodAutoscaler,omitempty"`
+
+	MaxRequestsInflight         *int `json:"maxRequestsInflight,omitempty" yaml:"maxRequestsInflight,omitempty"`
+	MaxMutatingRequestsInflight *int `json:"maxMutatingRequestsInflight,omitempty" yaml:"maxMutatingRequestsInflight,omitempty"`
+
+	Profiling bool `json:"profiling,omitempty" yaml:"profiling,omitempty"`
+}
+
+func (r *KubeAPIServer) GetMaxRequestsInflight(defaultValue int) int {
+	if r == nil || r.MaxRequestsInflight == nil {
+		return defaultValue
+	}
+	return *r.MaxRequestsInflight
+}
+
+func (r *KubeAPIServer) GetMaxMutatingRequestsInflight(defaultValue int) int {
+	if r == nil || r.MaxMutatingRequestsInflight == nil {
+		return defaultValue
+	}
+	return *r.MaxMutatingRequestsInflight
 }
 
 // HorizontalPodAutoscaler contains configuration for the horizontal pod auto scaler.

@@ -59,8 +59,19 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
-	err = o.deployDeployments(ctx, checksums, basicAuthPw)
-	if err != nil {
+	if err := o.deployKubeAPIServerDeployment(ctx, checksums, basicAuthPw); err != nil {
+		return err
+	}
+
+	if err := waitForDeploymentReady(ctx, o.client, o.emptyDeployment(KubeAPIServerDeploymentNameAPIServer), o.log); err != nil {
+		return err
+	}
+
+	if err := o.deployKubeAPIServerDeploymentControllerManager(ctx, checksums, basicAuthPw); err != nil {
+		return err
+	}
+
+	if err := waitForDeploymentReady(ctx, o.client, o.emptyDeployment(KubeAPIServerDeploymentNameControllerManager), o.log); err != nil {
 		return err
 	}
 

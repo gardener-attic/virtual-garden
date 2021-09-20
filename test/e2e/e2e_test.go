@@ -18,7 +18,6 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
@@ -27,8 +26,6 @@ import (
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/ghodss/yaml"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -703,40 +700,4 @@ func verifyDeletionOfBackupBucket(ctx context.Context, c client.Client, imports 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(bucketExists).To(BeFalse())
 	}
-}
-
-func CompareWithLocalCACertificate(caCert *secretsutil.Certificate, path string) {
-	localSecret, err := secretFromFile(path)
-	Expect(err).NotTo(HaveOccurred())
-	localCert, err := secretsutil.LoadCertificate(localSecret.Name, localSecret.Data[secretsutil.DataKeyPrivateKeyCA], localSecret.Data[secretsutil.DataKeyCertificateCA])
-	Expect(err).NotTo(HaveOccurred())
-	Expect(localCert.Certificate.IsCA).To(Equal(caCert.Certificate.IsCA)) // both should be true
-	Expect(localCert.Certificate.Subject.CommonName).To(Equal(caCert.Certificate.Subject.CommonName))
-	//	Expect(localCert.Certificate.KeyUsage).To(Equal(caCert.Certificate.KeyUsage))
-}
-
-func CompareWithLocalCertificate(cert *secretsutil.Certificate, path string) {
-	localSecret, err := secretFromFile(path)
-	Expect(err).NotTo(HaveOccurred())
-	localCert, err := secretsutil.LoadCertificate(localSecret.Name, localSecret.Data[secretsutil.DataKeyPrivateKey], localSecret.Data[secretsutil.DataKeyCertificate])
-	Expect(err).NotTo(HaveOccurred())
-	Expect(localCert.Certificate.IsCA).To(Equal(cert.Certificate.IsCA)) // both should be false
-	Expect(localCert.Certificate.Subject.CommonName).To(Equal(cert.Certificate.Subject.CommonName))
-	Expect(localCert.Certificate.Issuer.CommonName).To(Equal(cert.Certificate.Issuer.CommonName)) // = common name of the ca cert
-	Expect(localCert.Certificate.KeyUsage).To(Equal(cert.Certificate.KeyUsage))
-	Expect(localCert.Certificate.ExtKeyUsage).To(Equal(cert.Certificate.ExtKeyUsage))
-}
-
-func secretFromFile(path string) (*corev1.Secret, error) {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	secret := &corev1.Secret{}
-	if err := yaml.Unmarshal(data, secret); err != nil {
-		return nil, err
-	}
-
-	return secret, nil
 }

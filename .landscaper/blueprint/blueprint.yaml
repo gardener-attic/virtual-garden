@@ -199,6 +199,12 @@ imports:
                   type: string
                 tolerance:
                   type: string
+            maxRequestsInflight:
+              type: integer
+            maxMutatingRequestsInflight:
+              type: integer
+            profiling:
+              type: boolean
         deleteNamespace:
           type: boolean
         priorityClassName:

@@ -43,7 +43,7 @@ func (o *operation) DeployETCD(ctx context.Context) error {
 	}
 
 	for _, role := range []string{ETCDRoleMain, ETCDRoleEvents} {
-		if err := waitForStatefulSetReady(ctx, o.client, emptyETCDStatefulSet(o.namespace, role)); err != nil {
+		if err := waitForStatefulSetReady(ctx, o.client, emptyETCDStatefulSet(o.namespace, role), o.log); err != nil {
 			return err
 		}
 	}

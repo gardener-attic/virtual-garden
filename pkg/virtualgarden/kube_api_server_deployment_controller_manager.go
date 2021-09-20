@@ -134,7 +134,6 @@ func (o *operation) getKubeControllerManagerCommand() []string {
 		"--authorization-kubeconfig=/srv/kubernetes/controller-manager/kubeconfig",
 		"--cluster-signing-cert-file=/srv/kubernetes/ca/ca.crt",
 		"--cluster-signing-key-file=/srv/kubernetes/ca/ca.key",
-		//		"--cluster-signing-duration=168h", // 1 week
 		"--controllers=namespace,serviceaccount,serviceaccount-token,clusterrole-aggregation,garbagecollector,csrapproving,csrcleaner,csrsigning,bootstrapsigner,tokencleaner,resourcequota",
 		"--concurrent-gc-syncs=250",
 		"--concurrent-namespace-syncs=100",
