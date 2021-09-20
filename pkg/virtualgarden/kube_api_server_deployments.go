@@ -290,8 +290,10 @@ func (o *operation) getAPIServerCommand() []string {
 	command = append(command, "--etcd-cafile=/srv/kubernetes/etcd/ca/ca.crt")
 	command = append(command, "--etcd-certfile=/srv/kubernetes/etcd/client/tls.crt")
 	command = append(command, "--etcd-keyfile=/srv/kubernetes/etcd/client/tls.key")
-	command = append(command, "--etcd-servers=https://virtual-garden-etcd-main-client.garden.svc:2379")
-	command = append(command, "--etcd-servers-overrides=/events#https://virtual-garden-etcd-events-client.garden.svc:2379,coordination.k8s.io/leases#https://virtual-garden-etcd-events-client.garden.svc:2379")
+	command = append(command, fmt.Sprintf("--etcd-servers=https://virtual-garden-etcd-main-client.%s.svc:2379",
+		o.namespace))
+	command = append(command, fmt.Sprintf("--etcd-servers-overrides=/events#https://virtual-garden-etcd-events-client.%s.svc:2379,coordination.k8s.io/leases#https://virtual-garden-etcd-events-client.%s.svc:2379",
+		o.namespace, o.namespace))
 	if o.getAPIServerEventTTL() != "" {
 		command = append(command, fmt.Sprintf("--event-ttl=%s", o.getAPIServerEventTTL()))
 	}
