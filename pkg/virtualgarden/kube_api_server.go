@@ -39,8 +39,39 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
-	_, err = o.deployKubeAPIServerSecrets(ctx, checksums)
+	basicAuthPw, err := o.deployKubeAPIServerSecrets(ctx, checksums)
 	if err != nil {
+		return err
+	}
+
+	err = o.deployKubeAPIServerConfigMaps(ctx, checksums)
+	if err != nil {
+		return err
+	}
+
+	err = o.deployKubeAPIServerPodAutoscaling(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = o.deployMisc(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := o.deployKubeAPIServerDeployment(ctx, checksums, basicAuthPw); err != nil {
+		return err
+	}
+
+	if err := waitForDeploymentReady(ctx, o.client, o.emptyDeployment(KubeAPIServerDeploymentNameAPIServer), o.log); err != nil {
+		return err
+	}
+
+	if err := o.deployKubeAPIServerDeploymentControllerManager(ctx, checksums, basicAuthPw); err != nil {
+		return err
+	}
+
+	if err := waitForDeploymentReady(ctx, o.client, o.emptyDeployment(KubeAPIServerDeploymentNameControllerManager), o.log); err != nil {
 		return err
 	}
 
@@ -49,6 +80,22 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 
 // DeleteKubeAPIServer deletes the kube-apiserver and all related resources.
 func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
+	if err := o.deleteDeployments(ctx); err != nil {
+		return err
+	}
+
+	if err := o.deleteMisc(ctx); err != nil {
+		return err
+	}
+
+	if err := o.deleteKubeAPIServerPodAutoscaling(ctx); err != nil {
+		return err
+	}
+
+	if err := o.deleteKubeAPIServerConfigMaps(ctx); err != nil {
+		return err
+	}
+
 	if err := o.deleteKubeAPIServerSecrets(ctx); err != nil {
 		return err
 	}

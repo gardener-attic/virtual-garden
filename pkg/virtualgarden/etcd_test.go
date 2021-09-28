@@ -783,7 +783,7 @@ var _ = Describe("Etcd", func() {
 				}),
 			)
 
-			Expect(op.DeployETCD(ctx)).To(Succeed())
+			Expect(op.deployETCDResources(ctx)).To(Succeed())
 		})
 
 		It("should correctly deploy all etcd resources (w/o backup, w/o hvpa)", func() {
@@ -867,7 +867,7 @@ var _ = Describe("Etcd", func() {
 				}),
 			)
 
-			Expect(op.DeployETCD(ctx)).To(Succeed())
+			Expect(op.deployETCDResources(ctx)).To(Succeed())
 		})
 	})
 

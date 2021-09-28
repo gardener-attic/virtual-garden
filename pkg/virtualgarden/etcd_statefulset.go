@@ -338,6 +338,7 @@ func (o *operation) deployETCDStatefulSet(
 		}
 		return nil
 	})
+
 	return err
 }
 

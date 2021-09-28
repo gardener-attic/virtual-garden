@@ -36,7 +36,22 @@ const (
 // DeployETCD generates a dedicated CA, two server certificates (for main and events etcd), and one client
 // certificate. It deploys them as secrets together with the bootstrap config map. Finally, it creates a service for
 // etcd that can be used by clients and deploys it as a stateful set with a persistent volume for its data.
+// It waits until the stateful sets are ready.
 func (o *operation) DeployETCD(ctx context.Context) error {
+	if err := o.deployETCDResources(ctx); err != nil {
+		return err
+	}
+
+	for _, role := range []string{ETCDRoleMain, ETCDRoleEvents} {
+		if err := waitForStatefulSetReady(ctx, o.client, emptyETCDStatefulSet(o.namespace, role), o.log); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *operation) deployETCDResources(ctx context.Context) error {
 	o.log.Infof("Deploying the storage class for persistent volumes of etcd")
 	if err := o.deployETCDStorageClass(ctx); err != nil {
 		return err

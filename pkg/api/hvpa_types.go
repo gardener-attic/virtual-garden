@@ -16,6 +16,7 @@ package api
 
 import (
 	"github.com/gardener/hvpa-controller/api/v1alpha1"
+	"k8s.io/utils/pointer"
 )
 
 // HvpaConfig defines the structure of HVPA configuration data.
@@ -36,4 +37,116 @@ type HvpaConfig struct {
 type ScaleType struct {
 	StabilizationDuration *string               `json:"stabilizationDuration,omitempty" yaml:"stabilizationDuration,omitempty"`
 	MinChange             *v1alpha1.ScaleParams `json:"minChange,omitempty" yaml:"minChange,omitempty"`
+}
+
+func (h *HvpaConfig) GetMaxReplicas(def int32) int32 {
+	if h == nil || h.MaxReplicas == nil {
+		return def
+	}
+	return *h.MaxReplicas
+}
+
+func (h *HvpaConfig) GetMinReplicas() *int32 {
+	var def int32 = 1
+	if h == nil || h.MinReplicas == nil {
+		return pointer.Int32Ptr(def)
+	}
+	return h.MinReplicas
+}
+
+func (h *HvpaConfig) GetTargetAverageUtilizationMemory(def int32) *int32 {
+	if h == nil || h.TargetAverageUtilizationMemory == nil {
+		return pointer.Int32Ptr(def)
+	}
+	return h.TargetAverageUtilizationMemory
+}
+
+func (h *HvpaConfig) GetTargetAverageUtilizationCpu(def int32) *int32 {
+	if h == nil || h.TargetAverageUtilizationCpu == nil {
+		return pointer.Int32Ptr(def)
+	}
+	return h.TargetAverageUtilizationCpu
+}
+
+func (h *HvpaConfig) GetVpaScaleUpMode(def string) *string {
+	if h == nil || h.VpaScaleUpMode == nil {
+		return pointer.StringPtr(def)
+	}
+	return h.VpaScaleUpMode
+}
+
+func (h *HvpaConfig) GetVpaScaleUpStabilisationDuration(def string) *string {
+	if h == nil || h.VpaScaleUpStabilization == nil {
+		return pointer.StringPtr(def)
+	}
+	return h.VpaScaleUpStabilization.StabilizationDuration
+}
+
+func (h *HvpaConfig) GetVpaScaleUpMinChange(def v1alpha1.ScaleParams) v1alpha1.ScaleParams {
+	if h == nil || h.VpaScaleUpStabilization == nil || h.VpaScaleUpStabilization.MinChange == nil {
+		return def
+	}
+
+	return mergeScaleParams(h.VpaScaleUpStabilization.MinChange, def)
+}
+
+func (h *HvpaConfig) GetVpaScaleDownMinChange(def v1alpha1.ScaleParams) v1alpha1.ScaleParams {
+	if h == nil || h.VpaScaleDownStabilization == nil || h.VpaScaleDownStabilization.MinChange == nil {
+		return def
+	}
+
+	return mergeScaleParams(h.VpaScaleDownStabilization.MinChange, def)
+}
+
+func (h *HvpaConfig) GetLimitsRequestsGapScaleParams(def v1alpha1.ScaleParams) v1alpha1.ScaleParams {
+	if h == nil || h.LimitsRequestsGapScaleParams == nil {
+		return def
+	}
+
+	return mergeScaleParams(h.LimitsRequestsGapScaleParams, def)
+}
+
+func mergeScaleParams(externalValues *v1alpha1.ScaleParams, defaultValues v1alpha1.ScaleParams) v1alpha1.ScaleParams {
+	scaleParams := defaultValues
+
+	if externalValues.CPU.Value != nil {
+		scaleParams.CPU.Value = externalValues.CPU.Value
+	}
+
+	if externalValues.CPU.Percentage != nil {
+		scaleParams.CPU.Percentage = externalValues.CPU.Percentage
+	}
+
+	if externalValues.Memory.Value != nil {
+		scaleParams.Memory.Value = externalValues.Memory.Value
+	}
+
+	if externalValues.Memory.Percentage != nil {
+		scaleParams.Memory.Percentage = externalValues.Memory.Percentage
+	}
+
+	if externalValues.Replicas.Value != nil {
+		scaleParams.Replicas.Value = externalValues.Replicas.Value
+	}
+
+	if externalValues.Replicas.Percentage != nil {
+		scaleParams.Replicas.Percentage = externalValues.Replicas.Percentage
+	}
+
+	// return *h.VpaScaleUpStabilization.MinChange
+	return scaleParams
+}
+
+func (h *HvpaConfig) GetVpaScaleDownMode(def string) *string {
+	if h == nil || h.VpaScaleDownMode == nil {
+		return pointer.StringPtr(def)
+	}
+	return h.VpaScaleDownMode
+}
+
+func (h *HvpaConfig) GetVpaScaleDownStabilisationDuration(def string) *string {
+	if h == nil || h.VpaScaleDownStabilization == nil {
+		return pointer.StringPtr(def)
+	}
+	return h.VpaScaleDownStabilization.StabilizationDuration
 }

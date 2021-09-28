@@ -103,7 +103,7 @@ imports:
                 mutatingWebhookEnabled:
                   type: boolean
             serviceAccountKeyPem:
-              type string
+              type: string
             auditWebhookConfig:
               type: object
               properties:
@@ -199,6 +199,12 @@ imports:
                   type: string
                 tolerance:
                   type: string
+            maxRequestsInflight:
+              type: integer
+            maxMutatingRequestsInflight:
+              type: integer
+            profiling:
+              type: boolean
         deleteNamespace:
           type: boolean
         priorityClassName:

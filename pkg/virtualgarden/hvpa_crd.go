@@ -40,7 +40,7 @@ func (o *operation) checkHVPACRD(ctx context.Context) error {
 
 // getHVPACRD return the HVPA CRD.
 func (o *operation) getHVPACRD(ctx context.Context) (*v1beta1.CustomResourceDefinition, error) {
-	hvpaCrd := EmptyHVPACRD()
+	hvpaCrd := emptyHVPACRD()
 	err := o.client.Get(ctx, client.ObjectKeyFromObject(hvpaCrd), hvpaCrd)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (o *operation) getHVPACRD(ctx context.Context) (*v1beta1.CustomResourceDefi
 	return hvpaCrd, nil
 }
 
-func EmptyHVPACRD() *v1beta1.CustomResourceDefinition {
+func emptyHVPACRD() *v1beta1.CustomResourceDefinition {
 	return &v1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "hvpas.autoscaling.k8s.io",

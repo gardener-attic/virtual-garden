@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -86,7 +89,7 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		c, err = app.NewClientFromTarget(imports.Cluster)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = deployHVPACRD(ctx, c)
+		err = virtualgarden.DeployHVPACRD(ctx, c)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -95,7 +98,7 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		Expect(os.Setenv("OPERATION", "DELETE")).To(Succeed())
 		Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
 
-		err := deleteHPVACRD(ctx, c)
+		err := virtualgarden.DeleteHPVACRD(ctx, c)
 		Expect(err).NotTo(HaveOccurred())
 
 		verifyDeletion(ctx, c, imports)
@@ -111,6 +114,10 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 			Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
 
 			verifyReconciliation(ctx, c, imports)
+
+			verifyExports(ctx, c, imports, exportsPath)
+
+			verifyKubeApiServerCall(ctx, c, imports)
 		})
 	})
 })
@@ -131,7 +138,64 @@ func prepareComponentDescriptor(resourcesPath, componentDescriptorPath string) e
 	}, componentDescriptorPath)
 }
 
+func verifyExports(ctx context.Context, c client.Client, imports *api.Imports, exportsPath string) {
+	By("Checking the exports")
+	exports, err := loader.ExportsFromFile(exportsPath)
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(exports.KubeApiserverCaPem).NotTo(BeZero())
+	Expect(exports.EtcdCaPem).NotTo(BeZero())
+	Expect(exports.EtcdClientTlsPem).NotTo(BeZero())
+	Expect(exports.EtcdClientTlsKeyPem).NotTo(BeZero())
+	Expect(exports.KubeconfigYaml).NotTo(BeZero())
+	Expect(exports.VirtualGardenEndpoint).NotTo(BeZero())
+}
+
+// verifyKubeApiServerCall checks that the kube-apiserver can be accessed. This is done by reading the default namespace.
+func verifyKubeApiServerCall(ctx context.Context, c client.Client, imports *api.Imports) {
+	By("Checking that the kube-apiserver can be accessed")
+
+	var (
+		kubeAPIServerClient client.Client
+		err                 error
+	)
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
+	Expect(wait.PollImmediateUntil(5*time.Second, func() (bool, error) {
+		kubeAPIServerClient, err = newKubeAPIServerClient(ctx, c, imports)
+		if err != nil {
+			return false, nil
+		}
+
+		defaultNamespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}}
+		objectKey := client.ObjectKey{Name: defaultNamespace.Name}
+		err = kubeAPIServerClient.Get(ctx, objectKey, defaultNamespace)
+		return err == nil, nil
+	}, timeoutCtx.Done())).To(Succeed())
+}
+
+func newKubeAPIServerClient(ctx context.Context, c client.Client, imports *api.Imports) (client.Client, error) {
+	clientAdminSecret := &corev1.Secret{}
+	objectKey := client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameClientAdminCertificate, Namespace: imports.HostingCluster.Namespace}
+	err := c.Get(ctx, objectKey, clientAdminSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	kubeConfig := clientAdminSecret.Data[secretsutil.DataKeyKubeconfig]
+	kubeAPIServerClient, err := app.NewClientFromKubeconfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return kubeAPIServerClient, nil
+}
+
 func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imports) {
+	verifyReconciliationOfKubeAPIServerService(ctx, c, imports)
+
 	backupProvider := verifyReconciliationOfETCDBackupBucket(ctx, imports)
 
 	verifyReconciliationOfETCDStorageClass(ctx, c, imports)
@@ -153,6 +217,53 @@ func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imp
 
 		verifyReconciliationOfETCDHVPA(ctx, c, imports, role)
 	}
+
+	verifyReconciliationOfKubeAPIServerCertificates(ctx, c, imports)
+}
+
+func verifyReconciliationOfKubeAPIServerService(ctx context.Context, c client.Client, imports *api.Imports) {
+	By("Checking that the kube-apiserver service was created as expected")
+
+	kubeAPIServerService := &corev1.Service{}
+	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.KubeAPIServerServiceName, Namespace: imports.HostingCluster.Namespace}, kubeAPIServerService)).To(Succeed())
+
+	Expect(kubeAPIServerService.Labels).To(HaveKeyWithValue("app", "virtual-garden"))
+	Expect(kubeAPIServerService.Labels).To(HaveKeyWithValue("component", "kube-apiserver"))
+	Expect(kubeAPIServerService.Spec.Type).To(Equal(corev1.ServiceTypeLoadBalancer))
+	Expect(kubeAPIServerService.Spec.ClusterIP).NotTo(BeEmpty())
+	Expect(kubeAPIServerService.Spec.Selector).To(Equal(map[string]string{"app": "virtual-garden", "component": "kube-apiserver"}))
+	Expect(kubeAPIServerService.Spec.Ports).To(HaveLen(1))
+	Expect(kubeAPIServerService.Spec.Ports[0].Name).To(Equal("kube-apiserver"))
+	Expect(kubeAPIServerService.Spec.Ports[0].Port).To(Equal(int32(443)))
+	Expect(kubeAPIServerService.Spec.Ports[0].TargetPort).To(Equal(intstr.FromInt(443)))
+	Expect(kubeAPIServerService.Spec.Ports[0].Protocol).To(Equal(corev1.ProtocolTCP))
+	Expect(kubeAPIServerService.Spec.Ports[0].NodePort).NotTo(BeZero())
+
+	if helper.KubeAPIServerSNIEnabled(imports.VirtualGarden.KubeAPIServer) {
+		Expect(kubeAPIServerService.Annotations).To(HaveKeyWithValue("dns.gardener.cloud/dnsnames", imports.VirtualGarden.KubeAPIServer.SNI.Hostname))
+		if val := imports.VirtualGarden.KubeAPIServer.SNI.DNSClass; val != nil {
+			Expect(kubeAPIServerService.Annotations).To(HaveKeyWithValue("dns.gardener.cloud/class", *val))
+		}
+		if val := imports.VirtualGarden.KubeAPIServer.SNI.TTL; val != nil {
+			Expect(kubeAPIServerService.Annotations).To(HaveKeyWithValue("dns.gardener.cloud/ttl", strconv.Itoa(int(*val))))
+		}
+	} else {
+		Expect(kubeAPIServerService.Annotations).NotTo(HaveKey("dns.gardener.cloud/dnsnames"))
+		Expect(kubeAPIServerService.Annotations).NotTo(HaveKey("dns.gardener.cloud/class"))
+		Expect(kubeAPIServerService.Annotations).NotTo(HaveKey("dns.gardener.cloud/ttl"))
+	}
+
+	By("Checking that the load balancer service was created successfully")
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	Expect(wait.PollImmediateUntil(2*time.Second, func() (done bool, err error) {
+		service := &corev1.Service{}
+		if err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.KubeAPIServerServiceName, Namespace: imports.HostingCluster.Namespace}, service); err != nil {
+			return false, err
+		}
+		return len(service.Status.LoadBalancer.Ingress) > 0 && (service.Status.LoadBalancer.Ingress[0].Hostname != "" || service.Status.LoadBalancer.Ingress[0].IP != ""), nil
+	}, timeoutCtx.Done())).To(Succeed())
 }
 
 func verifyReconciliationOfETCDBackupBucket(ctx context.Context, imports *api.Imports) provider.BackupProvider {
@@ -356,7 +467,112 @@ func verifyReconciliationOfETCDHVPA(ctx context.Context, c client.Client, import
 	}
 }
 
+func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c client.Client, imports *api.Imports) {
+	By("Checking that the certificates for the kube-apiserver were created as expected")
+
+	// KubeApiServerSecretNameAggregatorCACertificate
+	aggCASecret := &corev1.Secret{}
+	objectKey := client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameAggregatorCACertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, aggCASecret)).To(Succeed())
+
+	aggCACertificate, err := secretsutil.LoadCertificate(aggCASecret.Name, aggCASecret.Data[secretsutil.DataKeyPrivateKeyCA], aggCASecret.Data[secretsutil.DataKeyCertificateCA])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(aggCACertificate.Certificate.IsCA).To(BeTrue())
+	Expect(aggCACertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:ca:kube-aggregator"))
+	Expect(aggCACertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign | x509.KeyUsageCRLSign))
+
+	// KubeApiServerSecretNameAggregatorClientCertificate
+	aggClientSecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameAggregatorClientCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, aggClientSecret)).To(Succeed())
+
+	Expect(len(aggClientSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
+
+	aggClientCertificate, err := secretsutil.LoadCertificate(aggClientSecret.Name, aggClientSecret.Data[secretsutil.DataKeyPrivateKey], aggClientSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(aggClientCertificate.Certificate.IsCA).To(BeFalse())
+	Expect(aggClientCertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:aggregator-client:kube-aggregator"))
+	Expect(aggClientCertificate.Certificate.Issuer.CommonName).To(Equal(aggCACertificate.Certificate.Subject.CommonName))
+	Expect(aggClientCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
+	Expect(aggClientCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}))
+
+	// virtual-garden-kube-apiserver-ca
+	kubeAPIServerCASecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameApiServerCACertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, kubeAPIServerCASecret)).To(Succeed())
+
+	kubeAPIServerCACertificate, err := secretsutil.LoadCertificate(kubeAPIServerCASecret.Name, kubeAPIServerCASecret.Data[secretsutil.DataKeyPrivateKeyCA], kubeAPIServerCASecret.Data[secretsutil.DataKeyCertificateCA])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(kubeAPIServerCACertificate.Certificate.IsCA).To(BeTrue())
+	Expect(kubeAPIServerCACertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:ca:kube-apiserver"))
+	Expect(kubeAPIServerCACertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign | x509.KeyUsageCRLSign))
+
+	// virtual-garden-kube-apiserver
+	kubeAPIServerSecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameApiServerServerCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, kubeAPIServerSecret)).To(Succeed())
+
+	Expect(len(kubeAPIServerSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
+
+	kubeAPIServerCertificate, err := secretsutil.LoadCertificate(kubeAPIServerSecret.Name, kubeAPIServerSecret.Data[secretsutil.DataKeyPrivateKey], kubeAPIServerSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(kubeAPIServerCertificate.Certificate.IsCA).To(BeFalse())
+	Expect(kubeAPIServerCertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:server:kube-apiserver"))
+	Expect(kubeAPIServerCertificate.Certificate.Issuer.CommonName).To(Equal(kubeAPIServerCACertificate.Certificate.Subject.CommonName))
+	Expect(kubeAPIServerCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
+	Expect(kubeAPIServerCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}))
+
+	// KubeApiServerSecretNameKubeControllerManagerCertificate
+	kubeControllerManagerSecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameKubeControllerManagerCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, kubeControllerManagerSecret)).To(Succeed())
+
+	Expect(len(kubeControllerManagerSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
+	Expect(len(kubeControllerManagerSecret.Data[virtualgarden.SecretKeyKubeconfig]) > 0).To(BeTrue())
+
+	kubeControllerManagerCertificate, err := secretsutil.LoadCertificate(kubeControllerManagerSecret.Name, kubeControllerManagerSecret.Data[secretsutil.DataKeyPrivateKey], kubeControllerManagerSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(kubeControllerManagerCertificate.Certificate.IsCA).To(BeFalse())
+	Expect(kubeControllerManagerCertificate.Certificate.Subject.CommonName).To(Equal("system:kube-controller-manager"))
+	Expect(kubeControllerManagerCertificate.Certificate.Issuer.CommonName).To(Equal(kubeAPIServerCACertificate.Certificate.Subject.CommonName))
+	Expect(kubeControllerManagerCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
+	Expect(kubeControllerManagerCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}))
+
+	// KubeApiServerSecretNameClientAdminCertificate
+	clientAdminSecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameClientAdminCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, clientAdminSecret)).To(Succeed())
+
+	Expect(len(clientAdminSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
+	Expect(len(clientAdminSecret.Data[virtualgarden.SecretKeyKubeconfig]) > 0).To(BeTrue())
+
+	clientAdminCertificate, err := secretsutil.LoadCertificate(clientAdminSecret.Name, clientAdminSecret.Data[secretsutil.DataKeyPrivateKey], clientAdminSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+	Expect(clientAdminCertificate.Certificate.IsCA).To(BeFalse())
+	Expect(clientAdminCertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:client:admin"))
+	Expect(clientAdminCertificate.Certificate.Issuer.CommonName).To(Equal(kubeAPIServerCACertificate.Certificate.Subject.CommonName))
+	Expect(clientAdminCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
+	Expect(clientAdminCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}))
+
+	// KubeApiServerSecretNameMetricsScraperCertificate
+	metricsScraperSecret := &corev1.Secret{}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameMetricsScraperCertificate, Namespace: imports.HostingCluster.Namespace}
+	Expect(c.Get(ctx, objectKey, metricsScraperSecret)).To(Succeed())
+
+	Expect(len(metricsScraperSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
+
+	metricsScraperCertificate, err := secretsutil.LoadCertificate(metricsScraperSecret.Name, metricsScraperSecret.Data[secretsutil.DataKeyPrivateKey], metricsScraperSecret.Data[secretsutil.DataKeyCertificate])
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(metricsScraperCertificate.Certificate.IsCA).To(BeFalse())
+	Expect(metricsScraperCertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:client:metrics-scraper"))
+	Expect(metricsScraperCertificate.Certificate.Issuer.CommonName).To(Equal(kubeAPIServerCACertificate.Certificate.Subject.CommonName))
+	Expect(metricsScraperCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
+	Expect(metricsScraperCertificate.Certificate.ExtKeyUsage).To(Equal([]x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}))
+}
+
 func verifyDeletion(ctx context.Context, c client.Client, imports *api.Imports) {
+	verifyDeletionOfKubeAPIServerService(ctx, c, imports)
 
 	for _, role := range []string{virtualgarden.ETCDRoleMain, virtualgarden.ETCDRoleEvents} {
 		verifyDeletionOfETCDHVPA(ctx, c, imports, role)
@@ -382,6 +598,23 @@ func verifyDeletion(ctx context.Context, c client.Client, imports *api.Imports) 
 	verifyDeletionOfETCDStorageClass(ctx, c, imports)
 
 	verifyDeletionOfBackupBucket(ctx, c, imports)
+}
+
+func verifyDeletionOfKubeAPIServerService(ctx context.Context, c client.Client, imports *api.Imports) {
+	By("Checking that the kube-apiserver load balancer service was deleted successfully")
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	Expect(wait.PollImmediateUntil(2*time.Second, func() (done bool, err error) {
+		if err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.KubeAPIServerServiceName, Namespace: imports.HostingCluster.Namespace}, &corev1.Service{}); err != nil {
+			if apierrors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		}
+		return false, nil
+	}, timeoutCtx.Done())).To(Succeed())
 }
 
 func verifyDeletionOfETCDHVPA(ctx context.Context, c client.Client, imports *api.Imports, role string) {

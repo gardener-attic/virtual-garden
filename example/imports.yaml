@@ -5,108 +5,20 @@ cluster:
     type: landscaper.gardener.cloud/kubernetes-cluster
     config:
       kubeconfig: |
-#       ... <please insert your kubeconfig here>
+      #       ... <please insert your kubeconfig here>
 
 hostingCluster:
-  namespace: garden-4
-  infrastructureProvider: gcp # aws|gcp|alicloud
+  namespace: garden
+  infrastructureProvider: gcp
 
 virtualGarden:
   deleteNamespace: true
-
   etcd:
     storageClassName: my-virtual-garden-storage-class
     handleETCDPersistentVolumes: true
-
   kubeAPIServer:
     replicas: 1
-    sni:
-      hostname: api.dev.gardener.cloud.sap
-      dnsClass: gardendns
-      ttl: 120
-      secretName: gardener-dashboard-tls
-    dnsAccessDomain: my.dns.domain
-
+    dnsAccessDomain: ""
     gardenerControlplane:
       validatingWebhookEnabled: true
       mutatingWebhookEnabled: true
-
-#   Insert your service account key (optional):
-#   serviceAccountKeyPem: |
-#     -----BEGIN RSA PRIVATE KEY-----
-#     ...
-#     -----END RSA PRIVATE KEY-----
-
-    auditWebhookConfig:
-      config: "my-audit-webhook-config"
-
-    auditWebhookBatchMaxSize: "1"
-
-    seedAuthorizer:
-      enabled: true
-      certificateAuthorityData: "my-ca-data"
-
-    hvpaEnabled: false
-    hvpa:
-      maxReplicas: 2
-      minReplicas: 1
-      targetAverageUtilizationCpu: 1
-      targetAverageUtilizationMemory: 1
-      vpaScaleUpMode: "x"
-      vpaScaleDownMode: "y"
-      vpaScaleUpStabilization:
-        stabilizationDuration: "z"
-        minChange:
-          cpu:
-            value: "abc"
-            percentage: 80
-          memory:
-            value: "abc"
-            percentage: 80
-          replicas:
-            value: "abc"
-            percentage: 80
-      vpaScaleDownStabilization:
-        stabilizationDuration: "a"
-        minChange:
-          cpu:
-            value: "abc"
-            percentage: 80
-          memory:
-            value: "abc"
-            percentage: 80
-          replicas:
-            value: "abc"
-            percentage: 80
-      limitsRequestsGapScaleParams:
-        cpu:
-          value: "abc"
-          percentage: 80
-        memory:
-          value: "abc"
-          percentage: 80
-        replicas:
-          value: "abc"
-          percentage: 80
-      maintenanceWindow:
-        begin: "abc"
-        end: "xyz"
-
-    eventTTL: "test-eventTTL"
-    oidcIssuerURL: "test-oidcIssuerURL"
-    additionalVolumeMounts:
-    - name: "test-volume-mount"
-      readOnly: true
-      mountPath: "test1/test2"
-      subPath: "sub1/sub2"
-      mountPropagation: true
-      subPathExpr: "test-subPathExpr"
-    additionalVolumes:
-    - name: "test-volume"
-      volumeSource: {}
-    horizontalPodAutoscaler:
-      downscaleStabilization: "a"
-      readinessDelay: "b"
-      cpuInitializationPeriod: "c"
-      syncPeriod: "d"
-      tolerance: "e"

@@ -11,7 +11,7 @@ set -o pipefail
 SOURCE_PATH="$(dirname $0)/.."
 COMMIT_SHA="$(git --git-dir ${SOURCE_PATH}/.git rev-parse HEAD)"
 
-if [[ ${RESOURCES_FILE_PATH} == "" ]]; then
+if [ -z "$RESOURCES_FILE_PATH" ]; then
   RESOURCES_FILE_PATH="${SOURCE_PATH}/.landscaper/resources.yaml"
 fi
 
