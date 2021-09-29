@@ -115,6 +115,15 @@ func (b *backupProvider) DeleteBucket(ctx context.Context) error {
 		return err
 	}
 
+	exists, err := b.BucketExists(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to check if s3 backup bucket %q exists: %w", b.bucketName, err)
+	}
+
+	if !exists {
+		return nil
+	}
+
 	b.log.Infof("Deleting objects of s3 backup bucket %q", b.bucketName)
 	iter := s3manager.NewDeleteListIterator(svc, &s3.ListObjectsInput{
 		Bucket: aws.String(b.bucketName),

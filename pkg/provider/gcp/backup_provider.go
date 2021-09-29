@@ -16,6 +16,9 @@ package gcp
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/sirupsen/logrus"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/googleapi"
@@ -33,15 +36,20 @@ type backupProvider struct {
 }
 
 // NewBackupProvider creates a new GCP backup provider implementation from the given service account JSON.
-func NewBackupProvider(credentialsData map[string]string, bucketName, region string) (*backupProvider, error) {
+func NewBackupProvider(
+	credentialsData map[string]string,
+	bucketName,
+	region string,
+	log *logrus.Logger,
+) (*backupProvider, error) {
 	serviceAccountJSON, err := ReadServiceAccount(credentialsData)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("data map doesn't have an service account json: %w", err)
 	}
 
 	projectID, err := ExtractServiceAccountProjectID(serviceAccountJSON)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("extracting project ID failed: %w", err)
 	}
 
 	return &backupProvider{
@@ -64,7 +72,7 @@ func (b *backupProvider) initializeStorageClient(ctx context.Context) error {
 
 	storageClient, err := storage.NewClient(ctx, option.WithCredentialsJSON(b.serviceAccountJSON), option.WithScopes(storage.ScopeFullControl))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get gcp client: %w", err)
 	}
 	b.storageClient = storageClient
 
@@ -85,7 +93,7 @@ func (b *backupProvider) CreateBucket(ctx context.Context) error {
 		if gerr, ok := err.(*googleapi.Error); ok && gerr.Code == errCodeBucketAlreadyOwnedByYou {
 			return nil
 		}
-		return err
+		return fmt.Errorf("creating gcp bucket failed: %w", err)
 	}
 	return nil
 }
@@ -107,7 +115,7 @@ func (b *backupProvider) DeleteBucket(ctx context.Context) error {
 			return nil
 		}
 
-		return err
+		return fmt.Errorf("deleting gcp bucket failed: %w", err)
 	}
 
 	return nil
@@ -122,7 +130,7 @@ func (b *backupProvider) BucketExists(ctx context.Context) (bool, error) {
 
 	if _, err := b.storageClient.Bucket(b.bucketName).Attrs(ctx); err != nil {
 		if err != storage.ErrBucketNotExist {
-			return false, err
+			return false, fmt.Errorf("checking if gcp bucket exists failed: %w", err)
 		}
 		return false, nil
 	}
@@ -142,11 +150,11 @@ func deleteAllObjects(ctx context.Context, storageClient *storage.Client, bucket
 			if err == iterator.Done {
 				return nil
 			}
-			return err
+			return fmt.Errorf("fetching next object in gcp bucket failed: %w", err)
 		}
 
 		if err := bucketHandle.Object(attr.Name).Delete(ctx); err != nil && err != storage.ErrObjectNotExist {
-			return err
+			return fmt.Errorf("deleting object in gcp bucket failed: %w", err)
 		}
 	}
 }

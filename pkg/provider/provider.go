@@ -76,7 +76,7 @@ func NewBackupProvider(providerType api.InfrastructureProviderType, credentials 
 		storageEndpoint := region
 		return alicloud.NewBackupProvider(credentials.Data, bucketName, storageEndpoint, log)
 	case api.InfrastructureProviderGCP:
-		return gcp.NewBackupProvider(credentials.Data, bucketName, region)
+		return gcp.NewBackupProvider(credentials.Data, bucketName, region, log)
 	case api.InfrastructureProviderAWS:
 		return aws.NewBackupProvider(credentials.Data, bucketName, region, log)
 	case api.InfrastructureProviderFake:
