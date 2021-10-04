@@ -49,8 +49,9 @@ var _ = Describe("EtcdBackup", func() {
 				VirtualGarden: api.VirtualGarden{
 					ETCD: &api.ETCD{
 						Backup: &api.ETCDBackup{
-							BucketName: bucketName,
-							Region:     region,
+							BucketName:                   bucketName,
+							Region:                       region,
+							DeleteBackupBucketOnDeletion: true,
 						},
 					},
 				},

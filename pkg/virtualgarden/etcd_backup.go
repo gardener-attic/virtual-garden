@@ -41,7 +41,13 @@ func (o *operation) DeployBackupBucket(ctx context.Context) error {
 
 // DeleteBackupBucket deletes the configured backup bucket that will store the data of the main etcd.
 func (o *operation) DeleteBackupBucket(ctx context.Context) error {
-	return o.backupProvider.DeleteBucket(ctx)
+	if o.imports.VirtualGarden.ETCD != nil &&
+		o.imports.VirtualGarden.ETCD.Backup != nil &&
+		o.imports.VirtualGarden.ETCD.Backup.DeleteBackupBucketOnDeletion {
+		return o.backupProvider.DeleteBucket(ctx)
+	}
+
+	return nil
 }
 
 func (o *operation) deployETCDBackupSecret(ctx context.Context, secretData map[string][]byte) (string, error) {

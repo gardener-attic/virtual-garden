@@ -91,6 +91,9 @@ type ETCDBackup struct {
 	// Credentials contain the credentials that shall be used for the creation of the blob storage
 	// bucket.
 	Credentials *Credentials `json:"credentials" yaml:"credentials"`
+	// DeleteBackupBucketOnDeletion controls whether the backup bucket for the etcd should be deleted
+	// when the virtual garden is uninstalled. The default value is false.
+	DeleteBackupBucketOnDeletion bool `json:"deleteBackupBucketOnDeletion" yaml:"deleteBackupBucketOnDeletion"`
 }
 
 // KubeAPIServer contains configuration for the virtual garden kube-apiserver.
