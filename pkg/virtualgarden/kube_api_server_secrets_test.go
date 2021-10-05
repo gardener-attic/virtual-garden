@@ -70,29 +70,29 @@ var _ = Describe("Api Server create secrets test", func() {
 
 		// deploy certificates
 		checksums1 := make(map[string]string)
-		basicAuth1, err := operation.deployKubeAPIServerSecrets(ctx, checksums1)
+		staticToken1, err := operation.deployKubeAPIServerSecrets(ctx, checksums1)
 		Expect(err).To(BeNil())
-		Expect(basicAuth1).NotTo(HaveLen(0))
+		Expect(staticToken1).NotTo(HaveLen(0))
 
 		checkSecret(ctx, KubeApiServerSecretNameAdmissionKubeconfig, ValidatingWebhookKey, MutatingWebhookKey)
 		checkSecret(ctx, KubeApiServerSecretNameAuditWebhookConfig, AuditWebhookConfigKey)
 		checkSecret(ctx, KubeApiServerSecretNameAuthWebhookConfig, ConfigYamlKey)
-		checkSecret(ctx, KubeApiServerSecretNameBasicAuth, BasicAuthKey)
+		checkSecret(ctx, KubeApiServerSecretNameStaticToken, StaticTokenKey)
 		checkSecret(ctx, KubeApiServerSecretNameEncryptionConfig, EncryptionConfigKey)
 		checkSecret(ctx, KubeApiServerSecretNameServiceAccountKey, ServiceAccountKey)
 
 		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerAuditWebhookConfig))
 		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerAuthWebhookConfig))
-		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerBasicAuth))
+		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerStaticToken))
 		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerEncryptionConfig))
 		Expect(checksums1).To(HaveKey(ChecksumKeyServiceAccountKey))
 
 		// redeploy and check that secrets remain unchanged
 		checksums2 := make(map[string]string)
-		basicAuth2, err := operation.deployKubeAPIServerSecrets(ctx, checksums2)
+		staticToken2, err := operation.deployKubeAPIServerSecrets(ctx, checksums2)
 		Expect(err).To(BeNil())
 		Expect(checksums1).To(Equal(checksums2))
-		Expect(basicAuth1).To(Equal(basicAuth2))
+		Expect(staticToken1).To(Equal(staticToken2))
 
 		// delete secrets and check that they are gone
 		Expect(operation.deleteKubeAPIServerSecrets(ctx)).To(Succeed())

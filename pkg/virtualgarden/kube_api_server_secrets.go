@@ -37,7 +37,7 @@ const (
 	KubeApiServerSecretNameAdmissionKubeconfig = Prefix + "-kube-apiserver-admission-kubeconfig"
 	KubeApiServerSecretNameAuditWebhookConfig  = "kube-apiserver-audit-webhook-config"
 	KubeApiServerSecretNameAuthWebhookConfig   = Prefix + "-kube-apiserver-auth-webhook-config"
-	KubeApiServerSecretNameBasicAuth           = Prefix + "-kube-apiserver-basic-auth"
+	KubeApiServerSecretNameStaticToken         = Prefix + "-kube-apiserver-static-token"
 	KubeApiServerSecretNameEncryptionConfig    = Prefix + "-kube-apiserver-encryption-config"
 	KubeApiServerSecretNameServiceAccountKey   = Prefix + "-service-account-key"
 )
@@ -63,7 +63,7 @@ func (o *operation) deployKubeAPIServerSecrets(ctx context.Context, checksums ma
 		return "", err
 	}
 
-	basicAuthPw, err := o.deployKubeApiServerSecretBasicAuth(ctx, checksums)
+	staticTokenHealthCheck, err := o.deployKubeApiServerSecretStaticToken(ctx, checksums)
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +76,7 @@ func (o *operation) deployKubeAPIServerSecrets(ctx context.Context, checksums ma
 		return "", err
 	}
 
-	return basicAuthPw, nil
+	return staticTokenHealthCheck, nil
 }
 
 func (o *operation) deleteKubeAPIServerSecrets(ctx context.Context) error {
@@ -86,7 +86,7 @@ func (o *operation) deleteKubeAPIServerSecrets(ctx context.Context) error {
 		KubeApiServerSecretNameAdmissionKubeconfig,
 		KubeApiServerSecretNameAuditWebhookConfig,
 		KubeApiServerSecretNameAuthWebhookConfig,
-		KubeApiServerSecretNameBasicAuth,
+		KubeApiServerSecretNameStaticToken,
 		KubeApiServerSecretNameEncryptionConfig,
 		KubeApiServerSecretNameServiceAccountKey,
 	} {
@@ -206,47 +206,47 @@ func (o *operation) deployKubeApiServerSecretAuthWebhookConfig(ctx context.Conte
 	return nil
 }
 
-func (o *operation) deployKubeApiServerSecretBasicAuth(ctx context.Context, checksums map[string]string) (string, error) {
+func (o *operation) deployKubeApiServerSecretStaticToken(ctx context.Context, checksums map[string]string) (string, error) {
 	const (
-		pwUsers = ",admin,admin,system:masters"
+		staticTokenSuffix = ",kube-apiserver-health-check,kube-apiserver-health-check,"
 	)
 
-	var basicAuthValue []byte
+	var staticTokenValue []byte
 
-	secret := o.emptySecret(KubeApiServerSecretNameBasicAuth)
+	secret := o.emptySecret(KubeApiServerSecretNameStaticToken)
 	err := o.client.Get(ctx, client.ObjectKeyFromObject(secret), secret)
 	if err != nil {
 		if client.IgnoreNotFound(err) != nil {
 			return "", err
 		}
 
-		// secret does not exist: generate password
-		pw, err2 := utils.GenerateRandomString(32)
+		// secret does not exist: generate static token
+		token, err2 := utils.GenerateRandomString(128)
 		if err2 != nil {
 			return "", err2
 		}
 
-		basicAuthValue = []byte(pw + pwUsers)
+		staticTokenValue = []byte(token + staticTokenSuffix)
 	} else {
 		// secret exists: use existing value
-		basicAuthValue = secret.Data[BasicAuthKey]
+		staticTokenValue = secret.Data[StaticTokenKey]
 	}
 
-	returnPw := strings.TrimSuffix(string(basicAuthValue), pwUsers)
+	returnToken := strings.TrimSuffix(string(staticTokenValue), staticTokenSuffix)
 
 	_, err = controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
 		if secret.Data == nil {
 			secret.Data = make(map[string][]byte)
 		}
-		secret.Data[BasicAuthKey] = basicAuthValue
+		secret.Data[StaticTokenKey] = staticTokenValue
 		return nil
 	})
 	if err != nil {
 		return "", err
 	}
 
-	checksums[ChecksumKeyKubeAPIServerBasicAuth] = utils.ComputeChecksum(secret.Data)
-	return returnPw, nil
+	checksums[ChecksumKeyKubeAPIServerStaticToken] = utils.ComputeChecksum(secret.Data)
+	return returnToken, nil
 }
 
 func (o *operation) deployKubeApiServerSecretEncryptionConfig(ctx context.Context, checksums map[string]string) error {

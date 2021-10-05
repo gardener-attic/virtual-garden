@@ -21,17 +21,45 @@ virtualGarden:
 
   etcd:
     storageClassName: my-virtual-garden-storage-class
+
+### backup settings for OSS (alicloud)
 #    backup:
-#      infrastructureProvider: fake # aws|gcp|alicloud
-#      region: europe-west555
-#      bucketName: my-virtual-garden-backup
+#      deleteBackupBucketOnDeletion: false
+#      infrastructureProvider: alicloud
+#      region: oss-eu-central-1.aliyuncs.com
+#      bucketName: testvirtualgarden
+#      credentials:
+#        data:
+#          accessKeyID:     "your access key id (not base64 encoded)"
+#          accessKeySecret: "your access key secret (not base64 encoded)"
+
+### backup settings for GCS
+#    backup:
+#      deleteBackupBucketOnDeletion: false
+#      infrastructureProvider: gcp
+#      region: europe-west4
+#      bucketName: testvirtualgarden
 #      credentials:
 #        data:
 #          serviceaccount.json: |
 #            {
-#              "project_id": "test-project",
-#              "type": "test-type"
+#              "type": "service_account",
+#              "project_id": "...",
+#              "private_key_id": "...",
+#              ...
 #            }
+
+### backup settings for S3
+#    backup:
+#      deleteBackupBucketOnDeletion: false
+#      infrastructureProvider: aws
+#      region: eu-central-1
+#      bucketName: testvirtualgarden
+#      credentials:
+#        data:
+#          accessKeyID:     "your access key id (not base64 encoded)"
+#          secretAccessKey: "your secret access key (not base64 encoded)"
+
     handleETCDPersistentVolumes: true
     hvpaEnabled: true
 

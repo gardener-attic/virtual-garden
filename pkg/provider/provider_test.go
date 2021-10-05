@@ -15,9 +15,14 @@
 package provider_test
 
 import (
+	"io/ioutil"
+
+	"github.com/gardener/virtual-garden/pkg/provider/alicloud"
+
 	"github.com/gardener/virtual-garden/pkg/api"
 	. "github.com/gardener/virtual-garden/pkg/provider"
 	"github.com/gardener/virtual-garden/pkg/provider/gcp"
+	"github.com/sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -53,22 +58,21 @@ var _ = Describe("Provider", func() {
 	Describe("#NewBackupProvider", func() {
 		var (
 			fooType = api.InfrastructureProviderType("foo")
+			log     = &logrus.Logger{Out: ioutil.Discard}
 		)
 
-		It("should fail for alicloud", func() {
-			credentials := api.Credentials{}
+		It("should succeed for alicloud", func() {
+			credentials := api.Credentials{
+				Data: map[string]string{
+					alicloud.DataKeyAccessKeyID:     "test-id",
+					alicloud.DataKeyAccessKeySecret: "test-secret",
+					alicloud.DataKeyStorageEndpoint: "test-endpoint",
+				},
+			}
 
-			provider, err := NewBackupProvider(api.InfrastructureProviderAlicloud, &credentials)
-			Expect(err).To(MatchError(ContainSubstring("unsupported")))
-			Expect(provider).To(BeNil())
-		})
-
-		It("should fail for aws", func() {
-			credentials := api.Credentials{}
-
-			provider, err := NewBackupProvider(api.InfrastructureProviderAWS, &credentials)
-			Expect(err).To(MatchError(ContainSubstring("unsupported")))
-			Expect(provider).To(BeNil())
+			provider, err := NewBackupProvider(api.InfrastructureProviderAlicloud, &credentials, "", "", log)
+			Expect(err).To(BeNil())
+			Expect(provider).NotTo(BeNil())
 		})
 
 		It("should succeed for gcp", func() {
@@ -76,7 +80,7 @@ var _ = Describe("Provider", func() {
 				Data: map[string]string{gcp.DataKeyServiceAccountJSON: "{\"project_id\": \"my-project\"}"},
 			}
 
-			provider, err := NewBackupProvider(api.InfrastructureProviderGCP, &credentials)
+			provider, err := NewBackupProvider(api.InfrastructureProviderGCP, &credentials, "", "", log)
 			Expect(err).To(BeNil())
 			Expect(provider).NotTo(BeNil())
 		})
@@ -84,7 +88,7 @@ var _ = Describe("Provider", func() {
 		It("should fail for unsupported providers", func() {
 			credentials := api.Credentials{}
 
-			provider, err := NewBackupProvider(fooType, &credentials)
+			provider, err := NewBackupProvider(fooType, &credentials, "", "", log)
 			Expect(err).To(MatchError(ContainSubstring("unsupported")))
 			Expect(provider).To(BeNil())
 		})

@@ -19,7 +19,6 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/gardener/gardener/pkg/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -50,7 +49,7 @@ func (o *operation) deleteDeployments(ctx context.Context) error {
 	return nil
 }
 
-func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums map[string]string, basicAuthPw string) error {
+func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums map[string]string, staticTokenHealthCheck string) error {
 	o.log.Infof("Deploying deployment %s", KubeAPIServerDeploymentNameAPIServer)
 
 	deployment := o.emptyDeployment(KubeAPIServerDeploymentNameAPIServer)
@@ -143,7 +142,7 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 										Path:        "/livez",
 										Port:        intstr.IntOrString{Type: intstr.Int, IntVal: 443},
 										Scheme:      corev1.URISchemeHTTPS,
-										HTTPHeaders: o.getAPIServerHeaders(basicAuthPw),
+										HTTPHeaders: o.getAPIServerHeaders(staticTokenHealthCheck),
 									},
 								},
 								InitialDelaySeconds: 15,
@@ -158,7 +157,7 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 										Path:        "/readyz",
 										Port:        intstr.IntOrString{Type: intstr.Int, IntVal: 443},
 										Scheme:      corev1.URISchemeHTTPS,
-										HTTPHeaders: o.getAPIServerHeaders(basicAuthPw),
+										HTTPHeaders: o.getAPIServerHeaders(staticTokenHealthCheck),
 									},
 								},
 								InitialDelaySeconds: 10,
@@ -212,7 +211,7 @@ func (o *operation) computeApiServerAnnotations(checksums map[string]string) map
 		ChecksumKeyKubeAPIServerServer,
 		ChecksumKeyKubeAPIServerAuditWebhookConfig,
 		ChecksumKeyKubeAPIServerAuthWebhookConfig,
-		ChecksumKeyKubeAPIServerBasicAuth,
+		ChecksumKeyKubeAPIServerStaticToken,
 		ChecksumKeyKubeAPIServerAdmissionConfig,
 	})
 	return annotations
@@ -237,21 +236,15 @@ func (o *operation) getAPIServerCommand() []string {
 	if o.isWebhookEnabled() {
 		command = append(command, "--admission-control-config-file=/etc/gardener-apiserver/admission/configuration.yaml")
 	}
-	command = append(command, "--enable-admission-plugins=Priority,NamespaceLifecycle,LimitRanger,PodSecurityPolicy,ServiceAccount,NodeRestriction,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota,StorageObjectInUseProtection,MutatingAdmissionWebhook,ValidatingAdmissionWebhook")
-	command = append(command, "--disable-admission-plugins=PersistentVolumeLabel")
+	command = append(command, "--allow-privileged=true")
+	command = append(command, "--anonymous-auth=false")
 	command = append(command, "--audit-policy-file=/etc/kube-apiserver/audit/audit-policy.yaml")
-	if len(o.getAPIServerAuditWebhookConfig()) > 0 {
-		command = append(command, "--audit-webhook-config-file=/etc/kube-apiserver/auditwebhook/audit-webhook-config.yaml")
-	}
 	if o.getAuditWebhookBatchMaxSize() != "" {
 		command = append(command, fmt.Sprintf("--audit-webhook-batch-max-size=%s", o.getAuditWebhookBatchMaxSize()))
 	}
-	if o.hasEncryptionConfig() {
-		command = append(command, "--encryption-provider-config=/etc/kube-apiserver/encryption/encryption-config.yaml")
+	if len(o.getAPIServerAuditWebhookConfig()) > 0 {
+		command = append(command, "--audit-webhook-config-file=/etc/kube-apiserver/auditwebhook/audit-webhook-config.yaml")
 	}
-	command = append(command, "--allow-privileged=true")
-	command = append(command, "--anonymous-auth=false")
-
 	if o.isSeedAuthorizerEnabled() {
 		command = append(command, "--authorization-mode=RBAC,Webhook")
 		command = append(command, "--authorization-webhook-config-file=/etc/kube-apiserver/auth-webhook/config.yaml")
@@ -260,11 +253,14 @@ func (o *operation) getAPIServerCommand() []string {
 	} else {
 		command = append(command, "--authorization-mode=RBAC")
 	}
-
-	command = append(command, "--basic-auth-file=/srv/kubernetes/auth/basic_auth.csv")
 	command = append(command, "--client-ca-file=/srv/kubernetes/ca/ca.crt")
+	command = append(command, "--disable-admission-plugins=PersistentVolumeLabel")
+	command = append(command, "--enable-admission-plugins=Priority,NamespaceLifecycle,LimitRanger,PodSecurityPolicy,ServiceAccount,NodeRestriction,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota,StorageObjectInUseProtection,MutatingAdmissionWebhook,ValidatingAdmissionWebhook")
 	command = append(command, "--enable-aggregator-routing=true")
 	command = append(command, "--enable-bootstrap-token-auth=true")
+	if o.hasEncryptionConfig() {
+		command = append(command, "--encryption-provider-config=/etc/kube-apiserver/encryption/encryption-config.yaml")
+	}
 	command = append(command, "--etcd-cafile=/srv/kubernetes/etcd/ca/ca.crt")
 	command = append(command, "--etcd-certfile=/srv/kubernetes/etcd/client/tls.crt")
 	command = append(command, "--etcd-keyfile=/srv/kubernetes/etcd/client/tls.key")
@@ -275,18 +271,18 @@ func (o *operation) getAPIServerCommand() []string {
 	if o.getAPIServerEventTTL() != "" {
 		command = append(command, fmt.Sprintf("--event-ttl=%s", o.getAPIServerEventTTL()))
 	}
+	command = append(command, "--insecure-port=0")
 	command = append(command, "--kubelet-preferred-address-types=InternalIP,Hostname,ExternalIP")
 	command = append(command, "--livez-grace-period=1m")
-	command = append(command, "--insecure-port=0")
-	command = append(command, fmt.Sprintf("--max-requests-inflight=%d",
-		o.imports.VirtualGarden.KubeAPIServer.GetMaxRequestsInflight(800)))
 	command = append(command, fmt.Sprintf("--max-mutating-requests-inflight=%d",
 		o.imports.VirtualGarden.KubeAPIServer.GetMaxMutatingRequestsInflight(400)))
+	command = append(command, fmt.Sprintf("--max-requests-inflight=%d",
+		o.imports.VirtualGarden.KubeAPIServer.GetMaxRequestsInflight(800)))
 	if o.getAPIServerOIDCIssuerURL() != nil {
-		command = append(command, fmt.Sprintf("--oidc-issuer-url=%s", *o.getAPIServerOIDCIssuerURL()))
 		command = append(command, "--oidc-client-id=kube-kubectl")
-		command = append(command, "--oidc-username-claim=email")
 		command = append(command, "--oidc-groups-claim=groups")
+		command = append(command, fmt.Sprintf("--oidc-issuer-url=%s", *o.getAPIServerOIDCIssuerURL()))
+		command = append(command, "--oidc-username-claim=email")
 	}
 	command = append(command, fmt.Sprintf("--profiling=%t", o.imports.VirtualGarden.KubeAPIServer.Profiling))
 	command = append(command, "--proxy-client-cert-file=/srv/kubernetes/aggregator/tls.crt")
@@ -296,17 +292,18 @@ func (o *operation) getAPIServerCommand() []string {
 	command = append(command, "--requestheader-group-headers=X-Remote-Group")
 	command = append(command, "--requestheader-username-headers=X-Remote-User")
 	command = append(command, "--secure-port=443")
-	command = append(command, "--service-cluster-ip-range=100.64.0.0/13")
 	command = append(command, "--service-account-key-file=/srv/kubernetes/service-account-key/service_account.key")
+	command = append(command, "--service-cluster-ip-range=100.64.0.0/13")
 	command = append(command, "--shutdown-delay-duration=20s")
 	command = append(command, "--tls-cert-file=/srv/kubernetes/apiserver/tls.crt")
-	command = append(command, "--tls-private-key-file=/srv/kubernetes/apiserver/tls.key")
 	command = append(command, "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA")
+	command = append(command, "--tls-private-key-file=/srv/kubernetes/apiserver/tls.key")
 	if o.isSNIEnabled() {
 		command = append(command, fmt.Sprintf("--tls-sni-cert-key=/srv/kubernetes/sni-tls/tls.crt,/srv/kubernetes/sni-tls/tls.key:%s", o.getSNIHostname()))
 	}
-	command = append(command, "--watch-cache-sizes=secrets#500,configmaps#500")
+	command = append(command, "--token-auth-file=/srv/kubernetes/token/static_tokens.csv")
 	command = append(command, "--v=2")
+	command = append(command, "--watch-cache-sizes=secrets#500,configmaps#500")
 
 	return command
 }
@@ -349,11 +346,11 @@ func (o *operation) getSNIHostname() string {
 	return o.imports.VirtualGarden.KubeAPIServer.SNI.Hostname
 }
 
-func (o *operation) getAPIServerHeaders(basicAuthPw string) []corev1.HTTPHeader {
+func (o *operation) getAPIServerHeaders(staticTokenHealthCheck string) []corev1.HTTPHeader {
 	return []corev1.HTTPHeader{
 		{
 			Name:  "Authorization",
-			Value: "Basic " + utils.EncodeBase64([]byte("admin:"+basicAuthPw)),
+			Value: "Bearer " + staticTokenHealthCheck,
 		},
 	}
 }
@@ -413,8 +410,8 @@ func (o *operation) getAPIServerVolumeMounts() []corev1.VolumeMount {
 			MountPath: "/srv/kubernetes/service-account-key",
 		},
 		corev1.VolumeMount{
-			Name:      volumeNameKubeAPIServerBasicAuth,
-			MountPath: "/srv/kubernetes/auth",
+			Name:      volumeNameKubeAPIServerStaticToken,
+			MountPath: "/srv/kubernetes/token",
 		},
 		corev1.VolumeMount{
 			Name:      volumeNameKubeAggregator,
@@ -496,7 +493,7 @@ func (o *operation) getAPIServerVolumes() []corev1.Volume {
 		volumeWithSecretSource(volumeNameCAFrontProxy, KubeApiServerSecretNameAggregatorCACertificate),
 		volumeWithSecretSource(volumeNameKubeAPIServer, KubeApiServerSecretNameApiServerServerCertificate),
 		volumeWithSecretSource(volumeNameETCDClientTLS, "virtual-garden-etcd-client"),
-		volumeWithSecretSource(volumeNameKubeAPIServerBasicAuth, KubeApiServerSecretNameBasicAuth),
+		volumeWithSecretSource(volumeNameKubeAPIServerStaticToken, KubeApiServerSecretNameStaticToken),
 		volumeWithSecretSource(volumeNameServiceAccountKey, KubeApiServerSecretNameServiceAccountKey),
 		volumeWithSecretSource(volumeNameKubeAggregator, KubeApiServerSecretNameAggregatorClientCertificate),
 	)

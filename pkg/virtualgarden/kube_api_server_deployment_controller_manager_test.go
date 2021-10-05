@@ -35,7 +35,6 @@ var _ = Describe("Api Server deployment test", func() {
 	It("Should create deployment virtual-garden-kube-controller-manager", func() {
 		var (
 			namespaceName = "apiservercontrollermanagerdeployment"
-			basicAuthPw   = "testBasicAuthPw"
 			checksums     = map[string]string{
 				ChecksumKeyKubeAPIServerAuditPolicyConfig: "testChecksum1",
 				ChecksumKeyKubeAPIServerEncryptionConfig:  "testChecksum2",
@@ -69,7 +68,7 @@ var _ = Describe("Api Server deployment test", func() {
 		}
 
 		// deploy Deployment
-		err = operation.deployKubeAPIServerDeploymentControllerManager(ctx, checksums, basicAuthPw)
+		err = operation.deployKubeAPIServerDeploymentControllerManager(ctx, checksums)
 		Expect(err).NotTo(HaveOccurred())
 
 		// check Deployment

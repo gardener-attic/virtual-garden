@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func (o *operation) deployKubeAPIServerDeploymentControllerManager(ctx context.Context, checksums map[string]string, basicAuthPw string) error {
+func (o *operation) deployKubeAPIServerDeploymentControllerManager(ctx context.Context, checksums map[string]string) error {
 	o.log.Infof("Deploying deployment %s", KubeAPIServerDeploymentNameControllerManager)
 
 	deployment := o.emptyDeployment(KubeAPIServerDeploymentNameControllerManager)
@@ -133,21 +133,22 @@ func (o *operation) getKubeControllerManagerCommand() []string {
 		"--authentication-kubeconfig=/srv/kubernetes/controller-manager/kubeconfig",
 		"--authorization-kubeconfig=/srv/kubernetes/controller-manager/kubeconfig",
 		"--cluster-signing-cert-file=/srv/kubernetes/ca/ca.crt",
+		"--cluster-signing-duration=48h",
 		"--cluster-signing-key-file=/srv/kubernetes/ca/ca.key",
 		"--controllers=namespace,serviceaccount,serviceaccount-token,clusterrole-aggregation,garbagecollector,csrapproving,csrcleaner,csrsigning,bootstrapsigner,tokencleaner,resourcequota",
 		"--concurrent-gc-syncs=250",
 		"--concurrent-namespace-syncs=100",
 		"--concurrent-resource-quota-syncs=100",
 		"--concurrent-serviceaccount-token-syncs=100",
+		fmt.Sprintf("--horizontal-pod-autoscaler-downscale-stabilization=%s", hpaConfig.DownscaleStabilization),
+		fmt.Sprintf("--horizontal-pod-autoscaler-cpu-initialization-period=%s", hpaConfig.CpuInitializationPeriod),
+		fmt.Sprintf("--horizontal-pod-autoscaler-initial-readiness-delay=%s", hpaConfig.ReadinessDelay),
+		fmt.Sprintf("--horizontal-pod-autoscaler-sync-period=%s", hpaConfig.SyncPeriod),
+		fmt.Sprintf("--horizontal-pod-autoscaler-tolerance=%s", hpaConfig.Tolerance),
 		"--kubeconfig=/srv/kubernetes/controller-manager/kubeconfig",
 		"--root-ca-file=/srv/kubernetes/ca/ca.crt",
 		"--service-account-private-key-file=/srv/kubernetes/service-account-key/service_account.key",
 		"--use-service-account-credentials=true",
-		fmt.Sprintf("--horizontal-pod-autoscaler-downscale-stabilization=%s", hpaConfig.DownscaleStabilization),
-		fmt.Sprintf("--horizontal-pod-autoscaler-initial-readiness-delay=%s", hpaConfig.ReadinessDelay),
-		fmt.Sprintf("--horizontal-pod-autoscaler-cpu-initialization-period=%s", hpaConfig.CpuInitializationPeriod),
-		fmt.Sprintf("--horizontal-pod-autoscaler-sync-period=%s", hpaConfig.SyncPeriod),
-		fmt.Sprintf("--horizontal-pod-autoscaler-tolerance=%s", hpaConfig.Tolerance),
 		"--v=5",
 	}
 }

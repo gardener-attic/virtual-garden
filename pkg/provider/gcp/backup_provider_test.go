@@ -16,6 +16,9 @@ package gcp_test
 
 import (
 	"fmt"
+	"io/ioutil"
+
+	"github.com/sirupsen/logrus"
 
 	. "github.com/gardener/virtual-garden/pkg/provider/gcp"
 
@@ -30,6 +33,7 @@ var _ = Describe("BackupProvider", func() {
 	var (
 		credentialsData    map[string]string
 		serviceAccountData = fmt.Sprintf(`{"project_id": "%s"}`, projectID)
+		log                = &logrus.Logger{Out: ioutil.Discard}
 	)
 
 	BeforeEach(func() {
@@ -40,10 +44,10 @@ var _ = Describe("BackupProvider", func() {
 		etcdBackupSecretVolumeMountPath := "/foo/bar"
 
 		It("should return the correct backup values", func() {
-			provider, err := NewBackupProvider(credentialsData)
+			provider, err := NewBackupProvider(credentialsData, "", "", log)
 			Expect(err).To(BeNil())
 
-			storageProviderName, secretData, environment := provider.ComputeETCDBackupConfiguration(etcdBackupSecretVolumeMountPath)
+			storageProviderName, secretData, environment := provider.ComputeETCDBackupConfiguration(etcdBackupSecretVolumeMountPath, "")
 			Expect(storageProviderName).To(Equal("GCS"))
 			Expect(secretData).To(Equal(map[string][]byte{DataKeyServiceAccountJSON: []byte(serviceAccountData)}))
 			Expect(environment).To(Equal([]corev1.EnvVar{{

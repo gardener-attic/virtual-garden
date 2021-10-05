@@ -30,7 +30,7 @@ name: kube-apiserver
 relation: local
 access:
   type: ociRegistry
-  imageReference: k8s.gcr.io/kube-apiserver:v1.18.14
+  imageReference: k8s.gcr.io/kube-apiserver:v1.19.15
 ...
 ---
 type: ociImage
@@ -38,5 +38,5 @@ name: kube-controller-manager
 relation: local
 access:
   type: ociRegistry
-  imageReference: k8s.gcr.io/kube-controller-manager:v1.18.14
+  imageReference: k8s.gcr.io/kube-controller-manager:v1.19.15
 ...
