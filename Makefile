@@ -110,7 +110,8 @@ setup-testenv:
 
 .PHONY: test
 test:
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test.sh ./cmd/... ./pkg/...
+	make setup-testenv
+	@go test -mod=vendor $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
 .PHONY: test-e2e
 test-e2e:

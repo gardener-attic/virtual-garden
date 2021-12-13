@@ -17,11 +17,17 @@ package virtualgarden
 import (
 	"context"
 	"fmt"
+
 	"net"
 
+	"github.com/gardener/gardener/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/yaml"
 
 	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
 )
@@ -34,47 +40,56 @@ const (
 	KubeApiServerSecretNameKubeControllerManagerCertificate = Prefix + "-kube-controller-manager"
 	KubeApiServerSecretNameClientAdminCertificate           = Prefix + "-kubeconfig-for-admin"
 	KubeApiServerSecretNameMetricsScraperCertificate        = Prefix + "-metrics-scraper"
+	KubeApiServerSecretNameOidcAuthenticationWebhookConfig  = Prefix + "-kube-apiserver-authentication-webhook-config"
 )
 
-func (o *operation) deployKubeAPIServerCertificates(ctx context.Context, loadbalancer string, checksums map[string]string) error {
+func (o *operation) deployKubeAPIServerCertificates(ctx context.Context, loadbalancer string, checksums map[string]string) (
+	*secretsutil.Certificate,
+	error,
+) {
 	o.log.Infof("Deploying secrets containing kube-apiserver certificates")
 
 	aggregatorCACertificate, err := o.deployKubeApiServerAggregatorCACertificate(ctx, checksums)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = o.deployKubeApiServerAggregatorClientCertificate(ctx, aggregatorCACertificate, checksums)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	apiServerCACertificate, err := o.deployKubeApiServerApiServerCACertificate(ctx, checksums)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = o.deployKubeApiServerApiServerTLSServingCertificate(ctx, apiServerCACertificate, loadbalancer, checksums)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = o.deployKubeApiServerKubeControllerManagerClientCertificate(ctx, apiServerCACertificate, checksums)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = o.deployKubeApiServerClientAdminCertificate(ctx, apiServerCACertificate, loadbalancer, checksums)
+	_, err = o.deployKubeApiServerClientAdminCertificate(ctx, apiServerCACertificate, loadbalancer)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = o.deployKubeApiServerMetricsScraperCertificate(ctx, apiServerCACertificate, checksums)
+	_, err = o.deployKubeApiServerMetricsScraperCertificate(ctx, apiServerCACertificate)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	oidcAuthenticationWebhookCert, err := o.deployKubeApiServerSecretOidcAuthenticationWebhookConfig(ctx, apiServerCACertificate, checksums)
+	if err != nil {
+		return nil, err
+	}
+
+	return oidcAuthenticationWebhookCert, nil
 }
 
 func (o *operation) deleteKubeAPIServerCertificates(ctx context.Context) error {
@@ -88,6 +103,7 @@ func (o *operation) deleteKubeAPIServerCertificates(ctx context.Context) error {
 		KubeApiServerSecretNameKubeControllerManagerCertificate,
 		KubeApiServerSecretNameClientAdminCertificate,
 		KubeApiServerSecretNameMetricsScraperCertificate,
+		KubeApiServerSecretNameOidcAuthenticationWebhookConfig,
 	} {
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: o.namespace}}
 		if err := o.client.Delete(ctx, secret); client.IgnoreNotFound(err) != nil {
@@ -187,7 +203,7 @@ func (o *operation) deployKubeApiServerKubeControllerManagerClientCertificate(ct
 }
 
 func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Context, caCertificate *secretsutil.Certificate,
-	loadBalancer string, checksums map[string]string) (*secretsutil.Certificate, error) {
+	loadBalancer string) (*secretsutil.Certificate, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameClientAdminCertificate,
 		CertType:   secretsutil.ClientCert,
@@ -213,10 +229,126 @@ func (o *operation) deployKubeApiServerClientAdminCertificate(ctx context.Contex
 	return cert, err
 }
 
+func (o *operation) deployKubeApiServerSecretOidcAuthenticationWebhookConfig(ctx context.Context,
+	caCertificate *secretsutil.Certificate, checksums map[string]string) (cert *secretsutil.Certificate, err error) {
+	if !o.isOidcWebhookAuthenticatorEnabled() {
+		return nil, nil
+	}
+
+	secret := o.emptySecret(KubeApiServerSecretNameOidcAuthenticationWebhookConfig)
+	secretKey := client.ObjectKey{Name: secret.Name, Namespace: secret.Namespace}
+	err = o.client.Get(ctx, secretKey, secret)
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, err
+		}
+
+		certConfig := &secretsutil.CertificateSecretConfig{
+			Name:       KubeApiServerSecretNameOidcAuthenticationWebhookConfig,
+			CertType:   secretsutil.ClientCert,
+			SigningCA:  caCertificate,
+			CommonName: "apiserver-oidc-webhook-authenticator-operator",
+		}
+
+		cert, err = certConfig.GenerateCertificate()
+		if err != nil {
+			return nil, err
+		}
+
+		kubeconfig := o.createKubeconfigForOidcWebhook(cert)
+
+		kubeconfigData, err := yaml.Marshal(kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+
+		secret = o.emptySecret(KubeApiServerSecretNameOidcAuthenticationWebhookConfig)
+		_, err = controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
+			if secret.Data == nil {
+				secret.Data = make(map[string][]byte)
+			}
+			secret.Data[SecretKeyKubeconfigYaml] = kubeconfigData
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		kubeconfigData, ok := secret.Data[SecretKeyKubeconfigYaml]
+		if !ok {
+			return nil, fmt.Errorf("Secret %s does not contain key %s",
+				KubeApiServerSecretNameOidcAuthenticationWebhookConfig, SecretKeyKubeconfigYaml)
+		}
+
+		kubeconfig := &v1.Config{}
+		if err = yaml.Unmarshal(kubeconfigData, kubeconfig); err != nil {
+			return nil, err
+		}
+
+		user := extractUser(kubeconfig, UserVirtualGardenKubeApiServer)
+		if user == nil {
+			return nil, fmt.Errorf("Kubeconfig in secret %s does not contain user %s",
+				KubeApiServerSecretNameOidcAuthenticationWebhookConfig, UserVirtualGardenKubeApiServer)
+		}
+
+		cert, err = secretsutil.LoadCertificate(KubeApiServerSecretNameOidcAuthenticationWebhookConfig, user.AuthInfo.ClientKeyData, user.AuthInfo.ClientCertificateData)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	checksums[ChecksumKeyKubeAPIServerOidcAuthenticationWebhookConfig] = utils.ComputeChecksum(secret.Data)
+	return cert, nil
+}
+
+func extractUser(kubeconfig *v1.Config, name string) *v1.NamedAuthInfo {
+	for i := range kubeconfig.AuthInfos {
+		user := &kubeconfig.AuthInfos[i]
+		if user.Name == name {
+			return user
+		}
+	}
+	return nil
+}
+
+func (o *operation) createKubeconfigForOidcWebhook(cert *secretsutil.Certificate) *v1.Config {
+	return &v1.Config{
+		APIVersion:     "v1",
+		Kind:           "Config",
+		CurrentContext: "authentication-webhook",
+		Clusters: []v1.NamedCluster{
+			{
+				Name: "oidc-webhook-authenticator",
+				Cluster: v1.Cluster{
+					CertificateAuthorityData: []byte(o.imports.VirtualGarden.KubeAPIServer.OidcWebhookAuthenticator.CertificateAuthorityData),
+					Server:                   "https://oidc-webhook-authenticator.garden/validate-token",
+				},
+			},
+		},
+		AuthInfos: []v1.NamedAuthInfo{
+			{
+				Name: UserVirtualGardenKubeApiServer,
+				AuthInfo: v1.AuthInfo{
+					ClientCertificateData: cert.CertificatePEM,
+					ClientKeyData:         cert.PrivateKeyPEM,
+				},
+			},
+		},
+		Contexts: []v1.NamedContext{
+			{
+				Name: "authentication-webhook",
+				Context: v1.Context{
+					Cluster:  "oidc-webhook-authenticator",
+					AuthInfo: "virtual-garden-kube-apiserver",
+				},
+			},
+		},
+	}
+}
+
 func (o *operation) deployKubeApiServerMetricsScraperCertificate(
 	ctx context.Context,
-	caCertificate *secretsutil.Certificate,
-	checksums map[string]string) (*secretsutil.Certificate, error) {
+	caCertificate *secretsutil.Certificate) (*secretsutil.Certificate, error) {
 	certConfig := &secretsutil.CertificateSecretConfig{
 		Name:       KubeApiServerSecretNameMetricsScraperCertificate,
 		CertType:   secretsutil.ClientCert,

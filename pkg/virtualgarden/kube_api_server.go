@@ -34,12 +34,12 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
-	err = o.deployKubeAPIServerCertificates(ctx, loadBalancer, checksums)
+	oidcAuthenticationWebhookCert, err := o.deployKubeAPIServerCertificates(ctx, loadBalancer, checksums)
 	if err != nil {
 		return err
 	}
 
-	staticTokenHealthCheck, err := o.deployKubeAPIServerSecrets(ctx, checksums)
+	staticTokenHealthCheck, err := o.deployKubeAPIServerSecrets(ctx, checksums, oidcAuthenticationWebhookCert)
 	if err != nil {
 		return err
 	}
@@ -108,8 +108,17 @@ func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
 }
 
 func (o *operation) isWebhookEnabled() bool {
+	return o.isWebhookTokenEnabled() || o.isWebhookKubeconfig()
+}
+
+func (o *operation) isWebhookTokenEnabled() bool {
 	controlplane := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane
-	return controlplane.ValidatingWebhookEnabled || controlplane.MutatingWebhookEnabled
+	return controlplane.ValidatingWebhook.Token.Enabled || controlplane.MutatingWebhook.Token.Enabled
+}
+
+func (o *operation) isWebhookKubeconfig() bool {
+	controlplane := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane
+	return controlplane.ValidatingWebhook.Kubeconfig != "" || controlplane.MutatingWebhook.Kubeconfig != ""
 }
 
 func (o *operation) computeKubeAPIServerLoadBalancer(ctx context.Context) (string, error) {

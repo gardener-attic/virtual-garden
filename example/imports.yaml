@@ -59,5 +59,29 @@ virtualGarden:
     replicas: 1
     dnsAccessDomain: ""
     gardenerControlplane:
-      validatingWebhookEnabled: true
-      mutatingWebhookEnabled: true
+      validatingWebhook:
+        kubeconfig: |
+          apiVersion: v1
+          kind: Config
+          users:
+          - name: '*'
+            user:
+              tokenFile: /var/run/secrets/admission-tokens/validating-webhook-token
+        token:
+          enabled: true
+          audience: validating-webhook
+          expirationSeconds: 3600
+      mutatingWebhook:
+        kubeconfig: |
+          apiVersion: v1
+          kind: Config
+          users:
+          - name: '*'
+            user:
+              tokenFile: /var/run/secrets/admission-tokens/mutating-webhook-token
+        token:
+          enabled: true
+          audience: mutating-webhook
+          expirationSeconds: 3600
+    oidcWebhookAuthenticator:
+      enabled: true

@@ -21,7 +21,7 @@ import (
 
 	"github.com/gardener/gardener/pkg/utils"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -100,7 +100,7 @@ func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context, c
 	)
 
 	controlplane := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane
-	if !o.isWebhookEnabled() {
+	if !(o.isWebhookEnabled()) {
 		return nil
 	}
 
@@ -120,7 +120,7 @@ func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context, c
 			Plugins: []apiserverv1.AdmissionPluginConfiguration{},
 		}
 
-		if controlplane.ValidatingWebhookEnabled {
+		if controlplane.ValidatingWebhook.Kubeconfig != "" {
 			config, err := o.newAdmissionPluginConfiguration(validatingAdmissionWebhookConfigName, validatingAdmissionWebhookKubeconfigPath)
 			if err != nil {
 				return err
@@ -129,7 +129,7 @@ func (o *operation) deployKubeApiServerConfigMapAdmission(ctx context.Context, c
 			admissionConfig.Plugins = append(admissionConfig.Plugins, *config)
 		}
 
-		if controlplane.MutatingWebhookEnabled {
+		if controlplane.MutatingWebhook.Kubeconfig != "" {
 			config, err := o.newAdmissionPluginConfiguration(mutatingAdmissionWebhookConfigName, mutatingAdmissionWebhookKubeconfigPath)
 			if err != nil {
 				return err

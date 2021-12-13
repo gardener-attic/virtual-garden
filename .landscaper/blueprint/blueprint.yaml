@@ -119,6 +119,11 @@ imports:
                   type: boolean
                 certificateAuthorityData:
                   type: string
+            oidcWebhookAuthenticator:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
             hvpaEnabled:
               type: boolean
             hvpa:

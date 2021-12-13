@@ -160,8 +160,12 @@ func getImportsForHvpa() api.Imports {
 				SNI:             nil,
 				DnsAccessDomain: "com.our.test",
 				GardenerControlplane: api.GardenerControlplane{
-					ValidatingWebhookEnabled: true,
-					MutatingWebhookEnabled:   true,
+					ValidatingWebhook: api.AdmissionWebhookConfig{
+						Token: api.AdmissionWebhookTokenConfig{Enabled: true},
+					},
+					MutatingWebhook: api.AdmissionWebhookConfig{
+						Token: api.AdmissionWebhookTokenConfig{Enabled: true},
+					},
 				},
 				ServiceAccountKeyPem:     pointer.String("test-service-account-key"),
 				AuditWebhookConfig:       api.AuditWebhookConfig{Config: "testconfig"},
