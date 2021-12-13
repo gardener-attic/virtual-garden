@@ -35,6 +35,7 @@ rules:
       - system:serviceaccount:garden:gardener-scheduler
       - system:serviceaccount:garden:secret-binding-distributor
       - system:serviceaccount:terminal-system:default
+      - system:serviceaccount:gardenlogin-system:gardenlogin-controller-manager
       - virtual-garden:client:admin
       - vpn-seed
   - level: None

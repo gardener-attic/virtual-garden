@@ -81,16 +81,17 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: annotations,
 					Labels: map[string]string{
-						LabelKeyApp:                                                  Prefix,
-						LabelKeyComponent:                                            "kube-apiserver",
-						"networking.gardener.cloud/to-dns":                           LabelValueAllowed,
-						"networking.gardener.cloud/to-etcd":                          LabelValueAllowed,
-						"networking.gardener.cloud/to-gardener-apiserver":            LabelValueAllowed,
-						"networking.gardener.cloud/to-gardener-admission-controller": LabelValueAllowed, // needed for webhooks
-						"networking.gardener.cloud/to-identity":                      LabelValueAllowed,
-						"networking.gardener.cloud/to-ingress":                       LabelValueAllowed, // needed for communication to identity
-						"networking.gardener.cloud/to-terminal-controller-manager":   LabelValueAllowed, // needed for webhooks
-						"networking.gardener.cloud/to-world":                         LabelValueAllowed, // GCP puts IP tables on nodes that allow for local routing, for other cloudproviders this is needed
+						LabelKeyApp:                                                   Prefix,
+						LabelKeyComponent:                                             "kube-apiserver",
+						"networking.gardener.cloud/to-dns":                            LabelValueAllowed,
+						"networking.gardener.cloud/to-etcd":                           LabelValueAllowed,
+						"networking.gardener.cloud/to-gardener-apiserver":             LabelValueAllowed,
+						"networking.gardener.cloud/to-gardener-admission-controller":  LabelValueAllowed, // needed for webhooks
+						"networking.gardener.cloud/to-identity":                       LabelValueAllowed,
+						"networking.gardener.cloud/to-ingress":                        LabelValueAllowed, // needed for communication to identity
+						"networking.gardener.cloud/to-terminal-controller-manager":    LabelValueAllowed, // needed for webhooks
+						"networking.gardener.cloud/to-gardenlogin-controller-manager": LabelValueAllowed, // needed for webhooks
+						"networking.gardener.cloud/to-world":                          LabelValueAllowed, // GCP puts IP tables on nodes that allow for local routing, for other cloudproviders this is needed
 					},
 				},
 				Spec: corev1.PodSpec{
