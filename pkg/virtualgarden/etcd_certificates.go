@@ -86,6 +86,7 @@ func (o *operation) deployETCDClientCertificate(ctx context.Context, caCertifica
 	}
 
 	o.exports.EtcdClientTlsKeyPem = string(cert.PrivateKeyPEM)
+	o.exports.EtcdUrl = string(cert.PrivateKeyPEM)
 	o.exports.EtcdClientTlsPem = string(cert.CertificatePEM)
 
 	return cert, clientCertChecksum, err

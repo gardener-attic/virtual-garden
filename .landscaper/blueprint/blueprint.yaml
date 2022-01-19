@@ -2,11 +2,11 @@ apiVersion: landscaper.gardener.cloud/v1alpha1
 kind: Blueprint
 
 imports:
-  - name: cluster
+  - name: runtimeCluster
     required: true
     targetType: landscaper.gardener.cloud/kubernetes-cluster
 
-  - name: hostingCluster
+  - name: runtimeClusterSettings
     schema:
       type: object
       properties:
@@ -242,7 +242,7 @@ imports:
           type: string
 
 exports:
-- name: kubeApiserverCaPem
+- name: virtualGardenApiserverCaPem
   schema:
     type: string
 
@@ -262,7 +262,12 @@ exports:
   schema:
     type: string
 
-- name: virtualGardenKubeconfig
+- name: etcdUrl
+  schema:
+    type: string
+
+- name: virtualGardenCluster
+  type: target
   targetType: landscaper.gardener.cloud/kubernetes-cluster
 
 - name: virtualGardenEndpoint

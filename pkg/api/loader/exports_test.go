@@ -52,12 +52,12 @@ var _ = Describe("Exports", func() {
 			It("should succeed writing and reading", func() {
 				path := filepath.Join(dir, "imports.yaml")
 				exports := &api.Exports{
-					KubeApiserverCaPem:    "KubeApiserverCaPem-string",
-					EtcdCaPem:             "EtcdCaPem-string",
-					EtcdClientTlsPem:      "EtcdClientTlsPem-string",
-					EtcdClientTlsKeyPem:   "EtcdClientTlsKeyPem-string",
-					KubeconfigYaml:        "KubeconfigYaml-string",
-					VirtualGardenEndpoint: "VirtualGardenEndpoint-string",
+					VirtualGardenApiserverCaPem: "VirtualGardenApiserverCaPem-string",
+					EtcdCaPem:                   "EtcdCaPem-string",
+					EtcdClientTlsPem:            "EtcdClientTlsPem-string",
+					EtcdClientTlsKeyPem:         "EtcdClientTlsKeyPem-string",
+					KubeconfigYaml:              "KubeconfigYaml-string",
+					VirtualGardenEndpoint:       "VirtualGardenEndpoint-string",
 				}
 
 				err := ExportsToFile(exports, path)

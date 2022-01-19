@@ -65,7 +65,7 @@ var _ = Describe("Imports", func() {
 				imports, err := ImportsFromFile(path)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(imports).To(Equal(&api.Imports{
-					HostingCluster: api.HostingCluster{Namespace: "foo"},
+					RuntimeClusterSettings: api.ClusterSettings{Namespace: "foo"},
 				}))
 			})
 
@@ -76,7 +76,7 @@ var _ = Describe("Imports", func() {
 				imports, err := ImportsFromFile(path)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(imports).To(Equal(&api.Imports{
-					HostingCluster: api.HostingCluster{Namespace: "foo"},
+					RuntimeClusterSettings: api.ClusterSettings{Namespace: "foo"},
 				}))
 			})
 		})

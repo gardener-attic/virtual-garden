@@ -3,11 +3,13 @@
 /.kube-secrets
 /tmp/*
 /local
+/gen
 **/dev
 
 *.coverprofile
 *.html
 .vscode
+.cache_ggshield
 .idea
 .DS_Store
 *~

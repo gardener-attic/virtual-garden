@@ -1,4 +1,4 @@
-cluster:
+runtimeCluster:
   apiVersion: landscaper.gardener.cloud/v1alpha1
   kind: Target
   spec:
@@ -7,7 +7,7 @@ cluster:
       kubeconfig: |
       #       ... <please insert your kubeconfig here>
 
-hostingCluster:
+runtimeClusterSettings:
   namespace: garden
   infrastructureProvider: gcp
 

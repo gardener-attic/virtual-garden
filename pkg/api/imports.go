@@ -32,16 +32,16 @@ const (
 
 // Imports defines the structure for the required configuration values from other components.
 type Imports struct {
-	// Cluster is the kubeconfig of the hosting cluster into which the virtual garden shall be installed.
-	Cluster lsv1alpha1.Target `json:"cluster" yaml:"cluster"`
-	// HostingCluster contains settings for the hosting cluster that runs the virtual garden.
-	HostingCluster HostingCluster `json:"hostingCluster" yaml:"hostingCluster"`
+	// RuntimeCluster is the kubeconfig of the cluster into which the virtual garden shall be installed.
+	RuntimeCluster lsv1alpha1.Target `json:"runtimeCluster" yaml:"runtimeCluster"`
+	// RuntimeClusterSettings contains settings for the hosting cluster that runs the virtual garden.
+	RuntimeClusterSettings ClusterSettings `json:"runtimeClusterSettings" yaml:"runtimeClusterSettings"`
 	// VirtualGarden contains configuration for the virtual garden cluster.
 	VirtualGarden VirtualGarden `json:"virtualGarden" yaml:"virtualGarden"`
 }
 
-// HostingCluster contains settings for the hosting cluster that runs the virtual garden.
-type HostingCluster struct {
+// ClusterSettings contains settings for the hosting cluster that runs the virtual garden.
+type ClusterSettings struct {
 	// Namespace is a namespace in the hosting cluster into which the virtual garden shall be installed.
 	Namespace string `json:"namespace" yaml:"namespace"`
 	// InfrastructureProvider is the provider type of the underlying infrastructure of the hosting cluster.

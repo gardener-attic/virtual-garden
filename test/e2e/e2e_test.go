@@ -89,7 +89,7 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create Kubernetes client for actual verification calls in the hosting cluster.
-		c, err = app.NewClientFromTarget(imports.Cluster)
+		c, err = app.NewClientFromTarget(imports.RuntimeCluster)
 		Expect(err).NotTo(HaveOccurred())
 
 		err = virtualgarden.DeployHVPACRD(ctx, c)
@@ -146,7 +146,7 @@ func verifyExports(ctx context.Context, c client.Client, imports *api.Imports, e
 	exports, err := loader.ExportsFromFile(exportsPath)
 	Expect(err).NotTo(HaveOccurred())
 
-	Expect(exports.KubeApiserverCaPem).NotTo(BeZero())
+	Expect(exports.VirtualGardenApiserverCaPem).NotTo(BeZero())
 	Expect(exports.EtcdCaPem).NotTo(BeZero())
 	Expect(exports.EtcdClientTlsPem).NotTo(BeZero())
 	Expect(exports.EtcdClientTlsKeyPem).NotTo(BeZero())
@@ -181,7 +181,7 @@ func verifyKubeApiServerCall(ctx context.Context, c client.Client, imports *api.
 
 func newKubeAPIServerClient(ctx context.Context, c client.Client, imports *api.Imports) (client.Client, error) {
 	clientAdminSecret := &corev1.Secret{}
-	objectKey := client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameClientAdminCertificate, Namespace: imports.HostingCluster.Namespace}
+	objectKey := client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameClientAdminCertificate, Namespace: imports.RuntimeClusterSettings.Namespace}
 	err := c.Get(ctx, objectKey, clientAdminSecret)
 	if err != nil {
 		return nil, err
@@ -228,7 +228,7 @@ func verifyReconciliationOfKubeAPIServerService(ctx context.Context, c client.Cl
 	By("Checking that the kube-apiserver service was created as expected")
 
 	kubeAPIServerService := &corev1.Service{}
-	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.KubeAPIServerServiceName, Namespace: imports.HostingCluster.Namespace}, kubeAPIServerService)).To(Succeed())
+	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.KubeAPIServerServiceName, Namespace: imports.RuntimeClusterSettings.Namespace}, kubeAPIServerService)).To(Succeed())
 
 	Expect(kubeAPIServerService.Labels).To(HaveKeyWithValue("app", "virtual-garden"))
 	Expect(kubeAPIServerService.Labels).To(HaveKeyWithValue("component", "kube-apiserver"))
@@ -262,7 +262,7 @@ func verifyReconciliationOfKubeAPIServerService(ctx context.Context, c client.Cl
 
 	Expect(wait.PollImmediateUntil(2*time.Second, func() (done bool, err error) {
 		service := &corev1.Service{}
-		if err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.KubeAPIServerServiceName, Namespace: imports.HostingCluster.Namespace}, service); err != nil {
+		if err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.KubeAPIServerServiceName, Namespace: imports.RuntimeClusterSettings.Namespace}, service); err != nil {
 			return false, err
 		}
 		return len(service.Status.LoadBalancer.Ingress) > 0 && (service.Status.LoadBalancer.Ingress[0].Hostname != "" || service.Status.LoadBalancer.Ingress[0].IP != ""), nil
@@ -294,7 +294,7 @@ func verifyReconciliationOfETCDBackupBucket(ctx context.Context, imports *api.Im
 func verifyReconciliationOfETCDStorageClass(ctx context.Context, c client.Client, imports *api.Imports) {
 	By("Checking that the etcd storage class was created as expected")
 
-	infrastructureProvider, err := provider.NewInfrastructureProvider(imports.HostingCluster.InfrastructureProvider)
+	infrastructureProvider, err := provider.NewInfrastructureProvider(imports.RuntimeClusterSettings.InfrastructureProvider)
 	Expect(err).NotTo(HaveOccurred())
 
 	etcdStorageClass := &storagev1.StorageClass{}
@@ -309,7 +309,7 @@ func verifyReconciliationOfETCDCACertificate(ctx context.Context, c client.Clien
 	By("Checking that the etcd CA secret was created as expected")
 
 	etcdSecretCACert := &corev1.Secret{}
-	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameCACertificate, Namespace: imports.HostingCluster.Namespace}, etcdSecretCACert)).To(Succeed())
+	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameCACertificate, Namespace: imports.RuntimeClusterSettings.Namespace}, etcdSecretCACert)).To(Succeed())
 
 	etcdCACertificate, err := secretsutil.LoadCertificate(etcdSecretCACert.Name, etcdSecretCACert.Data[secretsutil.DataKeyPrivateKeyCA], etcdSecretCACert.Data[secretsutil.DataKeyCertificateCA])
 	Expect(err).NotTo(HaveOccurred())
@@ -324,7 +324,7 @@ func verifyReconciliationOfETCDClientCertificate(ctx context.Context, c client.C
 	By("Checking that the etcd client secret was created as expected")
 
 	etcdSecretClientCert := &corev1.Secret{}
-	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameClientCertificate, Namespace: imports.HostingCluster.Namespace}, etcdSecretClientCert)).To(Succeed())
+	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameClientCertificate, Namespace: imports.RuntimeClusterSettings.Namespace}, etcdSecretClientCert)).To(Succeed())
 
 	etcdClientCertificate, err := secretsutil.LoadCertificate(etcdSecretClientCert.Name, etcdSecretClientCert.Data[secretsutil.DataKeyPrivateKey], etcdSecretClientCert.Data[secretsutil.DataKeyCertificate])
 	Expect(err).NotTo(HaveOccurred())
@@ -338,7 +338,7 @@ func verifyReconciliationOfETCDClientCertificate(ctx context.Context, c client.C
 func verifyReconciliationOfETCDBackupSecret(ctx context.Context, c client.Client, imports *api.Imports, backupProvider provider.BackupProvider) {
 	if helper.ETCDBackupEnabled(imports.VirtualGarden.ETCD) {
 		backupSecret := &corev1.Secret{}
-		Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameBackup, Namespace: imports.HostingCluster.Namespace}, backupSecret)).To(Succeed())
+		Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameBackup, Namespace: imports.RuntimeClusterSettings.Namespace}, backupSecret)).To(Succeed())
 		_, secretData, _ := backupProvider.ComputeETCDBackupConfiguration(virtualgarden.ETCDVolumeMountPathBackupSecret, virtualgarden.ETCDSecretNameBackup)
 		Expect(backupSecret.Data).To(Equal(secretData))
 	}
@@ -348,7 +348,7 @@ func verifyReconciliationOfETCDServiceService(ctx context.Context, c client.Clie
 	By("Checking that the etcd service was created as expected (" + role + ")")
 
 	etcdServiceService := &corev1.Service{}
-	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDServiceName(role), Namespace: imports.HostingCluster.Namespace}, etcdServiceService)).To(Succeed())
+	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDServiceName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, etcdServiceService)).To(Succeed())
 
 	Expect(etcdServiceService.Labels).To(HaveKeyWithValue("app", "virtual-garden"))
 	Expect(etcdServiceService.Labels).To(HaveKeyWithValue("component", "etcd"))
@@ -374,7 +374,7 @@ func verifyReconciliationOfETCDConfigMap(ctx context.Context, c client.Client, i
 	By("Checking that the etcd bootstrap configmap was created as expected (" + role + ")")
 
 	etcdConfigMap := &corev1.ConfigMap{}
-	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDConfigMapName(role), Namespace: imports.HostingCluster.Namespace}, etcdConfigMap)).To(Succeed())
+	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDConfigMapName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, etcdConfigMap)).To(Succeed())
 
 	Expect(etcdConfigMap.Data).To(HaveKey(virtualgarden.ETCDConfigMapDataKeyBootstrapScript))
 	Expect(etcdConfigMap.Data[virtualgarden.ETCDConfigMapDataKeyBootstrapScript]).NotTo(BeEmpty())
@@ -385,7 +385,7 @@ func verifyReconciliationOfETCDConfigMap(ctx context.Context, c client.Client, i
 func verifyReconciliationOfETCDServerCertificate(ctx context.Context, c client.Client, imports *api.Imports, role string, etcdCACertificate *secretsutil.Certificate) {
 	By("Checking that the etcd server secret was created as expected (" + role + ")")
 	etcdSecretServer := &corev1.Secret{}
-	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameServerCertificate(role), Namespace: imports.HostingCluster.Namespace}, etcdSecretServer)).To(Succeed())
+	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameServerCertificate(role), Namespace: imports.RuntimeClusterSettings.Namespace}, etcdSecretServer)).To(Succeed())
 
 	etcdServerCertificate, err := secretsutil.LoadCertificate(etcdSecretServer.Name, etcdSecretServer.Data[secretsutil.DataKeyPrivateKey], etcdSecretServer.Data[secretsutil.DataKeyCertificate])
 	Expect(err).NotTo(HaveOccurred())
@@ -393,10 +393,10 @@ func verifyReconciliationOfETCDServerCertificate(ctx context.Context, c client.C
 	Expect(etcdServerCertificate.Certificate.Subject.CommonName).To(Equal("virtual-garden:server:etcd:" + role))
 	Expect(etcdServerCertificate.Certificate.DNSNames).To(Equal([]string{
 		fmt.Sprintf("virtual-garden-etcd-%s-0", role),
-		fmt.Sprintf("virtual-garden-etcd-%s-client.%s", role, imports.HostingCluster.Namespace),
-		fmt.Sprintf("virtual-garden-etcd-%s-client.%s.svc", role, imports.HostingCluster.Namespace),
-		fmt.Sprintf("virtual-garden-etcd-%s-client.%s.svc.cluster", role, imports.HostingCluster.Namespace),
-		fmt.Sprintf("virtual-garden-etcd-%s-client.%s.svc.cluster.local", role, imports.HostingCluster.Namespace),
+		fmt.Sprintf("virtual-garden-etcd-%s-client.%s", role, imports.RuntimeClusterSettings.Namespace),
+		fmt.Sprintf("virtual-garden-etcd-%s-client.%s.svc", role, imports.RuntimeClusterSettings.Namespace),
+		fmt.Sprintf("virtual-garden-etcd-%s-client.%s.svc.cluster", role, imports.RuntimeClusterSettings.Namespace),
+		fmt.Sprintf("virtual-garden-etcd-%s-client.%s.svc.cluster.local", role, imports.RuntimeClusterSettings.Namespace),
 	}))
 	Expect(etcdServerCertificate.Certificate.Issuer.CommonName).To(Equal(etcdCACertificate.Certificate.Subject.CommonName))
 	Expect(etcdServerCertificate.Certificate.KeyUsage).To(Equal(x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment))
@@ -407,7 +407,7 @@ func verifyReconciliationOfETCDStatefulSet(ctx context.Context, c client.Client,
 	By("Checking that the etcd statefulset was created as expected (" + role + ")")
 
 	sts := &appsv1.StatefulSet{}
-	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDStatefulSetName(role), Namespace: imports.HostingCluster.Namespace}, sts)).To(Succeed())
+	Expect(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDStatefulSetName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, sts)).To(Succeed())
 
 	Expect(sts.Labels).To(HaveKeyWithValue("app", "virtual-garden"))
 	Expect(sts.Labels).To(HaveKeyWithValue("component", "etcd"))
@@ -457,7 +457,7 @@ func verifyReconciliationOfETCDStatefulSet(ctx context.Context, c client.Client,
 	defer cancel()
 
 	Expect(wait.PollImmediateUntil(2*time.Second, func() (done bool, err error) {
-		if err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDStatefulSetName(role), Namespace: imports.HostingCluster.Namespace}, sts); err != nil {
+		if err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDStatefulSetName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, sts); err != nil {
 			return false, err
 		}
 		return sts.Generation == sts.Status.ObservedGeneration && sts.Status.ReadyReplicas == 1, nil
@@ -468,7 +468,7 @@ func verifyReconciliationOfETCDHVPA(ctx context.Context, c client.Client, import
 	if helper.ETCDHVPAEnabled(imports.VirtualGarden.ETCD) {
 		By("Checking that the etcd HVPA was created as expected (" + role + ")")
 		etcdHVPA := &hvpav1alpha1.Hvpa{}
-		err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDHVPAName(role), Namespace: imports.HostingCluster.Namespace}, etcdHVPA)
+		err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDHVPAName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, etcdHVPA)
 		Expect(err).To(Succeed())
 	}
 }
@@ -478,7 +478,7 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 
 	// KubeApiServerSecretNameAggregatorCACertificate
 	aggCASecret := &corev1.Secret{}
-	objectKey := client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameAggregatorCACertificate, Namespace: imports.HostingCluster.Namespace}
+	objectKey := client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameAggregatorCACertificate, Namespace: imports.RuntimeClusterSettings.Namespace}
 	Expect(c.Get(ctx, objectKey, aggCASecret)).To(Succeed())
 
 	aggCACertificate, err := secretsutil.LoadCertificate(aggCASecret.Name, aggCASecret.Data[secretsutil.DataKeyPrivateKeyCA], aggCASecret.Data[secretsutil.DataKeyCertificateCA])
@@ -489,7 +489,7 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 
 	// KubeApiServerSecretNameAggregatorClientCertificate
 	aggClientSecret := &corev1.Secret{}
-	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameAggregatorClientCertificate, Namespace: imports.HostingCluster.Namespace}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameAggregatorClientCertificate, Namespace: imports.RuntimeClusterSettings.Namespace}
 	Expect(c.Get(ctx, objectKey, aggClientSecret)).To(Succeed())
 
 	Expect(len(aggClientSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
@@ -504,7 +504,7 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 
 	// virtual-garden-kube-apiserver-ca
 	kubeAPIServerCASecret := &corev1.Secret{}
-	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameApiServerCACertificate, Namespace: imports.HostingCluster.Namespace}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameApiServerCACertificate, Namespace: imports.RuntimeClusterSettings.Namespace}
 	Expect(c.Get(ctx, objectKey, kubeAPIServerCASecret)).To(Succeed())
 
 	kubeAPIServerCACertificate, err := secretsutil.LoadCertificate(kubeAPIServerCASecret.Name, kubeAPIServerCASecret.Data[secretsutil.DataKeyPrivateKeyCA], kubeAPIServerCASecret.Data[secretsutil.DataKeyCertificateCA])
@@ -515,7 +515,7 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 
 	// virtual-garden-kube-apiserver
 	kubeAPIServerSecret := &corev1.Secret{}
-	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameApiServerServerCertificate, Namespace: imports.HostingCluster.Namespace}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameApiServerServerCertificate, Namespace: imports.RuntimeClusterSettings.Namespace}
 	Expect(c.Get(ctx, objectKey, kubeAPIServerSecret)).To(Succeed())
 
 	Expect(len(kubeAPIServerSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
@@ -530,7 +530,7 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 
 	// KubeApiServerSecretNameKubeControllerManagerCertificate
 	kubeControllerManagerSecret := &corev1.Secret{}
-	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameKubeControllerManagerCertificate, Namespace: imports.HostingCluster.Namespace}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameKubeControllerManagerCertificate, Namespace: imports.RuntimeClusterSettings.Namespace}
 	Expect(c.Get(ctx, objectKey, kubeControllerManagerSecret)).To(Succeed())
 
 	Expect(len(kubeControllerManagerSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
@@ -546,7 +546,7 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 
 	// KubeApiServerSecretNameClientAdminCertificate
 	clientAdminSecret := &corev1.Secret{}
-	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameClientAdminCertificate, Namespace: imports.HostingCluster.Namespace}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameClientAdminCertificate, Namespace: imports.RuntimeClusterSettings.Namespace}
 	Expect(c.Get(ctx, objectKey, clientAdminSecret)).To(Succeed())
 
 	Expect(len(clientAdminSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
@@ -562,7 +562,7 @@ func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c clie
 
 	// KubeApiServerSecretNameMetricsScraperCertificate
 	metricsScraperSecret := &corev1.Secret{}
-	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameMetricsScraperCertificate, Namespace: imports.HostingCluster.Namespace}
+	objectKey = client.ObjectKey{Name: virtualgarden.KubeApiServerSecretNameMetricsScraperCertificate, Namespace: imports.RuntimeClusterSettings.Namespace}
 	Expect(c.Get(ctx, objectKey, metricsScraperSecret)).To(Succeed())
 
 	Expect(len(metricsScraperSecret.Data[secretsutil.DataKeyCertificateCA]) > 0).To(BeTrue())
@@ -586,20 +586,20 @@ func verifyDeletion(ctx context.Context, c client.Client, imports *api.Imports) 
 		verifyDeletionOfETCDStatefulSet(ctx, c, imports, role)
 
 		By("Checking that the etcd bootstrap configmap was deleted successfully (" + role + ")")
-		Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDConfigMapName(role), Namespace: imports.HostingCluster.Namespace}, &corev1.ConfigMap{}))).To(BeTrue())
+		Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDConfigMapName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, &corev1.ConfigMap{}))).To(BeTrue())
 
 		By("Checking that the etcd service was deleted successfully (" + role + ")")
-		Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDServiceName(role), Namespace: imports.HostingCluster.Namespace}, &corev1.Service{}))).To(BeTrue())
+		Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDServiceName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, &corev1.Service{}))).To(BeTrue())
 
 		By("Checking that the etcd server certificate was deleted successfully (" + role + ")")
-		Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameServerCertificate(role), Namespace: imports.HostingCluster.Namespace}, &corev1.Secret{}))).To(BeTrue())
+		Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameServerCertificate(role), Namespace: imports.RuntimeClusterSettings.Namespace}, &corev1.Secret{}))).To(BeTrue())
 	}
 
 	By("Checking that the etcd client certificate was deleted successfully")
-	Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameClientCertificate, Namespace: imports.HostingCluster.Namespace}, &corev1.Secret{}))).To(BeTrue())
+	Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameClientCertificate, Namespace: imports.RuntimeClusterSettings.Namespace}, &corev1.Secret{}))).To(BeTrue())
 
 	By("Checking that the etcd CA certificate was deleted successfully")
-	Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameCACertificate, Namespace: imports.HostingCluster.Namespace}, &corev1.Secret{}))).To(BeTrue())
+	Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameCACertificate, Namespace: imports.RuntimeClusterSettings.Namespace}, &corev1.Secret{}))).To(BeTrue())
 
 	verifyDeletionOfETCDStorageClass(ctx, c, imports)
 
@@ -613,7 +613,7 @@ func verifyDeletionOfKubeAPIServerService(ctx context.Context, c client.Client, 
 	defer cancel()
 
 	Expect(wait.PollImmediateUntil(2*time.Second, func() (done bool, err error) {
-		if err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.KubeAPIServerServiceName, Namespace: imports.HostingCluster.Namespace}, &corev1.Service{}); err != nil {
+		if err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.KubeAPIServerServiceName, Namespace: imports.RuntimeClusterSettings.Namespace}, &corev1.Service{}); err != nil {
 			if apierrors.IsNotFound(err) {
 				return true, nil
 			}
@@ -626,7 +626,7 @@ func verifyDeletionOfKubeAPIServerService(ctx context.Context, c client.Client, 
 func verifyDeletionOfETCDHVPA(ctx context.Context, c client.Client, imports *api.Imports, role string) {
 	if helper.ETCDHVPAEnabled(imports.VirtualGarden.ETCD) {
 		By("Checking that the etcd HVPA was deleted successfully (" + role + ")")
-		err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDHVPAName(role), Namespace: imports.HostingCluster.Namespace}, &hvpav1alpha1.Hvpa{})
+		err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDHVPAName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, &hvpav1alpha1.Hvpa{})
 		Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	}
 }
@@ -637,14 +637,14 @@ func verifyDeletionOfETCDStatefulSet(ctx context.Context, c client.Client, impor
 	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDStatefulSetName(role), Namespace: imports.HostingCluster.Namespace}, &appsv1.StatefulSet{}))).To(BeTrue())
+	Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDStatefulSetName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, &appsv1.StatefulSet{}))).To(BeTrue())
 
 	if handleETCDPersistentVolumes {
 		By("Checking that the etcd persistent volume and persistent volume claims were deleted successfully (" + role + ")")
 		pvcName := fmt.Sprintf("%s-%s-0", virtualgarden.ETCDDataVolumeName(role), virtualgarden.ETCDStatefulSetName(role))
 
 		Expect(wait.PollImmediateUntil(2*time.Second, func() (done bool, err error) {
-			if err := c.Get(ctx, client.ObjectKey{Name: pvcName, Namespace: imports.HostingCluster.Namespace}, &corev1.PersistentVolumeClaim{}); err != nil {
+			if err := c.Get(ctx, client.ObjectKey{Name: pvcName, Namespace: imports.RuntimeClusterSettings.Namespace}, &corev1.PersistentVolumeClaim{}); err != nil {
 				if apierrors.IsNotFound(err) {
 					return true, nil
 				}
@@ -660,7 +660,7 @@ func verifyDeletionOfETCDStatefulSet(ctx context.Context, c client.Client, impor
 			}
 
 			for _, pv := range pvList.Items {
-				if pv.Spec.ClaimRef.Namespace == imports.HostingCluster.Namespace && pv.Spec.ClaimRef.Name == pvcName {
+				if pv.Spec.ClaimRef.Namespace == imports.RuntimeClusterSettings.Namespace && pv.Spec.ClaimRef.Name == pvcName {
 					return false, nil
 				}
 			}
@@ -671,7 +671,7 @@ func verifyDeletionOfETCDStatefulSet(ctx context.Context, c client.Client, impor
 
 	By("Checking that the etcd pod was deleted successfully (" + role + ")")
 	Expect(wait.PollImmediateUntil(2*time.Second, func() (done bool, err error) {
-		if err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDStatefulSetName(role) + "-0", Namespace: imports.HostingCluster.Namespace}, &corev1.Pod{}); err != nil {
+		if err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDStatefulSetName(role) + "-0", Namespace: imports.RuntimeClusterSettings.Namespace}, &corev1.Pod{}); err != nil {
 			if apierrors.IsNotFound(err) {
 				return true, nil
 			}
@@ -695,7 +695,7 @@ func verifyDeletionOfETCDStorageClass(ctx context.Context, c client.Client, impo
 func verifyDeletionOfBackupBucket(ctx context.Context, c client.Client, imports *api.Imports) {
 	if helper.ETCDBackupEnabled(imports.VirtualGarden.ETCD) {
 		By("Checking that the etcd backup secret was deleted successfully)")
-		Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameBackup, Namespace: imports.HostingCluster.Namespace}, &corev1.Secret{}))).To(BeTrue())
+		Expect(apierrors.IsNotFound(c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDSecretNameBackup, Namespace: imports.RuntimeClusterSettings.Namespace}, &corev1.Secret{}))).To(BeTrue())
 
 		By("Checking that the blob storage bucket was deleted successfully")
 		log := &logrus.Logger{Out: ioutil.Discard}

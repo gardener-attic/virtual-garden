@@ -130,8 +130,8 @@ var _ = Describe("Api Server misc test", func() {
 
 func getImportsForMiscTest() *api.Imports {
 	return &api.Imports{
-		Cluster:        lsv1alpha1.Target{},
-		HostingCluster: api.HostingCluster{},
+		RuntimeCluster:         lsv1alpha1.Target{},
+		RuntimeClusterSettings: api.ClusterSettings{},
 		VirtualGarden: api.VirtualGarden{
 			ETCD: nil,
 			KubeAPIServer: &api.KubeAPIServer{

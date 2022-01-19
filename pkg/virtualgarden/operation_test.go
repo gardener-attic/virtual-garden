@@ -31,8 +31,8 @@ var _ = Describe("Operation", func() {
 				log       = logrus.New()
 				namespace = "foo"
 				imports   = &api.Imports{
-					HostingCluster: api.HostingCluster{InfrastructureProvider: api.InfrastructureProviderGCP},
-					VirtualGarden:  api.VirtualGarden{},
+					RuntimeClusterSettings: api.ClusterSettings{InfrastructureProvider: api.InfrastructureProviderGCP},
+					VirtualGarden:          api.VirtualGarden{},
 				}
 				imageRefs = &api.ImageRefs{
 					ETCDImage:                  "eu.gcr.io/sap-se-gcr-k8s-public/quay_io/coreos/etcd:v3.3.17",

@@ -40,13 +40,14 @@ spec:
 
   imports:
     targets:
-    - name: cluster
-      target: "#cluster"
+    - name: runtimeCluster
+      target: "#runtime-cluster"
 
+  # static data to not require to import config map
   importDataMappings:
-    hostingCluster:
+    runtimeClusterSettings:
       namespace: garden
-      infrastructureProvider: gcp
+      infrastructureProvider: aws
 
     virtualGarden:
       deleteNamespace: true
@@ -62,20 +63,22 @@ spec:
 
   exports:
     data:
-    - name: kubeApiserverCaPem
-      dataRef: "kubeapiservercapem"
+    - name: virtualGardenApiserverCaPem
+      dataRef: "virtual-garden-apiserver-ca-pem"
     - name: etcdCaPem
-      dataRef: "etcdcapem"
+      dataRef: "etcd-ca-pem"
     - name: etcdClientTlsPem
-      dataRef: "etcdclienttlspem"
+      dataRef: "etcd-client-tls-pem"
     - name: etcdClientTlsKeyPem
-      dataRef: "etcdclienttlskeypem"
+      dataRef: "etcd-client-tls-key-pem"
     - name: virtualGardenEndpoint
-      dataRef: "virtualgardenendpoint"
+      dataRef: "virtual-garden-endpoint"
+    - name: etcdUrl
+      dataRef: "etcd-url"
 
     targets:
-    - name: virtualGardenKubeconfig
-      target: "virtualgardenkubeconfig"
+    - name: virtualGardenCluster
+      target: "virtual-garden-cluster"
 EOF
 
 echo "Installation stored at ${INSTALLATION_PATH}"

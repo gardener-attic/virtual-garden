@@ -35,7 +35,7 @@ The component descriptor contains the list of all resources required for the dep
 
 - the blueprint,  
 - the image from the previous step, which will be executed by the container deployer,  
-- the images of etcd, kube-apiserver, etc. which will be deployed to the host cluster of the virtual garden.  
+- the images of etcd, kube-apiserver, etc. which will be deployed to the runtime cluster of the virtual garden.  
 
 ### Creating a Target and an Installation
 

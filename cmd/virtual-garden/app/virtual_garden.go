@@ -116,12 +116,12 @@ func run(ctx context.Context, log *logrus.Logger, opts *Options) error {
 	}
 
 	log.Infof("Creating REST config and Kubernetes client based on given kubeconfig")
-	client, err := NewClientFromTarget(imports.Cluster)
+	client, err := NewClientFromTarget(imports.RuntimeCluster)
 	if err != nil {
 		return err
 	}
 
-	operation, err := virtualgarden.NewOperation(client, log, imports.HostingCluster.Namespace, imports, imageRefs)
+	operation, err := virtualgarden.NewOperation(client, log, imports.RuntimeClusterSettings.Namespace, imports, imageRefs)
 	if err != nil {
 		return err
 	}

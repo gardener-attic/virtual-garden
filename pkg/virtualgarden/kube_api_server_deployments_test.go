@@ -98,8 +98,8 @@ var _ = Describe("Api Server deployment test", func() {
 
 func getImportsForDeploymentTest() *api.Imports {
 	return &api.Imports{
-		Cluster:        lsv1alpha1.Target{},
-		HostingCluster: api.HostingCluster{},
+		RuntimeCluster:         lsv1alpha1.Target{},
+		RuntimeClusterSettings: api.ClusterSettings{},
 		VirtualGarden: api.VirtualGarden{
 			ETCD: nil,
 			KubeAPIServer: &api.KubeAPIServer{

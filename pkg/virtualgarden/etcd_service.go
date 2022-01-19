@@ -16,6 +16,7 @@ package virtualgarden
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gardener/gardener/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
@@ -61,6 +62,12 @@ func (o *operation) deployETCDService(ctx context.Context, role string) error {
 		})
 		return nil
 	})
+
+	// export the etcd Url
+	if role == ETCDRoleMain {
+		o.exports.EtcdUrl = fmt.Sprintf("%s.%s.svc:%d", service.Name, service.Namespace, etcdServiceClientPort)
+	}
+
 	return err
 }
 
