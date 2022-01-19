@@ -60,7 +60,7 @@ var _ = Describe("Imports", func() {
 
 			It("should succeed reading and parsing the file (YAML)", func() {
 				path := filepath.Join(dir, "imports.yaml")
-				Expect(ioutil.WriteFile(path, []byte("virtualGarden: {}\nhostingCluster: {namespace: foo}\ncredentials: {}"), 0644)).To(Succeed())
+				Expect(ioutil.WriteFile(path, []byte("virtualGarden: {}\nruntimeClusterSettings: {namespace: foo}\ncredentials: {}"), 0644)).To(Succeed())
 
 				imports, err := ImportsFromFile(path)
 				Expect(err).NotTo(HaveOccurred())
@@ -71,7 +71,7 @@ var _ = Describe("Imports", func() {
 
 			It("should succeed reading and parsing the file (JSON)", func() {
 				path := filepath.Join(dir, "imports.json")
-				Expect(ioutil.WriteFile(path, []byte(`{"virtualGarden": {}, "hostingCluster": {"namespace": "foo"}, "credentials": {}}`), 0644)).To(Succeed())
+				Expect(ioutil.WriteFile(path, []byte(`{"virtualGarden": {}, "runtimeClusterSettings": {"namespace": "foo"}, "credentials": {}}`), 0644)).To(Succeed())
 
 				imports, err := ImportsFromFile(path)
 				Expect(err).NotTo(HaveOccurred())

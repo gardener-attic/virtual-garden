@@ -17,7 +17,7 @@ exports:
   virtualGardenEndpoint: |
     {{- index .values "deployitems" "virtual-garden-container-deployer" "virtualGardenEndpoint" | nindent 4 }}
 
-  virtual-garden-cluster:
+  virtualGardenCluster:
     type: landscaper.gardener.cloud/kubernetes-cluster
     config:
       kubeconfig: |
