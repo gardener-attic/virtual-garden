@@ -212,6 +212,7 @@ func (o *operation) computeApiServerAnnotations(checksums map[string]string) map
 		ChecksumKeyKubeAPIServerServer,
 		ChecksumKeyKubeAPIServerAuditWebhookConfig,
 		ChecksumKeyKubeAPIServerAuthWebhookConfig,
+		ChecksumKeyKubeAPIServerOidcAuthenticationWebhookConfig,
 		ChecksumKeyKubeAPIServerStaticToken,
 		ChecksumKeyKubeAPIServerAdmissionConfig,
 	})
@@ -246,6 +247,12 @@ func (o *operation) getAPIServerCommand() []string {
 	if len(o.getAPIServerAuditWebhookConfig()) > 0 {
 		command = append(command, "--audit-webhook-config-file=/etc/kube-apiserver/auditwebhook/audit-webhook-config.yaml")
 	}
+
+	if o.isOidcWebhookAuthenticatorEnabled() {
+		command = append(command, "--authentication-token-webhook-config-file=/etc/kube-apiserver/authentication-webhook/kubeconfig.yaml")
+		command = append(command, "--authentication-token-webhook-cache-ttl=0")
+	}
+
 	if o.isSeedAuthorizerEnabled() {
 		command = append(command, "--authorization-mode=RBAC,Webhook")
 		command = append(command, "--authorization-webhook-config-file=/etc/kube-apiserver/auth-webhook/config.yaml")
@@ -323,6 +330,10 @@ func (o *operation) isSeedAuthorizerEnabled() bool {
 	return o.imports.VirtualGarden.KubeAPIServer != nil && o.imports.VirtualGarden.KubeAPIServer.SeedAuthorizer.Enabled
 }
 
+func (o *operation) isOidcWebhookAuthenticatorEnabled() bool {
+	return o.imports.VirtualGarden.KubeAPIServer != nil && o.imports.VirtualGarden.KubeAPIServer.OidcWebhookAuthenticator.Enabled
+}
+
 func (o *operation) hasEncryptionConfig() bool {
 	return true
 }
@@ -382,6 +393,13 @@ func (o *operation) getAPIServerVolumeMounts() []corev1.VolumeMount {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      volumeNameKubeAPIServerAuthWebhookConfig,
 			MountPath: "/etc/kube-apiserver/auth-webhook",
+		})
+	}
+
+	if o.isOidcWebhookAuthenticatorEnabled() {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      volumeNameKubeAPIServerOidcAuthenticationWebhookConfig,
+			MountPath: "/etc/kube-apiserver/authentication-webhook",
 		})
 	}
 
@@ -482,6 +500,10 @@ func (o *operation) getAPIServerVolumes() []corev1.Volume {
 		volumes = append(volumes, volumeWithSecretSource(volumeNameKubeAPIServerAuthWebhookConfig, KubeApiServerSecretNameAuthWebhookConfig))
 	}
 
+	if o.isOidcWebhookAuthenticatorEnabled() {
+		volumes = append(volumes, volumeWithSecretSource(volumeNameKubeAPIServerOidcAuthenticationWebhookConfig, KubeApiServerSecretNameOidcAuthenticationWebhookConfig))
+	}
+
 	volumes = append(volumes, volumeWithConfigMapSource(volumeNameKubeAPIServerAuditPolicyConfig, KubeApiServerConfigMapAuditPolicy))
 
 	if len(o.getAPIServerAuditWebhookConfig()) > 0 {
@@ -510,25 +532,24 @@ func (o *operation) getAPIServerVolumes() []corev1.Volume {
 		)
 
 		projections := []corev1.VolumeProjection{}
-		if o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane.ValidatingWebhookEnabled {
+		controlplane := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane
+		if controlplane.ValidatingWebhook.Token.Enabled {
 			projections = append(projections, corev1.VolumeProjection{
 				ServiceAccountToken: &corev1.ServiceAccountTokenProjection{
-					Audience:          "validating-webhook",
-					ExpirationSeconds: pointer.Int64Ptr(3600),
+					Audience:          controlplane.ValidatingWebhook.Token.Audience,
+					ExpirationSeconds: pointer.Int64Ptr(controlplane.ValidatingWebhook.Token.ExpirationSeconds),
 					Path:              "validating-webhook-token",
 				},
 			})
-
 		}
-		if o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane.MutatingWebhookEnabled {
+		if o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane.MutatingWebhook.Token.Enabled {
 			projections = append(projections, corev1.VolumeProjection{
 				ServiceAccountToken: &corev1.ServiceAccountTokenProjection{
-					Audience:          "mutating-webhook",
-					ExpirationSeconds: pointer.Int64Ptr(3600),
+					Audience:          controlplane.MutatingWebhook.Token.Audience,
+					ExpirationSeconds: pointer.Int64Ptr(controlplane.MutatingWebhook.Token.ExpirationSeconds),
 					Path:              "mutating-webhook-token",
 				},
 			})
-
 		}
 		volumes = append(volumes,
 			corev1.Volume{

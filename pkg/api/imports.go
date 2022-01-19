@@ -116,6 +116,8 @@ type KubeAPIServer struct {
 
 	SeedAuthorizer SeedAuthorizer `json:"seedAuthorizer,omitempty" yaml:"seedAuthorizer,omitempty"`
 
+	OidcWebhookAuthenticator OidcWebhookAuthenticator `json:"oidcWebhookAuthenticator,omitempty" yaml:"oidcWebhookAuthenticator,omitempty"`
+
 	HVPAEnabled bool        `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
 	HVPA        *HvpaConfig `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`
 
@@ -158,8 +160,19 @@ type HorizontalPodAutoscaler struct {
 
 // GardenerControlplane contains the activation info for webhooks
 type GardenerControlplane struct {
-	ValidatingWebhookEnabled bool `json:"validatingWebhookEnabled,omitempty" yaml:"validatingWebhookEnabled,omitempty"`
-	MutatingWebhookEnabled   bool `json:"mutatingWebhookEnabled,omitempty" yaml:"mutatingWebhookEnabled,omitempty"`
+	ValidatingWebhook AdmissionWebhookConfig `json:"validatingWebhook,omitempty" yaml:"validatingWebhook,omitempty"`
+	MutatingWebhook   AdmissionWebhookConfig `json:"mutatingWebhook,omitempty" yaml:"mutatingWebhook,omitempty"`
+}
+
+type AdmissionWebhookConfig struct {
+	Kubeconfig string                      `json:"kubeconfig,omitempty" yaml:"kubeconfig,omitempty"`
+	Token      AdmissionWebhookTokenConfig `json:"token,omitempty" yaml:"token,omitempty"`
+}
+
+type AdmissionWebhookTokenConfig struct {
+	Enabled           bool   `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+	Audience          string `json:"audience,omitempty" yaml:"audience,omitempty"`
+	ExpirationSeconds int64  `json:"expirationSeconds,omitempty" yaml:"expirationSeconds,omitempty"`
 }
 
 // AuditWebhookConfig contains configuration for the audit webhook.
@@ -169,6 +182,12 @@ type AuditWebhookConfig struct {
 
 // SeedAuthorizer contains credentials for the seed authorizer.
 type SeedAuthorizer struct {
+	Enabled                  bool   `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+	CertificateAuthorityData string `json:"certificateAuthorityData,omitempty" yaml:"certificateAuthorityData,omitempty"`
+}
+
+// OidcWebhookAuthenticator contains configuration for the OIDC webhook authenticator.
+type OidcWebhookAuthenticator struct {
 	Enabled                  bool   `json:"enabled,omitempty" yaml:"enabled,omitempty"`
 	CertificateAuthorityData string `json:"certificateAuthorityData,omitempty" yaml:"certificateAuthorityData,omitempty"`
 }

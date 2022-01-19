@@ -107,8 +107,18 @@ func getImportsForDeploymentTest() *api.Imports {
 				SNI:             nil,
 				DnsAccessDomain: "com.our.test",
 				GardenerControlplane: api.GardenerControlplane{
-					ValidatingWebhookEnabled: true,
-					MutatingWebhookEnabled:   true,
+					ValidatingWebhook: api.AdmissionWebhookConfig{
+						Token: api.AdmissionWebhookTokenConfig{
+							Enabled:           true,
+							ExpirationSeconds: 600,
+						},
+					},
+					MutatingWebhook: api.AdmissionWebhookConfig{
+						Token: api.AdmissionWebhookTokenConfig{
+							Enabled:           true,
+							ExpirationSeconds: 600,
+						},
+					},
 				},
 				ServiceAccountKeyPem:     pointer.String("test-service-account-key"),
 				AuditWebhookConfig:       api.AuditWebhookConfig{Config: "testconfig"},

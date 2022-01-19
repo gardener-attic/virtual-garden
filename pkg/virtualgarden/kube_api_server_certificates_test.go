@@ -72,26 +72,29 @@ var _ = Describe("Api Server create certificates test", func() {
 
 		// deploy certificates
 		checksums1 := make(map[string]string)
-		err = operation.deployKubeAPIServerCertificates(ctx, loadBalancer, checksums1)
+		_, err = operation.deployKubeAPIServerCertificates(ctx, loadBalancer, checksums1)
 		Expect(err).To(BeNil())
 
 		checkSecret(ctx, KubeApiServerSecretNameApiServerCACertificate, "ca.key", "ca.crt")
 		checkSecret(ctx, KubeApiServerSecretNameApiServerServerCertificate, "ca.crt", "tls.key", "tls.crt")
-		checkSecret(ctx, KubeApiServerSecretNameKubeControllerManagerCertificate, "ca.crt", "tls.key", "tls.crt", "kubeconfig")
+		checkSecret(ctx, KubeApiServerSecretNameKubeControllerManagerCertificate, "ca.crt", "tls.key", "tls.crt", SecretKeyKubeconfig)
 		checkSecret(ctx, KubeApiServerSecretNameAggregatorCACertificate, "ca.key", "ca.crt")
 		checkSecret(ctx, KubeApiServerSecretNameAggregatorClientCertificate, "tls.key", "tls.crt")
-		checkSecret(ctx, KubeApiServerSecretNameClientAdminCertificate, "ca.crt", "tls.key", "tls.crt", "kubeconfig")
+		checkSecret(ctx, KubeApiServerSecretNameClientAdminCertificate, "ca.crt", "tls.key", "tls.crt", SecretKeyKubeconfig)
 		checkSecret(ctx, KubeApiServerSecretNameMetricsScraperCertificate, "tls.key", "tls.crt")
+		checkSecret(ctx, KubeApiServerSecretNameOidcAuthenticationWebhookConfig, SecretKeyKubeconfigYaml)
 
 		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerCA))
 		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerServer))
 		Expect(checksums1).To(HaveKey(ChecksumKeyKubeControllerManagerClient))
 		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAggregatorCA))
 		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAggregatorClient))
+		Expect(checksums1).To(HaveKey(ChecksumKeyKubeAPIServerOidcAuthenticationWebhookConfig))
 
 		// redeploy and check that certificates remain unchanged
 		checksums2 := make(map[string]string)
-		Expect(operation.deployKubeAPIServerCertificates(ctx, loadBalancer, checksums2)).To(Succeed())
+		_, err = operation.deployKubeAPIServerCertificates(ctx, loadBalancer, checksums2)
+		Expect(err).NotTo(HaveOccurred())
 		Expect(checksums1).To(Equal(checksums2))
 
 		// delete secrets and check that they are gone
@@ -116,13 +119,17 @@ func getImportsApiServerCertificatesTest() api.Imports {
 				AuditWebhookConfig:       api.AuditWebhookConfig{},
 				AuditWebhookBatchMaxSize: "",
 				SeedAuthorizer:           api.SeedAuthorizer{},
-				HVPAEnabled:              false,
-				HVPA:                     nil,
-				EventTTL:                 nil,
-				OidcIssuerURL:            nil,
-				AdditionalVolumeMounts:   nil,
-				AdditionalVolumes:        nil,
-				HorizontalPodAutoscaler:  nil,
+				OidcWebhookAuthenticator: api.OidcWebhookAuthenticator{
+					Enabled:                  true,
+					CertificateAuthorityData: "test-ca-data",
+				},
+				HVPAEnabled:             false,
+				HVPA:                    nil,
+				EventTTL:                nil,
+				OidcIssuerURL:           nil,
+				AdditionalVolumeMounts:  nil,
+				AdditionalVolumes:       nil,
+				HorizontalPodAutoscaler: nil,
 			},
 			DeleteNamespace:   false,
 			PriorityClassName: "",

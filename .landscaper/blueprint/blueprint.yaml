@@ -98,10 +98,34 @@ imports:
             gardenerControlplane:
               type: object
               properties:
-                validatingWebhookEnabled:
-                  type: boolean
-                mutatingWebhookEnabled:
-                  type: boolean
+                validatingWebhook:
+                  type: object
+                  properties:
+                    kubeconfig:
+                      type: string
+                    token:
+                      type: object
+                      properties:
+                        enabled:
+                          type: boolean
+                        audience:
+                          type: string
+                        expirationSeconds:
+                          type: number
+                mutatingWebhook:
+                  type: object
+                  properties:
+                    kubeconfig:
+                      type: string
+                    token:
+                      type: object
+                      properties:
+                        enabled:
+                          type: boolean
+                        audience:
+                          type: string
+                        expirationSeconds:
+                          type: number
             serviceAccountKeyPem:
               type: string
             auditWebhookConfig:
@@ -113,6 +137,13 @@ imports:
             auditWebhookBatchMaxSize:
               type: string
             seedAuthorizer:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                certificateAuthorityData:
+                  type: string
+            oidcWebhookAuthenticator:
               type: object
               properties:
                 enabled:

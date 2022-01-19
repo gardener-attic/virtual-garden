@@ -24,8 +24,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/ghodss/yaml"
 	v1 "k8s.io/client-go/tools/clientcmd/api/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/gardener/gardener/pkg/utils"
 	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"

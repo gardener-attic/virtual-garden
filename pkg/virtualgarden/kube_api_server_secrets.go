@@ -17,17 +17,16 @@ package virtualgarden
 import (
 	"context"
 	cryptorand "crypto/rand"
-	_ "embed"
 	"strings"
 
 	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
 
-	"github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	configv1 "k8s.io/apiserver/pkg/apis/config/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/yaml"
 
 	"github.com/gardener/gardener/pkg/utils"
 	v1 "k8s.io/client-go/tools/clientcmd/api/v1"
@@ -42,16 +41,11 @@ const (
 	KubeApiServerSecretNameServiceAccountKey   = Prefix + "-service-account-key"
 )
 
-//go:embed resources/validating-webhook-kubeconfig.yaml
-var validatingWebhookKubeconfig []byte
-
-//go:embed resources/mutating-webhook-kubeconfig.yaml
-var mutatingWebhookKubeconfig []byte
-
-func (o *operation) deployKubeAPIServerSecrets(ctx context.Context, checksums map[string]string) (string, error) {
+func (o *operation) deployKubeAPIServerSecrets(ctx context.Context, checksums map[string]string,
+	oidcAuthenticationWebhookCert *secretsutil.Certificate) (string, error) {
 	o.log.Infof("Deploying secrets for the kube-apiserver")
 
-	if err := o.deployKubeApiServerSecretAdmissionKubeconfig(ctx); err != nil {
+	if err := o.deployKubeApiServerSecretAdmissionKubeconfig(ctx, oidcAuthenticationWebhookCert); err != nil {
 		return "", err
 	}
 
@@ -98,22 +92,118 @@ func (o *operation) deleteKubeAPIServerSecrets(ctx context.Context) error {
 	return nil
 }
 
-func (o *operation) deployKubeApiServerSecretAdmissionKubeconfig(ctx context.Context) error {
+func (o *operation) deployKubeApiServerSecretAdmissionKubeconfig(ctx context.Context,
+	oidcAuthenticationWebhookCert *secretsutil.Certificate) error {
 	if !o.isWebhookEnabled() {
 		return nil
 	}
 
-	secret := o.emptySecret(KubeApiServerSecretNameAdmissionKubeconfig)
+	mutatingKubeconfigData, err := o.computeMutatingWebhookKubeconfig()
+	if err != nil {
+		return err
+	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
+	validatingKubeconfigData, err := o.computeValidatingWebhookKubeconfig(oidcAuthenticationWebhookCert)
+	if err != nil {
+		return err
+	}
+
+	secret := o.emptySecret(KubeApiServerSecretNameAdmissionKubeconfig)
+	_, err = controllerutil.CreateOrUpdate(ctx, o.client, secret, func() error {
 		if secret.Data == nil {
 			secret.Data = make(map[string][]byte)
 		}
-		secret.Data[ValidatingWebhookKey] = validatingWebhookKubeconfig
-		secret.Data[MutatingWebhookKey] = mutatingWebhookKubeconfig
+
+		if len(validatingKubeconfigData) > 0 {
+			secret.Data[ValidatingWebhookKey] = validatingKubeconfigData
+		}
+
+		if len(mutatingKubeconfigData) > 0 {
+			secret.Data[MutatingWebhookKey] = mutatingKubeconfigData
+		}
+
 		return nil
 	})
 	return err
+}
+
+func (o *operation) computeMutatingWebhookKubeconfig() ([]byte, error) {
+	mutatingWebhook := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane.MutatingWebhook
+	mutatingKubeconfigData := []byte(mutatingWebhook.Kubeconfig)
+	mutatingKubeconfig := v1.Config{}
+	if len(mutatingKubeconfigData) > 0 {
+		if err := yaml.Unmarshal(mutatingKubeconfigData, &mutatingKubeconfig); err != nil {
+			return nil, err
+		}
+	} else if mutatingWebhook.Token.Enabled {
+		mutatingKubeconfig = v1.Config{
+			APIVersion: "v1",
+			Kind:       "Config",
+			AuthInfos: []v1.NamedAuthInfo{
+				{
+					Name: "*",
+					AuthInfo: v1.AuthInfo{
+						TokenFile: "/var/run/secrets/admission-tokens/mutating-webhook-token",
+					},
+				},
+			},
+		}
+	} else {
+		return nil, nil
+	}
+
+	mutatingKubeconfigData, err := yaml.Marshal(mutatingKubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return mutatingKubeconfigData, nil
+}
+
+func (o *operation) computeValidatingWebhookKubeconfig(oidcAuthenticationWebhookCert *secretsutil.Certificate) ([]byte, error) {
+	validatingWebhook := o.imports.VirtualGarden.KubeAPIServer.GardenerControlplane.ValidatingWebhook
+	validatingKubeconfigData := []byte(validatingWebhook.Kubeconfig)
+	validatingKubeconfig := v1.Config{}
+	if len(validatingKubeconfigData) > 0 {
+		if err := yaml.Unmarshal(validatingKubeconfigData, &validatingKubeconfig); err != nil {
+			return nil, err
+		}
+	} else if validatingWebhook.Token.Enabled {
+		validatingKubeconfig = v1.Config{
+			APIVersion: "v1",
+			Kind:       "Config",
+			AuthInfos: []v1.NamedAuthInfo{
+				{
+					Name: "*",
+					AuthInfo: v1.AuthInfo{
+						TokenFile: "/var/run/secrets/admission-tokens/validating-webhook-token",
+					},
+				},
+			},
+		}
+	} else {
+		return nil, nil
+	}
+
+	if oidcAuthenticationWebhookCert != nil {
+		validatingKubeconfig.AuthInfos = append(
+			[]v1.NamedAuthInfo{{
+				Name: UserOidcWebhookAuthenticatorGarden,
+				AuthInfo: v1.AuthInfo{
+					ClientCertificateData: oidcAuthenticationWebhookCert.CertificatePEM,
+					ClientKeyData:         oidcAuthenticationWebhookCert.PrivateKeyPEM,
+				},
+			}},
+			validatingKubeconfig.AuthInfos...,
+		)
+	}
+
+	validatingKubeconfigData, err := yaml.Marshal(validatingKubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return validatingKubeconfigData, nil
 }
 
 func (o *operation) deployKubeApiServerSecretAuditWebhookConfig(ctx context.Context, checksums map[string]string) error {

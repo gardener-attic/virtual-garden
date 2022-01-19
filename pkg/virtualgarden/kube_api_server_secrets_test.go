@@ -70,7 +70,7 @@ var _ = Describe("Api Server create secrets test", func() {
 
 		// deploy certificates
 		checksums1 := make(map[string]string)
-		staticToken1, err := operation.deployKubeAPIServerSecrets(ctx, checksums1)
+		staticToken1, err := operation.deployKubeAPIServerSecrets(ctx, checksums1, nil)
 		Expect(err).To(BeNil())
 		Expect(staticToken1).NotTo(HaveLen(0))
 
@@ -89,7 +89,7 @@ var _ = Describe("Api Server create secrets test", func() {
 
 		// redeploy and check that secrets remain unchanged
 		checksums2 := make(map[string]string)
-		staticToken2, err := operation.deployKubeAPIServerSecrets(ctx, checksums2)
+		staticToken2, err := operation.deployKubeAPIServerSecrets(ctx, checksums2, nil)
 		Expect(err).To(BeNil())
 		Expect(checksums1).To(Equal(checksums2))
 		Expect(staticToken1).To(Equal(staticToken2))
@@ -113,8 +113,12 @@ func getImportsForApiServerSecretsTest() api.Imports {
 				SNI:             nil,
 				DnsAccessDomain: "com.our.test",
 				GardenerControlplane: api.GardenerControlplane{
-					ValidatingWebhookEnabled: true,
-					MutatingWebhookEnabled:   true,
+					ValidatingWebhook: api.AdmissionWebhookConfig{
+						Token: api.AdmissionWebhookTokenConfig{Enabled: true},
+					},
+					MutatingWebhook: api.AdmissionWebhookConfig{
+						Token: api.AdmissionWebhookTokenConfig{Enabled: true},
+					},
 				},
 				ServiceAccountKeyPem:     pointer.String("test-service-account-key"),
 				AuditWebhookConfig:       api.AuditWebhookConfig{Config: "testconfig"},
