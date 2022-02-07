@@ -14,13 +14,14 @@
 
 package api
 
-// Eports defines the structure for the exported data which might be consumed by other components.
+// Exports defines the structure for the exported data which might be consumed by other components.
 type Exports struct {
-	KubeApiserverCaPem    string `json:"kubeApiserverCaPem,omitempty" yaml:"kubeApiserverCaPem,omitempty"`
-	ServiceAccountKeyPem  string `json:"serviceAccountKeyPem,omitempty" yaml:"serviceAccountKeyPem,omitempty"`
-	EtcdCaPem             string `json:"etcdCaPem,omitempty" yaml:"etcdCaPem,omitempty"`
-	EtcdClientTlsPem      string `json:"etcdClientTlsPem,omitempty" yaml:"etcdClientTlsPem,omitempty"`
-	EtcdClientTlsKeyPem   string `json:"etcdClientTlsKeyPem,omitempty" yaml:"etcdClientTlsKeyPem,omitempty"`
-	KubeconfigYaml        string `json:"kubeconfigYaml,omitempty" yaml:"kubeconfigYaml,omitempty"`
-	VirtualGardenEndpoint string `json:"virtualGardenEndpoint,omitempty" yaml:"virtualGardenEndpoint,omitempty"`
+	VirtualGardenApiserverCaPem string `json:"virtualGardenApiserverCaPem,omitempty" yaml:"virtualGardenApiserverCaPem,omitempty"`
+	ServiceAccountKeyPem        string `json:"serviceAccountKeyPem,omitempty" yaml:"serviceAccountKeyPem,omitempty"`
+	EtcdCaPem                   string `json:"etcdCaPem,omitempty" yaml:"etcdCaPem,omitempty"`
+	EtcdClientTlsPem            string `json:"etcdClientTlsPem,omitempty" yaml:"etcdClientTlsPem,omitempty"`
+	EtcdClientTlsKeyPem         string `json:"etcdClientTlsKeyPem,omitempty" yaml:"etcdClientTlsKeyPem,omitempty"`
+	EtcdUrl                     string `json:"etcdUrl,omitempty" yaml:"etcdUrl,omitempty"`
+	KubeconfigYaml              string `json:"kubeconfigYaml,omitempty" yaml:"kubeconfigYaml,omitempty"`
+	VirtualGardenEndpoint       string `json:"virtualGardenEndpoint,omitempty" yaml:"virtualGardenEndpoint,omitempty"`
 }

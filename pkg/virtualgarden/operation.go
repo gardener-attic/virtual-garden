@@ -82,7 +82,7 @@ func NewOperation(
 		imageRefs: *imageRefs,
 	}
 
-	infrastructureProvider, err := provider.NewInfrastructureProvider(imports.HostingCluster.InfrastructureProvider)
+	infrastructureProvider, err := provider.NewInfrastructureProvider(imports.RuntimeClusterSettings.InfrastructureProvider)
 	if err != nil {
 		return nil, err
 	}

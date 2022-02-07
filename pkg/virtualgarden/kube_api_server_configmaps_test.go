@@ -95,8 +95,8 @@ var _ = Describe("Api Server create configmaps test", func() {
 
 func getImportsForApiServerConfigMapsTest() api.Imports {
 	return api.Imports{
-		Cluster:        lsv1alpha1.Target{},
-		HostingCluster: api.HostingCluster{},
+		RuntimeCluster:         lsv1alpha1.Target{},
+		RuntimeClusterSettings: api.ClusterSettings{},
 		VirtualGarden: api.VirtualGarden{
 			ETCD: nil,
 			KubeAPIServer: &api.KubeAPIServer{

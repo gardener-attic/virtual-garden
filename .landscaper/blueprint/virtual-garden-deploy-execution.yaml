@@ -2,8 +2,8 @@ deployItems:
 - name: virtual-garden-container-deployer
   type: landscaper.gardener.cloud/container
   target:
-    name: {{ index .imports "cluster" "metadata" "name" }}
-    namespace: {{ index .imports "cluster" "metadata" "namespace" }}
+    name: {{ index .imports "runtimeCluster" "metadata" "name" }}
+    namespace: {{ index .imports "runtimeCluster" "metadata" "namespace" }}
   config:
     apiVersion: container.deployer.landscaper.gardener.cloud/v1alpha1
     kind: ProviderConfiguration

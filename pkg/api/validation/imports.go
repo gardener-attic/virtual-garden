@@ -27,8 +27,8 @@ import (
 func ValidateImports(obj *api.Imports) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	allErrs = append(allErrs, ValidateCluster(&obj.Cluster, field.NewPath("cluster"))...)
-	allErrs = append(allErrs, ValidateHostingCluster(&obj.HostingCluster, field.NewPath("hostingCluster"))...)
+	allErrs = append(allErrs, ValidateCluster(&obj.RuntimeCluster, field.NewPath("cluster"))...)
+	allErrs = append(allErrs, ValidateHostingCluster(&obj.RuntimeClusterSettings, field.NewPath("hostingCluster"))...)
 	allErrs = append(allErrs, ValidateVirtualGarden(&obj.VirtualGarden, field.NewPath("virtualGarden"))...)
 
 	return allErrs
@@ -55,8 +55,8 @@ func ValidateCluster(obj *lsv1alpha1.Target, fldPath *field.Path) field.ErrorLis
 	return allErrs
 }
 
-// ValidateHostingCluster validates a HostingCluster object.
-func ValidateHostingCluster(obj *api.HostingCluster, fldPath *field.Path) field.ErrorList {
+// ValidateHostingCluster validates a ClusterSettings object.
+func ValidateHostingCluster(obj *api.ClusterSettings, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if len(obj.Namespace) == 0 {

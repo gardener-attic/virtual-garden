@@ -37,14 +37,14 @@ var _ = Describe("Imports", func() {
 
 		BeforeEach(func() {
 			obj = &api.Imports{
-				Cluster: lsv1alpha1.Target{
+				RuntimeCluster: lsv1alpha1.Target{
 					Spec: lsv1alpha1.TargetSpec{
 						Configuration: lsv1alpha1.AnyJSON{
 							RawMessage: json.RawMessage(`{"config":{"kubeconfig":"x"}}`),
 						},
 					},
 				},
-				HostingCluster: api.HostingCluster{
+				RuntimeClusterSettings: api.ClusterSettings{
 					Namespace:              "foo",
 					InfrastructureProvider: "gcp",
 				},
@@ -69,9 +69,9 @@ var _ = Describe("Imports", func() {
 
 		Context("hosting cluster", func() {
 			It("should fail for an invalid configuration", func() {
-				obj.Cluster = lsv1alpha1.Target{}
-				obj.HostingCluster.Namespace = ""
-				obj.HostingCluster.InfrastructureProvider = ""
+				obj.RuntimeCluster = lsv1alpha1.Target{}
+				obj.RuntimeClusterSettings.Namespace = ""
+				obj.RuntimeClusterSettings.InfrastructureProvider = ""
 
 				Expect(ValidateImports(obj)).To(ConsistOf(
 					PointTo(MatchFields(IgnoreExtras, Fields{

@@ -46,9 +46,12 @@ component-cli ca create "${CA_PATH}" \
 
 echo "> Extending resources.yaml: adding image of virtual-garden deployer"
 RESOURCES_BASE_PATH="$(mktemp -d)"
-cp -R ".landscaper/" "${RESOURCES_BASE_PATH}"
+
+# using .landscaper/resources yaml containing the blueprint and the required OCI images
+cp -a ".landscaper/." "${RESOURCES_BASE_PATH}"
 
 RESOURCES_FILE_PATH="${RESOURCES_BASE_PATH}/resources.yaml"
+
 cat << EOF >> ${RESOURCES_FILE_PATH}
 ---
 type: ociImage
@@ -67,3 +70,5 @@ mkdir -p ./gen
 CTF_PATH=${CTF_PATH} BASE_DEFINITION_PATH=${BASE_DEFINITION_PATH} CURRENT_COMPONENT_REPOSITORY=${REPO_CTX} RESOURCES_FILE_PATH=${RESOURCES_FILE_PATH} bash $SOURCE_PATH/.ci/component_descriptor
 
 component-cli ctf push --repo-ctx=${REPO_CTX} "${CTF_PATH}"
+
+echo "View the component descriptor with: component-cli component-archive remote get ${REPO_CTX} github.com/gardener/virtual-garden ${EFFECTIVE_VERSION}"

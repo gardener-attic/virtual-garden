@@ -125,7 +125,7 @@ func (o *operation) deployKubeApiServerApiServerCACertificate(ctx context.Contex
 		return nil, err
 	}
 
-	o.exports.KubeApiserverCaPem = string(cert.CertificatePEM)
+	o.exports.VirtualGardenApiserverCaPem = string(cert.CertificatePEM)
 
 	checksums[ChecksumKeyKubeAPIServerCA] = checksum
 	return cert, err
