@@ -94,6 +94,11 @@ func (s AnyJSON) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements json unmarshaling for a JSON
 func (s *AnyJSON) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*s = AnyJSON{RawMessage: nil}
+		return nil
+	}
+
 	raw := json.RawMessage{}
 	if err := raw.UnmarshalJSON(data); err != nil {
 		return err
@@ -146,8 +151,8 @@ const (
 	ErrorConfigurationProblem ErrorCode = "ERR_CONFIGURATION_PROBLEM"
 	// ErrorInternalProblem indicates that the last error occurred due to a servere internal error
 	ErrorInternalProblem ErrorCode = "ERR_INTERNAL_PROBLEM"
-	// ErrorHealthCheckTimeout indicates that objects failed the health check within the given time
-	ErrorHealthCheckTimeout ErrorCode = "ERR_HEALTH_CHECK_TIMEOUT"
+	// ErrorReadinessCheckTimeout indicates that objects failed the readiness check within the given time
+	ErrorReadinessCheckTimeout ErrorCode = "ERR_READINESS_CHECK_TIMEOUT"
 	// ErrorTimeout indicates that an operation timed out.
 	ErrorTimeout ErrorCode = "ERR_TIMEOUT"
 )
@@ -156,7 +161,7 @@ const (
 var UnrecoverableErrorCodes = []ErrorCode{
 	ErrorConfigurationProblem,
 	ErrorInternalProblem,
-	ErrorHealthCheckTimeout,
+	ErrorReadinessCheckTimeout,
 	ErrorTimeout,
 }
 
@@ -272,6 +277,7 @@ type VersionedNamedObjectReference struct {
 type SecretReference struct {
 	ObjectReference `json:",inline"`
 	// Key is the name of the key in the secret that holds the data.
+	// +optional
 	Key string `json:"key"`
 }
 
@@ -280,6 +286,7 @@ type SecretReference struct {
 type ConfigMapReference struct {
 	ObjectReference `json:",inline"`
 	// Key is the name of the key in the configmap that holds the data.
+	// +optional
 	Key string `json:"key"`
 }
 

@@ -5,6 +5,8 @@
 package v1alpha1
 
 import (
+	"encoding/json"
+
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -120,6 +122,10 @@ type Installation struct {
 
 // InstallationSpec defines a component installation.
 type InstallationSpec struct {
+	// Context defines the current context of the installation.
+	// +optional
+	Context string `json:"context,omitempty"`
+
 	//ComponentDescriptor is a reference to the installation's component descriptor
 	// +optional
 	ComponentDescriptor *ComponentDescriptorDefinition `json:"componentDescriptor,omitempty"`
@@ -194,7 +200,11 @@ type InstallationImports struct {
 
 	// Targets defines all target imports.
 	// +optional
-	Targets []TargetImportExport `json:"targets,omitempty"`
+	Targets []TargetImport `json:"targets,omitempty"`
+
+	// ComponentDescriptors defines all component descriptor imports.
+	// +optional
+	ComponentDescriptors []ComponentDescriptorImport `json:"componentDescriptors,omitempty"`
 }
 
 // InstallationExports defines exports of data objects and targets.
@@ -205,7 +215,7 @@ type InstallationExports struct {
 
 	// Targets defines all target exports.
 	// +optional
-	Targets []TargetImportExport `json:"targets,omitempty"`
+	Targets []TargetExport `json:"targets,omitempty"`
 }
 
 // DataImport is a data object import.
@@ -243,13 +253,87 @@ type DataExport struct {
 	DataRef string `json:"dataRef"`
 }
 
-// TargetImportExport is a target import/export.
-type TargetImportExport struct {
-	// Name the internal name of the imported/exported target.
+// TargetImport is either a single target or a target list import.
+type TargetImport struct {
+	// Name the internal name of the imported target.
 	Name string `json:"name"`
 
 	// Target is the name of the in-cluster target object.
-	Target string `json:"target"`
+	// Exactly one of Target, Targets, and TargetListReference has to be specified.
+	// +optional
+	Target string `json:"target,omitempty"`
+
+	// Targets is a list of in-cluster target objects.
+	// Exactly one of Target, Targets, and TargetListReference has to be specified.
+	// +optional
+	Targets []string `json:"targets"`
+
+	// TargetListReference can (only) be used to import a targetlist that has been imported by the parent installation.
+	// Exactly one of Target, Targets, and TargetListReference has to be specified.
+	// +optional
+	TargetListReference string `json:"targetListRef,omitempty"`
+}
+
+// TargetExport is a single target export.
+type TargetExport struct {
+	// Name the internal name of the exported target.
+	Name string `json:"name"`
+
+	// Target is the name of the in-cluster target object.
+	// +optional
+	Target string `json:"target,omitempty"`
+}
+
+type ComponentDescriptorImport struct {
+	// Name the internal name of the imported/exported component descriptor.
+	Name string `json:"name"`
+
+	// Ref is a reference to a component descriptor in a registry.
+	// Exactly one of Ref, SecretRef, ConfigMapRef, and List has to be specified.
+	// +optional
+	Ref *ComponentDescriptorReference `json:"ref,omitempty"`
+
+	// SecretRef is a reference to a key in a secret in the cluster.
+	// Exactly one of Ref, SecretRef, ConfigMapRef, and List has to be specified.
+	// +optional
+	SecretRef *SecretReference `json:"secretRef,omitempty"`
+
+	// ConfigMapRef is a reference to a key in a config map in the cluster.
+	// Exactly one of Ref, SecretRef, ConfigMapRef, and List has to be specified.
+	// +optional
+	ConfigMapRef *ConfigMapReference `json:"configMapRef,omitempty"`
+
+	// List represents a list of component descriptor imports.
+	// Exactly one of Ref, SecretRef, ConfigMapRef, and List has to be specified.
+	// +optional
+	List []ComponentDescriptorImportData `json:"list,omitempty"`
+
+	// DataRef can be used to reference component descriptors imported by the parent installation.
+	// This field is used in subinstallation templates only, use one of the other fields instead for root installations.
+	// +optional
+	DataRef string `json:"dataRef,omitempty"`
+}
+
+type ComponentDescriptorImportData struct {
+	// Ref is a reference to a component descriptor in a registry.
+	// Exactly one of Ref, SecretRef, ConfigMapRef, and List has to be specified.
+	// +optional
+	Ref *ComponentDescriptorReference `json:"ref,omitempty"`
+
+	// SecretRef is a reference to a key in a secret in the cluster.
+	// Exactly one of Ref, SecretRef, ConfigMapRef, and List has to be specified.
+	// +optional
+	SecretRef *SecretReference `json:"secretRef,omitempty"`
+
+	// ConfigMapRef is a reference to a key in a config map in the cluster.
+	// Exactly one of Ref, SecretRef, ConfigMapRef, and List has to be specified.
+	// +optional
+	ConfigMapRef *ConfigMapReference `json:"configMapRef,omitempty"`
+
+	// DataRef can be used to reference component descriptors imported by the parent installation.
+	// This field is used in subinstallation templates only, use one of the other fields instead for root installations.
+	// +optional
+	DataRef string `json:"dataRef,omitempty"`
 }
 
 // BlueprintDefinition defines the blueprint that should be used for the installation.
@@ -342,9 +426,42 @@ type SecretLabelSelectorRef struct {
 type ImportStatusType string
 
 const (
-	DataImportStatusType   ImportStatusType = "dataobject"
+	// DataImportStatusType is an ImportStatusType for data objects
+	DataImportStatusType ImportStatusType = "dataobject"
+	// TargetImportStatusType is an ImportStatusType for targets
 	TargetImportStatusType ImportStatusType = "target"
+	// TargetListImportStatusType is an ImportStatusType for target lists
+	TargetListImportStatusType ImportStatusType = "targetList"
+	// CDImportStatusType is an ImportStatusType for component descriptors
+	CDImportStatusType ImportStatusType = "componentDescriptor"
+	// CDListImportStatusType is an ImportStatusType for component descriptor lists
+	CDListImportStatusType ImportStatusType = "componentDescriptorList"
 )
+
+// TargetImportStatus
+type TargetImportStatus struct {
+	// Target is the name of the in-cluster target object.
+	Target string `json:"target,omitempty"`
+	// SourceRef is the reference to the installation from where the value is imported
+	SourceRef *ObjectReference `json:"sourceRef,omitempty"`
+	// ConfigGeneration is the generation of the imported value.
+	ConfigGeneration string `json:"configGeneration,omitempty"`
+}
+
+// CDImportStatus is the import status of a component descriptor
+type CDImportStatus struct {
+	// ComponentDescriptorRef is a reference to a component descriptor
+	// +optional
+	ComponentDescriptorRef *ComponentDescriptorReference `json:"componentDescriptorRef,omitempty"`
+	// SecretRef is the name of the secret.
+	// +optional
+	SecretRef string `json:"secretRef,omitempty"`
+	// ConfigMapRef is the name of the imported configmap.
+	// +optional
+	ConfigMapRef string `json:"configMapRef,omitempty"`
+	// SourceRef is the reference to the installation from where the value is imported
+	SourceRef *ObjectReference `json:"sourceRef,omitempty"`
+}
 
 // ImportStatus hold the state of a import.
 type ImportStatus struct {
@@ -352,11 +469,20 @@ type ImportStatus struct {
 	// Can be either from data or target imports
 	Name string `json:"name"`
 	// Type defines the kind of import.
-	// Can be either DataObject or Target
+	// Can be either DataObject, Target, or TargetList
 	Type ImportStatusType `json:"type"`
 	// Target is the name of the in-cluster target object.
 	// +optional
 	Target string `json:"target,omitempty"`
+	// TargetList is a list of import statuses for in-cluster target objects.
+	// +optional
+	Targets []TargetImportStatus `json:"targetList,omitempty"`
+	// ComponentDescriptorRef is a reference to a component descriptor
+	// +optional
+	ComponentDescriptorRef *ComponentDescriptorReference `json:"componentDescriptorRef,omitempty"`
+	// ComponentDescriptors is a list of import statuses for component descriptors
+	// +optional
+	ComponentDescriptors []CDImportStatus `json:"componentDescriptorList,omitempty"`
 	// DataRef is the name of the in-cluster data object.
 	// +optional
 	DataRef string `json:"dataRef,omitempty"`
@@ -366,8 +492,65 @@ type ImportStatus struct {
 	// ConfigMapRef is the name of the imported configmap.
 	// +optional
 	ConfigMapRef string `json:"configMapRef,omitempty"`
-	// SourceRef is the reference to the installation where the value is imported
+	// SourceRef is the reference to the installation from where the value is imported
+	// +optional
 	SourceRef *ObjectReference `json:"sourceRef,omitempty"`
 	// ConfigGeneration is the generation of the imported value.
-	ConfigGeneration string `json:"configGeneration"`
+	// +optional
+	ConfigGeneration string `json:"configGeneration,omitempty"`
+}
+
+// MarshalJSON implements the json marshaling for a TargetImport
+// Why this is needed:
+//   We need Targets to not have the 'omitempty' annotation,
+//   because the code distinguishes between nil and an empty list.
+//   Not having the annotation causes the default json marshal to write
+//   'null' in case of nil, which causes problems.
+func (ti TargetImport) MarshalJSON() ([]byte, error) {
+
+	type TargetImportWithTargets struct {
+		Name                string   `json:"name"`
+		Target              string   `json:"target,omitempty"`
+		Targets             []string `json:"targets"`
+		TargetListReference string   `json:"targetListRef,omitempty"`
+	}
+	type TargetImportWithoutTargets struct {
+		Name                string   `json:"name"`
+		Target              string   `json:"target,omitempty"`
+		Targets             []string `json:"targets,omitempty"`
+		TargetListReference string   `json:"targetListRef,omitempty"`
+	}
+
+	if ti.Targets == nil {
+		return json.Marshal(TargetImportWithoutTargets(ti))
+	}
+	return json.Marshal(TargetImportWithTargets(ti))
+}
+
+// MarshalJSON implements the json marshaling for a ComponentDescriptorImport
+// This is needed for the same reasons as the MarshalJSON function for TargetImports.
+func (cdi ComponentDescriptorImport) MarshalJSON() ([]byte, error) {
+
+	type ComponentDescriptorImportWithCDs struct {
+		Name         string                          `json:"name"`
+		Ref          *ComponentDescriptorReference   `json:"ref,omitempty"`
+		SecretRef    *SecretReference                `json:"secretRef,omitempty"`
+		ConfigMapRef *ConfigMapReference             `json:"configMapRef,omitempty"`
+		List         []ComponentDescriptorImportData `json:"list"`
+		DataRef      string                          `json:"dataRef,omitempty"`
+	}
+
+	type ComponentDescriptorImportWithoutCDs struct {
+		Name         string                          `json:"name"`
+		Ref          *ComponentDescriptorReference   `json:"ref,omitempty"`
+		SecretRef    *SecretReference                `json:"secretRef,omitempty"`
+		ConfigMapRef *ConfigMapReference             `json:"configMapRef,omitempty"`
+		List         []ComponentDescriptorImportData `json:"list,omitempty"`
+		DataRef      string                          `json:"dataRef,omitempty"`
+	}
+
+	if cdi.List == nil {
+		return json.Marshal(ComponentDescriptorImportWithoutCDs(cdi))
+	}
+	return json.Marshal(ComponentDescriptorImportWithCDs(cdi))
 }
