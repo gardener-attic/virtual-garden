@@ -75,6 +75,12 @@ func SetDefaults_DefinitionExport(exports *ExportDefinitionList) {
 
 // SetDefaults_Installation sets default values for installation objects
 func SetDefaults_Installation(obj *Installation) {
+
+	// default the repository context to "default"
+	if len(obj.Spec.Context) == 0 {
+		obj.Spec.Context = DefaultContextName
+	}
+
 	// default the namespace of imports
 	for i, dataImport := range obj.Spec.Imports.Data {
 		if dataImport.ConfigMapRef != nil {
@@ -87,5 +93,64 @@ func SetDefaults_Installation(obj *Installation) {
 				obj.Spec.Imports.Data[i].SecretRef.Namespace = obj.GetNamespace()
 			}
 		}
+	}
+	for i, cdImport := range obj.Spec.Imports.ComponentDescriptors {
+		if cdImport.ConfigMapRef != nil {
+			if len(cdImport.ConfigMapRef.Namespace) == 0 {
+				obj.Spec.Imports.ComponentDescriptors[i].ConfigMapRef.Namespace = obj.GetNamespace()
+			}
+		}
+		if cdImport.SecretRef != nil {
+			if len(cdImport.SecretRef.Namespace) == 0 {
+				obj.Spec.Imports.ComponentDescriptors[i].SecretRef.Namespace = obj.GetNamespace()
+			}
+		}
+		if cdImport.Ref != nil {
+			if cdImport.Ref.RepositoryContext == nil {
+				if obj.Spec.ComponentDescriptor != nil && obj.Spec.ComponentDescriptor.Reference != nil {
+					cdImport.Ref.RepositoryContext = obj.Spec.ComponentDescriptor.Reference.RepositoryContext
+				}
+			}
+		}
+
+		if len(cdImport.List) != 0 {
+			for j := range cdImport.List {
+				impDef := &cdImport.List[j]
+
+				if impDef.ConfigMapRef != nil {
+					if len(impDef.ConfigMapRef.Namespace) == 0 {
+						impDef.ConfigMapRef.Namespace = obj.GetNamespace()
+					}
+				}
+				if impDef.SecretRef != nil {
+					if len(impDef.SecretRef.Namespace) == 0 {
+						impDef.SecretRef.Namespace = obj.GetNamespace()
+					}
+				}
+				if impDef.Ref != nil {
+					if impDef.Ref.RepositoryContext == nil {
+						if obj.Spec.ComponentDescriptor != nil && obj.Spec.ComponentDescriptor.Reference != nil {
+							impDef.Ref.RepositoryContext = obj.Spec.ComponentDescriptor.Reference.RepositoryContext
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// SetDefaults_Execution sets default values for Execution objects
+func SetDefaults_Execution(obj *Execution) {
+	// default the repository context to "default"
+	if len(obj.Spec.Context) == 0 {
+		obj.Spec.Context = DefaultContextName
+	}
+}
+
+// SetDefaults_DeployItem sets default values for DeployItem objects
+func SetDefaults_DeployItem(obj *DeployItem) {
+	// default the repository context to "default"
+	if len(obj.Spec.Context) == 0 {
+		obj.Spec.Context = DefaultContextName
 	}
 }

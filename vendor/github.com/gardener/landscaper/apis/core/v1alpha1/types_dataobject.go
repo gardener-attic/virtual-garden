@@ -35,6 +35,9 @@ const DataObjectKeyLabel = "data.landscaper.gardener.cloud/key"
 // DataObjectSourceLabel defines the name of the label that specifies the source of the dataobject.
 const DataObjectSourceLabel = "data.landscaper.gardener.cloud/source"
 
+// DataObjectHashAnnotation defines the name of the annotation that specifies the hash of the data.
+const DataObjectHashAnnotation = "data.landscaper.gardener.cloud/hash"
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // DataObjectList contains a list of DataObject
@@ -69,6 +72,11 @@ var DataObjectDefinition = lsschema.CustomResourceDefinition{
 			Type:     "string",
 			JSONPath: ".metadata.labels['data\\.landscaper\\.gardener\\.cloud\\/key']",
 		},
+		{
+			Name:     "Age",
+			Type:     "date",
+			JSONPath: ".metadata.creationTimestamp",
+		},
 	},
 }
 
@@ -76,9 +84,6 @@ var DataObjectDefinition = lsschema.CustomResourceDefinition{
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // DataObject are resources that can hold any kind json or yaml data.
-// +kubebuilder:resource:path="dataobjects",scope="Namespaced",shortName={"do","dobj"},singular="dataobject"
-// +kubebuilder:printcolumn:JSONPath=`.metadata.labels['data\.landscaper\.gardener\.cloud\/context']`,name=Context,type=string
-// +kubebuilder:printcolumn:JSONPath=`.metadata.labels['data\.landscaper\.gardener\.cloud\/key']`,name=Key,type=string
 type DataObject struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
