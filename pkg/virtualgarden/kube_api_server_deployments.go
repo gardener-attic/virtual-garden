@@ -301,6 +301,8 @@ func (o *operation) getAPIServerCommand() []string {
 	command = append(command, "--requestheader-username-headers=X-Remote-User")
 	command = append(command, "--secure-port=443")
 	command = append(command, "--service-account-key-file=/srv/kubernetes/service-account-key/service_account.key")
+	command = append(command, "--service-account-signing-key-file=/srv/kubernetes/service-account-key/service_account.key")
+	command = append(command, fmt.Sprintf("--service-account-issuer=https://gardener.%s", o.imports.VirtualGarden.KubeAPIServer.DnsAccessDomain))
 	command = append(command, "--service-cluster-ip-range=100.64.0.0/13")
 	command = append(command, "--shutdown-delay-duration=20s")
 	command = append(command, "--tls-cert-file=/srv/kubernetes/apiserver/tls.crt")
