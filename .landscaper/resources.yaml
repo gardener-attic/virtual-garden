@@ -11,6 +11,7 @@ input:
 ---
 type: ociImage
 name: etcd
+version: v3.14.13
 relation: external
 access:
   type: ociRegistry
@@ -20,6 +21,7 @@ access:
 type: ociImage
 name: etcd-backup-restore
 relation: external
+version: v0.11.1
 access:
   type: ociRegistry
   imageReference: eu.gcr.io/gardener-project/gardener/etcdbrctl:v0.11.1
@@ -27,6 +29,7 @@ access:
 ---
 type: ociImage
 name: kube-apiserver
+version: v1.20.15
 relation: external
 access:
   type: ociRegistry
@@ -35,6 +38,7 @@ access:
 ---
 type: ociImage
 name: kube-controller-manager
+version: v1.20.15
 relation: external
 access:
   type: ociRegistry
