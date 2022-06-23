@@ -18,11 +18,12 @@ import (
 	"context"
 	_ "embed"
 
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	"github.com/gardener/virtual-garden/pkg/api/helper"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -39,7 +40,7 @@ func (o *operation) checkHVPACRD(ctx context.Context) error {
 }
 
 // getHVPACRD return the HVPA CRD.
-func (o *operation) getHVPACRD(ctx context.Context) (*v1beta1.CustomResourceDefinition, error) {
+func (o *operation) getHVPACRD(ctx context.Context) (*v1.CustomResourceDefinition, error) {
 	hvpaCrd := emptyHVPACRD()
 	err := o.client.Get(ctx, client.ObjectKeyFromObject(hvpaCrd), hvpaCrd)
 	if err != nil {
@@ -49,8 +50,8 @@ func (o *operation) getHVPACRD(ctx context.Context) (*v1beta1.CustomResourceDefi
 	return hvpaCrd, nil
 }
 
-func emptyHVPACRD() *v1beta1.CustomResourceDefinition {
-	return &v1beta1.CustomResourceDefinition{
+func emptyHVPACRD() *v1.CustomResourceDefinition {
+	return &v1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "hvpas.autoscaling.k8s.io",
 		},

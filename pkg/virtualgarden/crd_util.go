@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -65,7 +66,7 @@ func DeployVPACRD(ctx context.Context, c client.Client) error {
 	return err
 }
 
-func waitToBeEstablished(ctx context.Context, c client.Client, crd *v1beta1.CustomResourceDefinition) error {
+func waitToBeEstablished(ctx context.Context, c client.Client, crd *v1.CustomResourceDefinition) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 
@@ -79,7 +80,7 @@ func waitToBeEstablished(ctx context.Context, c client.Client, crd *v1beta1.Cust
 
 		conditions := crd.Status.Conditions
 		for _, condition := range conditions {
-			if condition.Type == v1beta1.Established && condition.Status == v1beta1.ConditionTrue {
+			if condition.Type == v1.Established && condition.Status == v1.ConditionTrue {
 				return true, nil
 			}
 		}
@@ -96,8 +97,8 @@ func DeleteHPVACRD(ctx context.Context, c client.Client) error {
 }
 
 // loadCRD loads the CRD.
-func loadCRD(crdBytes []byte) (*v1beta1.CustomResourceDefinition, error) {
-	crd := &v1beta1.CustomResourceDefinition{}
+func loadCRD(crdBytes []byte) (*v1.CustomResourceDefinition, error) {
+	crd := &v1.CustomResourceDefinition{}
 	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(crdBytes), 32)
 	err := decoder.Decode(crd)
 	if err != nil {
@@ -107,8 +108,8 @@ func loadCRD(crdBytes []byte) (*v1beta1.CustomResourceDefinition, error) {
 	return crd, nil
 }
 
-func emptyVPACRD() *v1beta1.CustomResourceDefinition {
-	return &v1beta1.CustomResourceDefinition{
+func emptyVPACRD() *v1.CustomResourceDefinition {
+	return &v1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "verticalpodautoscalers.autoscaling.k8s.io",
 		},
