@@ -49,11 +49,6 @@ func (o *operation) DeployKubeAPIServer(ctx context.Context) error {
 		return err
 	}
 
-	err = o.deployKubeAPIServerPodAutoscaling(ctx)
-	if err != nil {
-		return err
-	}
-
 	err = o.deployMisc(ctx)
 	if err != nil {
 		return err
@@ -85,10 +80,6 @@ func (o *operation) DeleteKubeAPIServer(ctx context.Context) error {
 	}
 
 	if err := o.deleteMisc(ctx); err != nil {
-		return err
-	}
-
-	if err := o.deleteKubeAPIServerPodAutoscaling(ctx); err != nil {
 		return err
 	}
 

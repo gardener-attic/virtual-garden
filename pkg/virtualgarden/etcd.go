@@ -21,7 +21,6 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -123,13 +122,6 @@ func (o *operation) deployETCDResources(ctx context.Context) error {
 		if err := o.deployETCDStatefulSet(ctx, role, checksums, storageCapacity, storageClassName, storageProviderName, environment); err != nil {
 			return err
 		}
-
-		if helper.ETCDHVPAEnabled(o.imports.VirtualGarden.ETCD) {
-			o.log.Infof("Deploying etcd HVPA for role %q if CRD is installed", role)
-			if err := o.deployETCDHVPA(ctx, role); err != nil && !meta.IsNoMatchError(err) {
-				return err
-			}
-		}
 	}
 
 	return nil
@@ -138,12 +130,6 @@ func (o *operation) deployETCDResources(ctx context.Context) error {
 // DeleteETCD deletes etcd and all related resources.
 func (o *operation) DeleteETCD(ctx context.Context) error {
 	for _, role := range []string{ETCDRoleMain, ETCDRoleEvents} {
-		if helper.ETCDHVPAEnabled(o.imports.VirtualGarden.ETCD) {
-			o.log.Infof("Deleting etcd HVPA for role %q if CRD is installed", role)
-			if err := o.deleteETCDHVPA(ctx, role); err != nil && !meta.IsNoMatchError(err) {
-				return err
-			}
-		}
 
 		o.log.Infof("Deleting etcd statefulset for role %q", role)
 		if err := o.deleteETCDStatefulSet(ctx, role); err != nil {

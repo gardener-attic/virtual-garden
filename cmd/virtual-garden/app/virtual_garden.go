@@ -27,7 +27,6 @@ import (
 	"github.com/gardener/virtual-garden/pkg/api/validation"
 	"github.com/gardener/virtual-garden/pkg/virtualgarden"
 
-	hvpav1alpha1 "github.com/gardener/hvpa-controller/api/v1alpha1"
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -35,7 +34,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	autoscalingv1beta2 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/component-base/version/verflag"
@@ -178,8 +176,6 @@ func NewClientFromKubeconfig(kubeconfig []byte) (client.Client, error) {
 
 	scheme := runtime.NewScheme()
 	utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
-	utilruntime.Must(hvpav1alpha1.AddToScheme(scheme))
-	utilruntime.Must(autoscalingv1beta2.AddToScheme(scheme))
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 
 	return client.New(restConfig, client.Options{Scheme: scheme})

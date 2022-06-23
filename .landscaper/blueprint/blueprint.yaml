@@ -73,8 +73,6 @@ imports:
             handleETCDPersistentVolumes:
               description: "If true, the persistent volumes for the etcds are also deleted."
               type: boolean
-            hvpaEnabled:
-              type: boolean
         kubeAPIServer:
           type: object
           properties:
@@ -150,46 +148,6 @@ imports:
                   type: boolean
                 certificateAuthorityData:
                   type: string
-            hvpaEnabled:
-              type: boolean
-            hvpa:
-              type: object
-              properties:
-                maxReplicas:
-                  type: integer
-                minReplicas:
-                  type: integer
-                targetAverageUtilizationCpu:
-                  type: integer
-                targetAverageUtilizationMemory:
-                  type: integer
-                vpaScaleUpMode:
-                  type: string
-                vpaScaleDownMode:
-                  type: string
-                vpaScaleUpStabilization:
-                  type: object
-                  properties:
-                    stabilizationDuration:
-                      type: string
-                    minChange:
-                      "$ref": "#/definitions/scaleParams"
-                vpaScaleDownStabilization:
-                  type: object
-                  properties:
-                    stabilizationDuration:
-                      type: string
-                    minChange:
-                      "$ref": "#/definitions/scaleParams"
-                limitsRequestsGapScaleParams:
-                  "$ref": "#/definitions/scaleParams"
-                maintenanceWindow:
-                  type: object
-                  properties:
-                    begin:
-                      type: string
-                    end:
-                      type: string
             eventTTL:
               type: string
             oidcIssuerURL:

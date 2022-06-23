@@ -40,7 +40,6 @@ import (
 	"github.com/gardener/virtual-garden/pkg/virtualgarden"
 
 	secretsutil "github.com/gardener/gardener/pkg/utils/secrets"
-	hvpav1alpha1 "github.com/gardener/hvpa-controller/api/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -92,7 +91,6 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		c, err = app.NewClientFromTarget(imports.RuntimeCluster)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = virtualgarden.DeployHVPACRD(ctx, c)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -100,9 +98,6 @@ var _ = Describe("VirtualGarden E2E tests", func() {
 		By("Executing virtual garden deployer (deletion)")
 		Expect(os.Setenv("OPERATION", "DELETE")).To(Succeed())
 		Expect(app.NewCommandVirtualGarden().ExecuteContext(ctx)).To(Succeed())
-
-		err := virtualgarden.DeleteHPVACRD(ctx, c)
-		Expect(err).NotTo(HaveOccurred())
 
 		verifyDeletion(ctx, c, imports)
 	})
@@ -217,8 +212,6 @@ func verifyReconciliation(ctx context.Context, c client.Client, imports *api.Imp
 		verifyReconciliationOfETCDServerCertificate(ctx, c, imports, role, etcdCACertificate)
 
 		verifyReconciliationOfETCDStatefulSet(ctx, c, imports, role, backupProvider)
-
-		verifyReconciliationOfETCDHVPA(ctx, c, imports, role)
 	}
 
 	verifyReconciliationOfKubeAPIServerCertificates(ctx, c, imports)
@@ -464,15 +457,6 @@ func verifyReconciliationOfETCDStatefulSet(ctx context.Context, c client.Client,
 	}, timeoutCtx.Done())).To(Succeed())
 }
 
-func verifyReconciliationOfETCDHVPA(ctx context.Context, c client.Client, imports *api.Imports, role string) {
-	if helper.ETCDHVPAEnabled(imports.VirtualGarden.ETCD) {
-		By("Checking that the etcd HVPA was created as expected (" + role + ")")
-		etcdHVPA := &hvpav1alpha1.Hvpa{}
-		err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDHVPAName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, etcdHVPA)
-		Expect(err).To(Succeed())
-	}
-}
-
 func verifyReconciliationOfKubeAPIServerCertificates(ctx context.Context, c client.Client, imports *api.Imports) {
 	By("Checking that the certificates for the kube-apiserver were created as expected")
 
@@ -581,8 +565,6 @@ func verifyDeletion(ctx context.Context, c client.Client, imports *api.Imports) 
 	verifyDeletionOfKubeAPIServerService(ctx, c, imports)
 
 	for _, role := range []string{virtualgarden.ETCDRoleMain, virtualgarden.ETCDRoleEvents} {
-		verifyDeletionOfETCDHVPA(ctx, c, imports, role)
-
 		verifyDeletionOfETCDStatefulSet(ctx, c, imports, role)
 
 		By("Checking that the etcd bootstrap configmap was deleted successfully (" + role + ")")
@@ -621,14 +603,6 @@ func verifyDeletionOfKubeAPIServerService(ctx context.Context, c client.Client, 
 		}
 		return false, nil
 	}, timeoutCtx.Done())).To(Succeed())
-}
-
-func verifyDeletionOfETCDHVPA(ctx context.Context, c client.Client, imports *api.Imports, role string) {
-	if helper.ETCDHVPAEnabled(imports.VirtualGarden.ETCD) {
-		By("Checking that the etcd HVPA was deleted successfully (" + role + ")")
-		err := c.Get(ctx, client.ObjectKey{Name: virtualgarden.ETCDHVPAName(role), Namespace: imports.RuntimeClusterSettings.Namespace}, &hvpav1alpha1.Hvpa{})
-		Expect(apierrors.IsNotFound(err)).To(BeTrue())
-	}
 }
 
 func verifyDeletionOfETCDStatefulSet(ctx context.Context, c client.Client, imports *api.Imports, role string) {

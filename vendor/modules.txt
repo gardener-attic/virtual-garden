@@ -182,7 +182,6 @@ github.com/gardener/gardener/pkg/utils/version
 github.com/gardener/gardener-resource-manager/pkg/apis/resources
 github.com/gardener/gardener-resource-manager/pkg/apis/resources/v1alpha1
 # github.com/gardener/hvpa-controller v0.3.1
-## explicit
 github.com/gardener/hvpa-controller/api/v1alpha1
 # github.com/gardener/landscaper/apis v0.20.0 => github.com/gardener/landscaper/apis v0.20.0
 ## explicit
@@ -801,7 +800,6 @@ k8s.io/apiserver/pkg/apis/config
 k8s.io/apiserver/pkg/apis/config/v1
 k8s.io/apiserver/pkg/authentication/user
 # k8s.io/autoscaler v0.0.0-20190805135949-100e91ba756e
-## explicit
 k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2
 # k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible => k8s.io/client-go v0.21.2
 ## explicit

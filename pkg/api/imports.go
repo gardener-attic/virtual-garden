@@ -72,8 +72,6 @@ type ETCD struct {
 	// +optional
 	Backup *ETCDBackup `json:"backup,omitempty" yaml:"backup,omitempty"`
 
-	HVPAEnabled bool `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
-
 	// HandleETCDPersistentVolumes defines whether the PV(C)s that are getting automatically created by the etcd
 	// statefulset shall be handled or not (false by default). If true then they will be deleted when the virtual
 	// garden is deleted. Otherwise, they will remain in the system for manual cleanup (to prevent data loss).
@@ -118,16 +116,11 @@ type KubeAPIServer struct {
 
 	OidcWebhookAuthenticator OidcWebhookAuthenticator `json:"oidcWebhookAuthenticator,omitempty" yaml:"oidcWebhookAuthenticator,omitempty"`
 
-	HVPAEnabled bool        `json:"hvpaEnabled,omitempty" yaml:"hvpaEnabled,omitempty"`
-	HVPA        *HvpaConfig `json:"hvpa,omitempty" yaml:"hvpa,omitempty"`
-
 	EventTTL      *string `json:"eventTTL,omitempty" yaml:"eventTTL,omitempty"`
 	OidcIssuerURL *string `json:"oidcIssuerURL,omitempty" yaml:"oidcIssuerURL,omitempty"`
 
 	AdditionalVolumeMounts []corev1.VolumeMount `json:"additionalVolumeMounts,omitempty" yaml:"additionalVolumeMounts,omitempty"`
 	AdditionalVolumes      []corev1.Volume      `json:"additionalVolumes,omitempty" yaml:"additionalVolumes,omitempty"`
-
-	HorizontalPodAutoscaler *HorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty" yaml:"horizontalPodAutoscaler,omitempty"`
 
 	MaxRequestsInflight         *int `json:"maxRequestsInflight,omitempty" yaml:"maxRequestsInflight,omitempty"`
 	MaxMutatingRequestsInflight *int `json:"maxMutatingRequestsInflight,omitempty" yaml:"maxMutatingRequestsInflight,omitempty"`
@@ -147,15 +140,6 @@ func (r *KubeAPIServer) GetMaxMutatingRequestsInflight(defaultValue int) int {
 		return defaultValue
 	}
 	return *r.MaxMutatingRequestsInflight
-}
-
-// HorizontalPodAutoscaler contains configuration for the horizontal pod auto scaler.
-type HorizontalPodAutoscaler struct {
-	DownscaleStabilization  string `json:"downscaleStabilization,omitempty" yaml:"downscaleStabilization,omitempty"`
-	ReadinessDelay          string `json:"readinessDelay,omitempty" yaml:"readinessDelay,omitempty"`
-	CpuInitializationPeriod string `json:"cpuInitializationPeriod,omitempty" yaml:"cpuInitializationPeriod,omitempty"`
-	SyncPeriod              string `json:"syncPeriod,omitempty" yaml:"syncPeriod,omitempty"`
-	Tolerance               string `json:"tolerance,omitempty" yaml:"tolerance,omitempty"`
 }
 
 // GardenerControlplane contains the activation info for webhooks
