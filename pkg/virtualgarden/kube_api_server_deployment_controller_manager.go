@@ -16,9 +16,7 @@ package virtualgarden
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/gardener/virtual-garden/pkg/api"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -126,8 +124,6 @@ func (o *operation) getKubeControllerManagerContainers() []corev1.Container {
 }
 
 func (o *operation) getKubeControllerManagerCommand() []string {
-	hpaConfig := o.getKubeControllerManagerHPAConfig()
-
 	return []string{
 		"/usr/local/bin/kube-controller-manager",
 		"--authentication-kubeconfig=/srv/kubernetes/controller-manager/kubeconfig",
@@ -140,11 +136,6 @@ func (o *operation) getKubeControllerManagerCommand() []string {
 		"--concurrent-namespace-syncs=100",
 		"--concurrent-resource-quota-syncs=100",
 		"--concurrent-serviceaccount-token-syncs=100",
-		fmt.Sprintf("--horizontal-pod-autoscaler-downscale-stabilization=%s", hpaConfig.DownscaleStabilization),
-		fmt.Sprintf("--horizontal-pod-autoscaler-cpu-initialization-period=%s", hpaConfig.CpuInitializationPeriod),
-		fmt.Sprintf("--horizontal-pod-autoscaler-initial-readiness-delay=%s", hpaConfig.ReadinessDelay),
-		fmt.Sprintf("--horizontal-pod-autoscaler-sync-period=%s", hpaConfig.SyncPeriod),
-		fmt.Sprintf("--horizontal-pod-autoscaler-tolerance=%s", hpaConfig.Tolerance),
 		"--kubeconfig=/srv/kubernetes/controller-manager/kubeconfig",
 		"--root-ca-file=/srv/kubernetes/ca/ca.crt",
 		"--service-account-private-key-file=/srv/kubernetes/service-account-key/service_account.key",
@@ -176,37 +167,4 @@ func (o *operation) getKubeControllerManagerVolumes() []corev1.Volume {
 		volumeWithSecretSource(volumeNameKubeControllerManager, KubeApiServerSecretNameKubeControllerManagerCertificate),
 		volumeWithSecretSource(volumeNameServiceAccountKey, KubeApiServerSecretNameServiceAccountKey),
 	}
-}
-
-func (o *operation) getKubeControllerManagerHPAConfig() *api.HorizontalPodAutoscaler {
-	// Start with the default values
-	config := api.HorizontalPodAutoscaler{
-		DownscaleStabilization:  "30m0s",
-		ReadinessDelay:          "30s",
-		CpuInitializationPeriod: "5m0s",
-		SyncPeriod:              "30s",
-		Tolerance:               "0.1",
-	}
-
-	// Overwrite with imported values
-	importedConfig := o.imports.VirtualGarden.KubeAPIServer.HorizontalPodAutoscaler
-	if importedConfig != nil {
-		if len(importedConfig.DownscaleStabilization) != 0 {
-			config.DownscaleStabilization = importedConfig.DownscaleStabilization
-		}
-		if len(importedConfig.ReadinessDelay) != 0 {
-			config.ReadinessDelay = importedConfig.ReadinessDelay
-		}
-		if len(importedConfig.CpuInitializationPeriod) != 0 {
-			config.CpuInitializationPeriod = importedConfig.CpuInitializationPeriod
-		}
-		if len(importedConfig.SyncPeriod) != 0 {
-			config.SyncPeriod = importedConfig.SyncPeriod
-		}
-		if len(importedConfig.Tolerance) != 0 {
-			config.Tolerance = importedConfig.Tolerance
-		}
-	}
-
-	return &config
 }

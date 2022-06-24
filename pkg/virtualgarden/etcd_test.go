@@ -26,13 +26,11 @@ import (
 
 	"github.com/gardener/gardener/pkg/utils"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
-	hvpav1alpha1 "github.com/gardener/hvpa-controller/api/v1alpha1"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -41,7 +39,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	autoscalingv1beta2 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -90,7 +87,6 @@ var _ = Describe("Etcd", func() {
 							BucketName: bucketName,
 						},
 						StorageClassName:            &storageClassName,
-						HVPAEnabled:                 true,
 						HandleETCDPersistentVolumes: true,
 					},
 					PriorityClassName: "garden-controlplane",
@@ -118,13 +114,11 @@ var _ = Describe("Etcd", func() {
 			configMapMainObjectMeta    metav1.ObjectMeta
 			secretServerMainObjectMeta metav1.ObjectMeta
 			statefulSetMainObjectMeta  metav1.ObjectMeta
-			hvpaMainObjectMeta         metav1.ObjectMeta
 
 			serviceEventsObjectMeta      metav1.ObjectMeta
 			configMapEventsObjectMeta    metav1.ObjectMeta
 			secretServerEventsObjectMeta metav1.ObjectMeta
 			statefulSetEventsObjectMeta  metav1.ObjectMeta
-			hvpaEventsObjectMeta         metav1.ObjectMeta
 
 			secretChecksumCA           string
 			secretChecksumClient       string
@@ -527,146 +521,6 @@ var _ = Describe("Etcd", func() {
 					},
 				}
 			}
-			hvpaFor = func(role string) *hvpav1alpha1.Hvpa {
-				var (
-					hvpaContainerScalingOff = autoscalingv1beta2.ContainerScalingModeOff
-					objectMeta              metav1.ObjectMeta
-					statefulSetName         string
-				)
-
-				if role == ETCDRoleMain {
-					objectMeta = hvpaMainObjectMeta
-					statefulSetName = statefulSetMainObjectMeta.Name
-				} else if role == ETCDRoleEvents {
-					objectMeta = hvpaEventsObjectMeta
-					statefulSetName = statefulSetEventsObjectMeta.Name
-				}
-
-				return &hvpav1alpha1.Hvpa{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      objectMeta.Name,
-						Namespace: objectMeta.Namespace,
-					},
-					Spec: hvpav1alpha1.HvpaSpec{
-						Replicas: pointer.Int32Ptr(1),
-						TargetRef: &autoscalingv2beta1.CrossVersionObjectReference{
-							APIVersion: "apps/v1",
-							Kind:       "StatefulSet",
-							Name:       statefulSetName,
-						},
-						Hpa: hvpav1alpha1.HpaSpec{
-							Selector: &metav1.LabelSelector{
-								MatchLabels: map[string]string{"role": "etcd-hpa-" + role},
-							},
-							Deploy: false,
-							Template: hvpav1alpha1.HpaTemplate{
-								ObjectMeta: metav1.ObjectMeta{
-									Labels: map[string]string{"role": "etcd-hpa-" + role},
-								},
-								Spec: hvpav1alpha1.HpaTemplateSpec{
-									MinReplicas: pointer.Int32Ptr(1),
-									MaxReplicas: 1,
-									Metrics: []autoscalingv2beta1.MetricSpec{
-										{
-											Resource: &autoscalingv2beta1.ResourceMetricSource{
-												Name:                     corev1.ResourceMemory,
-												TargetAverageUtilization: pointer.Int32Ptr(80),
-											},
-										},
-										{
-											Resource: &autoscalingv2beta1.ResourceMetricSource{
-												Name:                     corev1.ResourceCPU,
-												TargetAverageUtilization: pointer.Int32Ptr(80),
-											},
-										},
-									},
-								},
-							},
-						},
-						Vpa: hvpav1alpha1.VpaSpec{
-							Selector: &metav1.LabelSelector{
-								MatchLabels: map[string]string{"role": "etcd-vpa-" + role},
-							},
-							Deploy: true,
-							Template: hvpav1alpha1.VpaTemplate{
-								ObjectMeta: metav1.ObjectMeta{
-									Labels: map[string]string{"role": "etcd-vpa-" + role},
-								},
-								Spec: hvpav1alpha1.VpaTemplateSpec{
-									ResourcePolicy: &autoscalingv1beta2.PodResourcePolicy{
-										ContainerPolicies: []autoscalingv1beta2.ContainerResourcePolicy{
-											{
-												ContainerName: etcdContainerName,
-												MaxAllowed: corev1.ResourceList{
-													corev1.ResourceCPU:    resource.MustParse("4"),
-													corev1.ResourceMemory: resource.MustParse("30G"),
-												},
-												MinAllowed: corev1.ResourceList{
-													corev1.ResourceCPU:    resource.MustParse("200m"),
-													corev1.ResourceMemory: resource.MustParse("700M"),
-												},
-											},
-											{
-												ContainerName: backupRestoreSidecarContainerName,
-												Mode:          &hvpaContainerScalingOff,
-											},
-										},
-									},
-								},
-							},
-							ScaleUp: hvpav1alpha1.ScaleType{
-								UpdatePolicy: hvpav1alpha1.UpdatePolicy{
-									UpdateMode: pointer.StringPtr(hvpav1alpha1.UpdateModeAuto),
-								},
-								StabilizationDuration: pointer.StringPtr("5m"),
-								MinChange: hvpav1alpha1.ScaleParams{
-									CPU: hvpav1alpha1.ChangeParams{
-										Value:      pointer.StringPtr("1"),
-										Percentage: pointer.Int32Ptr(80),
-									},
-									Memory: hvpav1alpha1.ChangeParams{
-										Value:      pointer.StringPtr("2G"),
-										Percentage: pointer.Int32Ptr(80),
-									},
-								},
-							},
-							ScaleDown: hvpav1alpha1.ScaleType{
-								UpdatePolicy: hvpav1alpha1.UpdatePolicy{
-									UpdateMode: pointer.StringPtr(hvpav1alpha1.UpdateModeOff),
-								},
-								StabilizationDuration: pointer.StringPtr("15m"),
-								MinChange: hvpav1alpha1.ScaleParams{
-									CPU: hvpav1alpha1.ChangeParams{
-										Value:      pointer.StringPtr("1"),
-										Percentage: pointer.Int32Ptr(80),
-									},
-									Memory: hvpav1alpha1.ChangeParams{
-										Value:      pointer.StringPtr("2G"),
-										Percentage: pointer.Int32Ptr(80),
-									},
-								},
-							},
-							LimitsRequestsGapScaleParams: hvpav1alpha1.ScaleParams{
-								CPU: hvpav1alpha1.ChangeParams{
-									Value:      pointer.StringPtr("2"),
-									Percentage: pointer.Int32Ptr(40),
-								},
-								Memory: hvpav1alpha1.ChangeParams{
-									Value:      pointer.StringPtr("3G"),
-									Percentage: pointer.Int32Ptr(40),
-								},
-							},
-						},
-						WeightBasedScalingIntervals: []hvpav1alpha1.WeightBasedScalingInterval{
-							{
-								VpaWeight:         hvpav1alpha1.VpaOnly,
-								StartReplicaCount: 1,
-								LastReplicaCount:  1,
-							},
-						},
-					},
-				}
-			}
 		)
 
 		BeforeEach(func() {
@@ -679,16 +533,14 @@ var _ = Describe("Etcd", func() {
 			configMapMainObjectMeta = objectMeta(ETCDConfigMapName(ETCDRoleMain), namespace)
 			secretServerMainObjectMeta = objectMeta(ETCDSecretNameServerCertificate(ETCDRoleMain), namespace)
 			statefulSetMainObjectMeta = objectMeta(ETCDStatefulSetName(ETCDRoleMain), namespace)
-			hvpaMainObjectMeta = objectMeta(ETCDHVPAName(ETCDRoleMain), namespace)
 
 			serviceEventsObjectMeta = objectMeta(ETCDServiceName(ETCDRoleEvents), namespace)
 			configMapEventsObjectMeta = objectMeta(ETCDConfigMapName(ETCDRoleEvents), namespace)
 			secretServerEventsObjectMeta = objectMeta(ETCDSecretNameServerCertificate(ETCDRoleEvents), namespace)
 			statefulSetEventsObjectMeta = objectMeta(ETCDStatefulSetName(ETCDRoleEvents), namespace)
-			hvpaEventsObjectMeta = objectMeta(ETCDHVPAName(ETCDRoleEvents), namespace)
 		})
 
-		It("should correctly deploy all etcd resources (w/ backup, w/ hvpa)", func() {
+		It("should correctly deploy all etcd resources (w/ backup)", func() {
 			gomock.InOrder(
 				c.EXPECT().Get(ctx, client.ObjectKey{Name: storageClassObjectMeta.Name}, gomock.AssignableToTypeOf(&storagev1.StorageClass{})).Return(apierrors.NewNotFound(schema.GroupResource{}, "")),
 				c.EXPECT().Create(ctx, gomock.AssignableToTypeOf(&storagev1.StorageClass{})).Do(func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) {
@@ -751,10 +603,6 @@ var _ = Describe("Etcd", func() {
 				c.EXPECT().Create(ctx, gomock.AssignableToTypeOf(&appsv1.StatefulSet{})).Do(func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) {
 					Expect(obj).To(Equal(statefulSetFor(ETCDRoleMain, op.imports.VirtualGarden.ETCD.Backup)))
 				}),
-				c.EXPECT().Get(ctx, client.ObjectKey{Name: hvpaMainObjectMeta.Name, Namespace: hvpaMainObjectMeta.Namespace}, gomock.AssignableToTypeOf(&hvpav1alpha1.Hvpa{})).Return(apierrors.NewNotFound(schema.GroupResource{}, "")),
-				c.EXPECT().Create(ctx, gomock.AssignableToTypeOf(&hvpav1alpha1.Hvpa{})).Do(func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) {
-					Expect(obj).To(Equal(hvpaFor(ETCDRoleMain)))
-				}),
 
 				c.EXPECT().Get(ctx, client.ObjectKey{Name: serviceEventsObjectMeta.Name, Namespace: serviceEventsObjectMeta.Namespace}, gomock.AssignableToTypeOf(&corev1.Service{})).Return(apierrors.NewNotFound(schema.GroupResource{}, "")),
 				c.EXPECT().Create(ctx, gomock.AssignableToTypeOf(&corev1.Service{})).Do(func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) {
@@ -777,18 +625,13 @@ var _ = Describe("Etcd", func() {
 				c.EXPECT().Create(ctx, gomock.AssignableToTypeOf(&appsv1.StatefulSet{})).Do(func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) {
 					Expect(obj).To(Equal(statefulSetFor(ETCDRoleEvents, nil)))
 				}),
-				c.EXPECT().Get(ctx, client.ObjectKey{Name: hvpaEventsObjectMeta.Name, Namespace: hvpaEventsObjectMeta.Namespace}, gomock.AssignableToTypeOf(&hvpav1alpha1.Hvpa{})).Return(apierrors.NewNotFound(schema.GroupResource{}, "")),
-				c.EXPECT().Create(ctx, gomock.AssignableToTypeOf(&hvpav1alpha1.Hvpa{})).Do(func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) {
-					Expect(obj).To(Equal(hvpaFor(ETCDRoleEvents)))
-				}),
 			)
 
 			Expect(op.deployETCDResources(ctx)).To(Succeed())
 		})
 
-		It("should correctly deploy all etcd resources (w/o backup, w/o hvpa)", func() {
+		It("should correctly deploy all etcd resources (w/o backup)", func() {
 			op.imports.VirtualGarden.ETCD.Backup = nil
-			op.imports.VirtualGarden.ETCD.HVPAEnabled = false
 
 			gomock.InOrder(
 				c.EXPECT().Get(ctx, client.ObjectKey{Name: storageClassObjectMeta.Name}, gomock.AssignableToTypeOf(&storagev1.StorageClass{})).Return(apierrors.NewNotFound(schema.GroupResource{}, "")),
@@ -872,16 +715,14 @@ var _ = Describe("Etcd", func() {
 	})
 
 	Describe("#DeleteETCD", func() {
-		It("should correctly delete all etcd resources (w/ backup, w/ pvc handling, w/ hvpa)", func() {
+		It("should correctly delete all etcd resources (w/ backup, w/ pvc handling)", func() {
 			gomock.InOrder(
-				c.EXPECT().Delete(ctx, &hvpav1alpha1.Hvpa{ObjectMeta: objectMeta(ETCDHVPAName(ETCDRoleMain), namespace)}),
 				c.EXPECT().Delete(ctx, &appsv1.StatefulSet{ObjectMeta: objectMeta(ETCDStatefulSetName(ETCDRoleMain), namespace)}),
 				c.EXPECT().Delete(ctx, &corev1.PersistentVolumeClaim{ObjectMeta: objectMeta(ETCDPersistentVolumeClaimName(ETCDRoleMain), namespace)}),
 				c.EXPECT().Delete(ctx, &corev1.Secret{ObjectMeta: objectMeta(ETCDSecretNameBackup, namespace)}),
 				c.EXPECT().Delete(ctx, &corev1.ConfigMap{ObjectMeta: objectMeta(ETCDConfigMapName(ETCDRoleMain), namespace)}),
 				c.EXPECT().Delete(ctx, &corev1.Service{ObjectMeta: objectMeta(ETCDServiceName(ETCDRoleMain), namespace)}),
 
-				c.EXPECT().Delete(ctx, &hvpav1alpha1.Hvpa{ObjectMeta: objectMeta(ETCDHVPAName(ETCDRoleEvents), namespace)}),
 				c.EXPECT().Delete(ctx, &appsv1.StatefulSet{ObjectMeta: objectMeta(ETCDStatefulSetName(ETCDRoleEvents), namespace)}),
 				c.EXPECT().Delete(ctx, &corev1.PersistentVolumeClaim{ObjectMeta: objectMeta(ETCDPersistentVolumeClaimName(ETCDRoleEvents), namespace)}),
 				c.EXPECT().Delete(ctx, &corev1.ConfigMap{ObjectMeta: objectMeta(ETCDConfigMapName(ETCDRoleEvents), namespace)}),
@@ -898,9 +739,8 @@ var _ = Describe("Etcd", func() {
 			Expect(op.DeleteETCD(ctx)).To(Succeed())
 		})
 
-		It("should correctly delete all etcd resources (w/o backup, w/o pvc handling, w/o hvpa)", func() {
+		It("should correctly delete all etcd resources (w/o backup, w/o pvc handling)", func() {
 			op.imports.VirtualGarden.ETCD.Backup = nil
-			op.imports.VirtualGarden.ETCD.HVPAEnabled = false
 			op.imports.VirtualGarden.ETCD.HandleETCDPersistentVolumes = false
 
 			gomock.InOrder(

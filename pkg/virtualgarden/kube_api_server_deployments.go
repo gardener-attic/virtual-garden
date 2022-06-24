@@ -58,9 +58,6 @@ func (o *operation) deployKubeAPIServerDeployment(ctx context.Context, checksums
 	apiServerImports := o.imports.VirtualGarden.KubeAPIServer
 
 	replicas := pointer.Int32Ptr(int32(apiServerImports.Replicas))
-	if apiServerImports.HVPAEnabled {
-		replicas = apiServerImports.HVPA.GetMinReplicas()
-	}
 
 	annotations := o.computeApiServerAnnotations(checksums)
 

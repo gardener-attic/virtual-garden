@@ -44,13 +44,4 @@ var _ = Describe("Helper", func() {
 		Entry("backup is nil", &api.ETCD{}, BeFalse()),
 		Entry("backup is not nil", &api.ETCD{Backup: &api.ETCDBackup{}}, BeTrue()),
 	)
-
-	DescribeTable("#ETCDHVPAEnabled",
-		func(etcd *api.ETCD, matcher types.GomegaMatcher) {
-			Expect(ETCDHVPAEnabled(etcd)).To(matcher)
-		},
-
-		Entry("etcd is nil", nil, BeFalse()),
-		Entry("hvpa is nil", &api.ETCD{}, BeFalse()),
-	)
 })
