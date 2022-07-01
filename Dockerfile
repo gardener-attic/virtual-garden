@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 #### BUILDER ####
-FROM golang:1.16.5 AS builder
+FROM golang:1.17.11 AS builder
 
 WORKDIR /go/src/github.com/gardener/virtual-garden
 COPY . .
@@ -13,7 +13,7 @@ ARG EFFECTIVE_VERSION
 RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION
 
 #### BASE ####
-FROM eu.gcr.io/gardenlinux/gardenlinux:184.0 AS base
+FROM gcr.io/distroless/static-debian11:nonroot AS base
 
 #### Landscaper Controller ####
 FROM base as virtual-garden
