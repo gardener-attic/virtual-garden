@@ -411,6 +411,10 @@ func (o *operation) generateNewEncryptionConfig() ([]byte, error) {
 		},
 	}
 
+	if len(o.imports.VirtualGarden.KubeAPIServer.EncryptionConfig.Resources) > 0 {
+		encryptionConfig.Resources[0].Resources = o.imports.VirtualGarden.KubeAPIServer.EncryptionConfig.Resources
+	}
+
 	return yaml.Marshal(&encryptionConfig)
 }
 

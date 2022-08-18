@@ -126,6 +126,8 @@ type KubeAPIServer struct {
 	MaxMutatingRequestsInflight *int `json:"maxMutatingRequestsInflight,omitempty" yaml:"maxMutatingRequestsInflight,omitempty"`
 
 	Profiling bool `json:"profiling,omitempty" yaml:"profiling,omitempty"`
+
+	EncryptionConfig EncryptionConfig `json:"encryptionConfig,omitempty" yaml:"encryptionConfig,omitempty"`
 }
 
 func (r *KubeAPIServer) GetMaxRequestsInflight(defaultValue int) int {
@@ -200,3 +202,8 @@ type Credentials struct {
 
 // InfrastructureProviderType is a string alias.
 type InfrastructureProviderType string
+
+// EncryptionConfig configures the kubernetes EncryptionConfiguration used by the Kube API server.
+type EncryptionConfig struct {
+	Resources []string `json:"resources" yaml:"resources"`
+}
