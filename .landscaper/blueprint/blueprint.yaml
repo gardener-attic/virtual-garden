@@ -194,6 +194,13 @@ imports:
               type: integer
             profiling:
               type: boolean
+            encryptionConfig:
+              type: object
+              properties:
+                resources:
+                  type: array
+                  items:
+                    type: string
         deleteNamespace:
           type: boolean
         priorityClassName:
