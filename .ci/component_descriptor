@@ -23,3 +23,7 @@ cp ${BASE_DEFINITION_PATH} "${CA_PATH}/component-descriptor.yaml"
 component-cli ca "${CA_PATH}" "${CTF_PATH}" \
     -r  ${RESOURCES_FILE_PATH} \
     VERSION=${EFFECTIVE_VERSION}
+
+
+# also upload the components to a open source repo
+component-cli ctf push --repo-ctx="eu.gcr.io/gardener-project/development" "${CTF_PATH}"
