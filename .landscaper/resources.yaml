@@ -33,7 +33,7 @@ version: v1.20.15
 relation: external
 access:
   type: ociRegistry
-  imageReference: k8s.gcr.io/kube-apiserver:v1.20.15
+  imageReference: k8s.gcr.io/kube-apiserver:v1.21.14
 ...
 ---
 type: ociImage
@@ -42,5 +42,5 @@ version: v1.20.15
 relation: external
 access:
   type: ociRegistry
-  imageReference: k8s.gcr.io/kube-controller-manager:v1.20.15
+  imageReference: k8s.gcr.io/kube-controller-manager:v1.21.14
 ...
