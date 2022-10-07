@@ -11,7 +11,7 @@ input:
 ---
 type: ociImage
 name: etcd
-version: v3.14.13
+version: v3.4.13
 relation: external
 access:
   type: ociRegistry
@@ -29,18 +29,18 @@ access:
 ---
 type: ociImage
 name: kube-apiserver
-version: v1.20.15
+version: v1.22.15
 relation: external
 access:
   type: ociRegistry
-  imageReference: k8s.gcr.io/kube-apiserver:v1.21.14
+  imageReference: k8s.gcr.io/kube-apiserver:v1.22.15
 ...
 ---
 type: ociImage
 name: kube-controller-manager
-version: v1.20.15
+version: v1.22.15
 relation: external
 access:
   type: ociRegistry
-  imageReference: k8s.gcr.io/kube-controller-manager:v1.21.14
+  imageReference: k8s.gcr.io/kube-controller-manager:v1.22.15
 ...
