@@ -1,4 +1,4 @@
-cluster:
+runtimeCluster:
   apiVersion: "landscaper.gardener.cloud/v1alpha1"
   kind: Target
   metadata:
@@ -12,7 +12,7 @@ cluster:
         kind: Config
 #       ... <please insert your kubeconfig here>
 
-hostingCluster:
+runtimeClusterSettings:
   namespace: garden
   infrastructureProvider: gcp # aws|gcp|alicloud
 
