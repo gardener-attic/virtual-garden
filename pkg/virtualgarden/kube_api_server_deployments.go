@@ -303,7 +303,7 @@ func (o *operation) getAPIServerCommand() []string {
 	command = append(command, "--service-cluster-ip-range=100.64.0.0/13")
 	command = append(command, "--shutdown-delay-duration=20s")
 	command = append(command, "--tls-cert-file=/srv/kubernetes/apiserver/tls.crt")
-	command = append(command, "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA")
+	command = append(command, "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384")
 	command = append(command, "--tls-private-key-file=/srv/kubernetes/apiserver/tls.key")
 	if o.isSNIEnabled() {
 		command = append(command, fmt.Sprintf("--tls-sni-cert-key=/srv/kubernetes/sni-tls/tls.crt,/srv/kubernetes/sni-tls/tls.key:%s", o.getSNIHostname()))
