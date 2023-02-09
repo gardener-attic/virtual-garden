@@ -107,7 +107,7 @@ github.com/davecgh/go-spew/spew
 github.com/drone/envsubst
 github.com/drone/envsubst/parse
 github.com/drone/envsubst/path
-# github.com/emicklei/go-restful v2.9.6+incompatible
+# github.com/emicklei/go-restful v2.16.0+incompatible
 ## explicit
 github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
