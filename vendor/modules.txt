@@ -96,8 +96,8 @@ github.com/cespare/xxhash/v2
 # github.com/containerd/containerd v1.5.5 => github.com/containerd/containerd v1.5.13
 ## explicit; go 1.17
 github.com/containerd/containerd/reference/docker
-# github.com/cyphar/filepath-securejoin v0.2.2
-## explicit
+# github.com/cyphar/filepath-securejoin v0.2.4
+## explicit; go 1.13
 github.com/cyphar/filepath-securejoin
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
